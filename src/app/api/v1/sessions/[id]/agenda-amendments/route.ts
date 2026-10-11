@@ -12,6 +12,7 @@ import { tenantSettings } from '@/lib/server/domain'
 import { matterLabel } from '@/lib/server/serializers'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
+import { createSessionNotice } from '@/lib/server/session-notice'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,7 +107,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (activeMatters < policy.minimumAgendaMatters) {
       throw new DomainError('SESSION_PRECONDITION', 409, 'Pauta incompleta', `Esta Câmara exige ao menos ${policy.minimumAgendaMatters} matéria(s) na Ordem do Dia.`)
     }
-    return { ...change, revision: revision.revision + 1, policy }
+    return { ...change, revision: revision.revision + 1, policy, tenant }
   }
 
   if (command.mode === 'preview') {
@@ -127,19 +128,25 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     }
     const changed = await tx.session.updateMany({ where: { id, tenantId: session.tenantId, status: 'scheduled', version: command.version }, data: { version: { increment: 1 } } })
     if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A sessão mudou. Recarregue a pauta.')
+    const updated = await tx.session.findUniqueOrThrow({ where: { id } })
+    const issuedAt = new Date()
+    const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication, minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours }
+    const notice = createSessionNotice({ tenant: change.tenant, session: updated, revision: change.revision,
+      issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification })
     await tx.sessionAgendaRevision.create({ data: {
       tenantId: session.tenantId, sessionId: id, revision: change.revision,
       agendaJson: JSON.stringify(change.after),
-      policyJson: JSON.stringify({ enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication, minimumAgendaMatters: change.policy.minimumAgendaMatters }),
+      policyJson: JSON.stringify(policySnapshot),
       changeJson: JSON.stringify({ action: command.action, before: change.before, after: change.after }),
       justification: command.justification, actorId: actor.id,
+      noticeJson: notice.noticeJson, noticeSha256: notice.noticeSha256, createdAt: issuedAt,
     } })
     await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'agenda.amended', aggregateType: 'session', aggregateId: id,
-      summary: `${change.summary} Revisão ${change.revision}.`, before: { revision: change.revision - 1 }, after: { revision: change.revision, action: command.action },
+      summary: `${change.summary} Revisão ${change.revision}.`, before: { revision: change.revision - 1 }, after: { revision: change.revision, action: command.action, noticeSha256: notice.noticeSha256 },
       justification: command.justification, correlationId, ip: clientIp(req) })
     await emitOutbox(tx, { tenantId: session.tenantId, eventType: 'agenda.updated', aggregateId: id, sessionId: id,
       aggregateVersion: command.version + 1, correlationId,
-      internalPayload: { sessionId: id, revision: change.revision }, publicPayload: { sessionId: id, revision: change.revision } })
+      internalPayload: { sessionId: id, revision: change.revision, noticeSha256: notice.noticeSha256 }, publicPayload: { sessionId: id, revision: change.revision, noticeSha256: notice.noticeSha256 } })
     return change
   })
   return Response.json({ amendment: result }, { status: 201 })

@@ -9,6 +9,7 @@ import { createHash, randomBytes, randomInt, randomUUID, scryptSync } from 'cryp
 import { computeReceipt } from '../src/lib/server/receipts'
 import { computeDocHash, computeDocumentSignature } from '../src/lib/server/document-signatures'
 import { computeTenantHealth } from '../src/lib/server/tenant-health'
+import { createSessionNotice } from '../src/lib/server/session-notice'
 
 const db = new PrismaClient()
 
@@ -488,10 +489,17 @@ async function main() {
     await db.agendaItem.create({ data: { sessionId: s2.id, order: ord++, ...item } })
   }
   const agendaS2Rows = await db.agendaItem.findMany({ where: { sessionId: s2.id }, orderBy: { order: 'asc' } })
+  const agendaS2Snapshot = agendaS2Rows.map((item) => ({ id: item.id, order: item.order, section: item.section, matterId: item.matterId, title: item.title, kind: item.kind, batchItems: item.batchItems, status: item.status }))
+  const agendaS2Policy = { enabledSessionTypes: ['ordinaria', 'extraordinaria', 'solene', 'especial'], requireSecretaryForPublication: false, minimumAgendaMatters: 0, minimumNoticeHours: 0 }
+  const agendaS2IssuedAt = at(-1, 9, 30)
+  const agendaS2Notice = createSessionNotice({ tenant, session: s2, revision: 1, issuedAt: agendaS2IssuedAt, agenda: agendaS2Snapshot, policy: agendaS2Policy })
   await db.sessionAgendaRevision.create({ data: {
     tenantId: t, sessionId: s2.id, revision: 1,
-    agendaJson: JSON.stringify(agendaS2Rows.map((item) => ({ id: item.id, order: item.order, section: item.section, matterId: item.matterId, title: item.title, kind: item.kind, batchItems: item.batchItems, status: item.status }))),
-    policyJson: JSON.stringify({ enabledSessionTypes: ['ordinaria', 'extraordinaria', 'solene', 'especial'], requireSecretaryForPublication: false, minimumAgendaMatters: 0 }),
+    agendaJson: JSON.stringify(agendaS2Snapshot),
+    policyJson: JSON.stringify(agendaS2Policy),
+    noticeJson: agendaS2Notice.noticeJson,
+    noticeSha256: agendaS2Notice.noticeSha256,
+    createdAt: agendaS2IssuedAt,
   } })
   await audit({ tenantId: t, actorName: 'Paula Andrade', actorRole: 'legislative_admin', action: 'session.created', aggregateType: 'session', aggregateId: s2.id, summary: 'Sessão criada com pauta de 10 itens.', createdAt: at(-1, 9) })
   await audit({ tenantId: t, actorName: 'Paula Andrade', actorRole: 'legislative_admin', action: 'session.scheduled', aggregateType: 'session', aggregateId: s2.id, summary: 'Pauta publicada e sessão agendada para hoje às 19h.', before: { status: 'draft' }, after: { status: 'scheduled' }, createdAt: at(-1, 9, 30) })

@@ -27,6 +27,7 @@ const settingsSchema = z
     enabledSessionTypes: z.array(z.enum(['ordinaria', 'extraordinaria', 'solene', 'especial'])).min(1).max(4).refine((v) => new Set(v).size === v.length).optional(),
     requireSecretaryForPublication: z.boolean().optional(),
     minimumAgendaMatters: z.number().int().min(0).max(100).optional(),
+    minimumNoticeHours: z.number().int().min(0).max(720).optional(),
   })
   .strict()
 

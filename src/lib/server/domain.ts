@@ -179,6 +179,9 @@ export function tenantSettings(
     minimumAgendaMatters: Number.isInteger(parsed.minimumAgendaMatters)
       && Number(parsed.minimumAgendaMatters) >= 0 && Number(parsed.minimumAgendaMatters) <= 100
       ? Number(parsed.minimumAgendaMatters) : 0,
+    minimumNoticeHours: Number.isInteger(parsed.minimumNoticeHours)
+      && Number(parsed.minimumNoticeHours) >= 0 && Number(parsed.minimumNoticeHours) <= 720
+      ? Number(parsed.minimumNoticeHours) : 0,
   }
 }
 

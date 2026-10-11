@@ -4,6 +4,7 @@
  * `session.<action>` e outbox `session.state_changed` + `session.quorum`.
  */
 import type { NextRequest } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { withTransaction } from '@/lib/server/tx'
@@ -17,6 +18,7 @@ import { notify } from '@/lib/server/notify'
 import { SESSION_TRANSITIONS, currentAttendance, tenantSettings, type SessionAction } from '@/lib/server/domain'
 import { buildSessionSummaries, sessionLabel } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
+import { createSessionNotice } from '@/lib/server/session-notice'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,11 +97,14 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       )
     }
 
-    let publication: { agendaJson: string; policyJson: string } | null = null
+    let publication: { agendaJson: string; policyJson: string; tenant: { id: string; slug: string; name: string; city: string; uf: string; timezone: string } } | null = null
     if (body.action === 'schedule') {
       const tenant = await tx.tenant.findUnique({ where: { id: session.tenantId } })
       if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Câmara não encontrada', 'Câmara não encontrada.')
       const policy = tenantSettings(tenant)
+      if (session.scheduledAt.getTime() - Date.now() < policy.minimumNoticeHours * 60 * 60 * 1000) {
+        throw new DomainError('SESSION_PRECONDITION', 409, 'Prazo de convocação', `Esta Câmara exige ${policy.minimumNoticeHours} hora(s) de antecedência para publicar a convocação.`)
+      }
       if (!policy.enabledSessionTypes.includes(session.type as typeof policy.enabledSessionTypes[number])) {
         throw new DomainError('SESSION_TYPE_DISABLED', 409, 'Tipo indisponível', 'O tipo da sessão foi desabilitado nesta Câmara antes da publicação.')
       }
@@ -129,29 +134,42 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           enabledSessionTypes: policy.enabledSessionTypes,
           requireSecretaryForPublication: policy.requireSecretaryForPublication,
           minimumAgendaMatters: policy.minimumAgendaMatters,
+          minimumNoticeHours: policy.minimumNoticeHours,
         }),
+        tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name, city: tenant.city, uf: tenant.uf, timezone: tenant.timezone },
       }
     }
 
     const now = new Date()
-    const data: Record<string, unknown> = {
+    const data: Prisma.SessionUpdateManyMutationInput = {
       status: transition.to,
-      version: session.version + 1,
+      version: { increment: 1 },
     }
     if (body.action === 'schedule') data.agendaPublished = true
     if (body.action === 'open_session') data.openedAt = now
     if (body.action === 'close') data.closedAt = now
     if (body.action === 'cancel' && body.justification) data.notes = session.notes ?? body.justification
 
-    const updated = await tx.session.update({ where: { id: session.id }, data })
+    const changed = await tx.session.updateMany({ where: { id: session.id, tenantId: session.tenantId, status: from, version: session.version }, data })
+    if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A sessão mudou. Recarregue antes de continuar.')
+    const updated = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    let noticeHash: string | null = null
     if (publication) {
+      const notice = createSessionNotice({
+        tenant: publication.tenant, session: updated, revision: 1, issuedAt: now,
+        agenda: JSON.parse(publication.agendaJson), policy: JSON.parse(publication.policyJson),
+      })
+      noticeHash = notice.noticeSha256
       await tx.sessionAgendaRevision.create({ data: {
         tenantId: session.tenantId,
         sessionId: session.id,
         revision: 1,
         agendaJson: publication.agendaJson,
         policyJson: publication.policyJson,
+        noticeJson: notice.noticeJson,
+        noticeSha256: notice.noticeSha256,
         actorId: actor.id,
+        createdAt: now,
       } })
     }
 
@@ -163,7 +181,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       aggregateId: session.id,
       summary: `${SUMMARY[body.action]} (status: ${from} → ${transition.to})`,
       before: { status: from },
-      after: { status: transition.to, ...(publication ? { agendaRevision: 1 } : {}) },
+      after: { status: transition.to, ...(publication ? { agendaRevision: 1, noticeSha256: noticeHash } : {}) },
       justification: body.action === 'cancel' ? body.justification : null,
       correlationId,
       ip: clientIp(req),
@@ -175,6 +193,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       from,
       to: transition.to,
       label: SESSION_STATUS_LABEL[transition.to],
+      ...(noticeHash && { agendaRevision: 1, noticeSha256: noticeHash }),
     }
     await emitOutbox(tx, {
       tenantId: session.tenantId,

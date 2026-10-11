@@ -140,6 +140,7 @@ aceitam `Enter`/`Esc`.
   O administrador da Câmara define em **Configurações → Preparação de sessões** os tipos
   habilitados, se o nome do secretário é obrigatório e o número mínimo de matérias.
   O sistema verifica essas regras antes da publicação e guarda a política aplicada.
+  A Câmara também define a **antecedência mínima da convocação** em horas. Na publicação, o sistema emite um comprovante com a pauta, os dados da sessão e um SHA-256. O portal oferece o documento público para consulta e conferência.
 - Se precisar corrigir tipo, data, presidente, secretário, local ou observações, abra as ações da sessão em rascunho e escolha **Editar rascunho**. Depois confira a pauta e publique. Alterações simultâneas exigem recarregar a sessão.
 - Depois de publicada e antes de abrir o credenciamento, use **Emendar pauta publicada** na sessão ou na mesa: escolha incluir, reordenar ou retirar matéria, informe o motivo, confira a comparação antes/depois e confirme. Uma nova revisão será publicada no portal com data e justificativa. O mínimo de matérias definido pela Câmara continua obrigatório.
 - Acompanhe o histórico com filtros e expanda a pauta de cada sessão.

@@ -80,6 +80,7 @@ export default function SettingsModule() {
       enabledSessionTypes: ['ordinaria', 'extraordinaria', 'solene', 'especial'],
       requireSecretaryForPublication: false,
       minimumAgendaMatters: 0,
+      minimumNoticeHours: 0,
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -134,6 +135,8 @@ export default function SettingsModule() {
     if (settings.enabledSessionTypes.length === 0) errs.enabledSessionTypes = 'Habilite ao menos um tipo de sessão.'
     if (!Number.isInteger(settings.minimumAgendaMatters) || settings.minimumAgendaMatters < 0 || settings.minimumAgendaMatters > 100)
       errs.minimumAgendaMatters = 'Informe um número entre 0 e 100.'
+    if (!Number.isInteger(settings.minimumNoticeHours) || settings.minimumNoticeHours < 0 || settings.minimumNoticeHours > 720)
+      errs.minimumNoticeHours = 'Informe um número entre 0 e 720 horas.'
     setErrors(errs)
     if (Object.keys(errs).length > 0 || !tenant) return
     save.mutate()
@@ -330,6 +333,15 @@ export default function SettingsModule() {
                   aria-invalid={!!errors.minimumAgendaMatters} />
                 <p className="text-xs text-muted-foreground">Use 0 se sessões sem matéria puderem ser publicadas.</p>
                 {errors.minimumAgendaMatters && <p className="text-xs text-destructive">{errors.minimumAgendaMatters}</p>}
+              </div>
+              <div className="grid gap-2 sm:max-w-64">
+                <Label htmlFor="tenant-notice-hours">Antecedência mínima da convocação (horas)</Label>
+                <Input id="tenant-notice-hours" type="number" min={0} max={720}
+                  value={settings.minimumNoticeHours}
+                  onChange={(e) => setSetting('minimumNoticeHours', Number(e.target.value))}
+                  aria-invalid={!!errors.minimumNoticeHours} />
+                <p className="text-xs text-muted-foreground">Verificada quando a pauta é publicada. Use 0 para não exigir prazo adicional.</p>
+                {errors.minimumNoticeHours && <p className="text-xs text-destructive">{errors.minimumNoticeHours}</p>}
               </div>
             </CardContent>
           </Card>

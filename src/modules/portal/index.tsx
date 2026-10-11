@@ -891,6 +891,10 @@ function SessionDetailSheet({
                 Pauta {session.session.agendaPublished ? '' : '(não publicada)'}
               </h4>
               {session.agendaRevision && <p className="mb-2 text-xs text-zinc-600">Revisão {session.agendaRevision.number} · publicada em {fmtDateTime(session.agendaRevision.publishedAt)}{session.agendaRevision.justification ? ` · Motivo da alteração: ${session.agendaRevision.justification}` : ''}</p>}
+              {session.agendaRevision?.noticeSha256 && <p className="mb-2 break-all text-xs text-zinc-600">
+                <a className="font-semibold underline" href={`/api/v1/public/sessions/${sessionId}/notices?tenant=${encodeURIComponent(slug)}&revision=${session.agendaRevision.number}`} target="_blank" rel="noopener noreferrer">Ver convocação publicada</a>
+                {' · SHA-256: '}{session.agendaRevision.noticeSha256}
+              </p>}
               {session.agenda.length === 0 ? (
                 <p className="text-xs italic text-zinc-500">
                   {session.session.agendaPublished ? 'Pauta vazia.' : 'A pauta é publicada quando a sessão é agendada.'}

@@ -82,9 +82,13 @@ apenas registrar alerta), `suspend` (open|resumed→suspended), `resume` (suspen
 → `{ session: SessionSummary, quorum: QuorumInfo }`. Emite `session.state_changed` +
 `session.quorum` (outbox). Auditoria `session.<action>`.
 `schedule` valida a política vigente do tenant (tipo habilitado, secretário quando exigido, mínimo de matérias e presidente ativo). Registra a revisão 1 da pauta e uma cópia da política usada, sem alterar revisões anteriores.
+Também verifica `minimumNoticeHours` da Câmara e emite, na mesma transação, conteúdo de convocação e SHA-256. Mesmo com mínimo 0, a data da sessão deve estar no futuro.
 
 ### GET `/api/v1/sessions/:id/agenda-revisions`
-→ `{ revisions: [{ id, number, createdAt, actorId, agenda, policy, change, justification }] }`, somente no escopo da Câmara do ator. `change`/`justification` são nulos na publicação inicial. Sessões antigas publicadas antes da etapa 011 podem não ter revisão histórica; o sistema não fabrica uma.
+→ `{ revisions: [{ id, number, createdAt, actorId, agenda, policy, change, justification, notice, noticeSha256 }] }`, somente no escopo da Câmara do ator. `change`/`justification` são nulos na publicação inicial. `notice`/`noticeSha256` podem ser nulos em revisões legadas; o sistema não fabrica histórico.
+
+### GET `/api/v1/public/sessions/:id/notices?tenant=slug&revision=n`
+Sem autenticação, mas escopado pela Câmara pública e por sessão não rascunho. `revision` é opcional; sem ela, retorna a convocação mais recente. → `{ revision, publishedAt, sha256, notice }`. Convocação ausente ou pertencente a outra Câmara → 404. O SHA-256 corresponde aos bytes UTF-8 do JSON serializado em `notice`.
 
 ### POST `/api/v1/sessions/:id/agenda-amendments`
 Permissão `session.transition`. Body: `{ action: 'add'|'move'|'retire', mode: 'preview'|'apply', version, justification, matterId? | itemId?, position? }`. `position` é índice zero da Ordem do Dia. Disponível somente em `scheduled`, com pauta publicada e revisão inicial. `preview` → `{ preview: { before, after, summary, revision, policy } }` sem mutação. `apply` → `{ amendment: ... }` (201); grava revisão, auditoria e outbox atomicamente. Exige mínimo de matérias conforme política da Câmara. Versão antiga → 409; matéria de outra Câmara → 404; outra Câmara não acessa a sessão → 403.

@@ -61,7 +61,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       agendaPublished: session.agendaPublished,
     },
     agenda: agenda.map(toPublicAgendaItem),
-    agendaRevision: agendaRevision ? { number: agendaRevision.revision, publishedAt: agendaRevision.createdAt.toISOString(), justification: agendaRevision.justification } : null,
+    agendaRevision: agendaRevision ? { number: agendaRevision.revision, publishedAt: agendaRevision.createdAt.toISOString(), justification: agendaRevision.justification, noticeSha256: agendaRevision.noticeSha256 } : null,
     // Presença consolidada final: apenas quando a sessão foi encerrada.
     attendance: closed
       ? {

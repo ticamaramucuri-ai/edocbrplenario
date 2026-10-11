@@ -7,3 +7,4 @@ DATABASE_URL="file:$database" bunx prisma db push --skip-generate > /dev/null
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-preparation.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-policy.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/agenda-amendments.test.ts
+DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice.test.ts

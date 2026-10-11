@@ -113,6 +113,7 @@ export type TenantSettings = {
   enabledSessionTypes: SessionType[]
   requireSecretaryForPublication: boolean
   minimumAgendaMatters: number
+  minimumNoticeHours: number
 }
 
 export type TenantView = {
@@ -924,7 +925,7 @@ export type PublicSessionSummary = {
 export type PublicSessionDetail = {
   session: PublicSessionSummary
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
-  agendaRevision: { number: number; publishedAt: string; justification: string | null } | null
+  agendaRevision: { number: number; publishedAt: string; justification: string | null; noticeSha256: string | null } | null
   attendance: {
     present: Array<{ name: string; party: string }>
     presentCount: number

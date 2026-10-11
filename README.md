@@ -114,6 +114,8 @@ A política de publicação configurável por Câmara e a revisão inicial da pa
 [`docs/etapas/011-politica-publicacao-saas.md`](docs/etapas/011-politica-publicacao-saas.md).
 As emendas à pauta publicada, com prévia e nova revisão pública, estão em
 [`docs/etapas/012-emendas-pauta-publicada.md`](docs/etapas/012-emendas-pauta-publicada.md).
+A convocação pública com antecedência por Câmara e SHA-256 por revisão está em
+[`docs/etapas/013-convocacao-publica-saas.md`](docs/etapas/013-convocacao-publica-saas.md).
 O desenho de integração com Nextcloud e Alfresco está em
 [`docs/integracoes/arquitetura-edocbr.md`](docs/integracoes/arquitetura-edocbr.md).
 A prova local de transmissão está em [`docs/transmissao/prova-local.md`](docs/transmissao/prova-local.md), e o contrato inicial do painel em [`docs/transmissao/painel-operacao.md`](docs/transmissao/painel-operacao.md).

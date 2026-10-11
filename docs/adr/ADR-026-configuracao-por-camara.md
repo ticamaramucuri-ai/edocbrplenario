@@ -19,6 +19,7 @@ O edocBR Plenário é um SaaS multi-Câmara. Tipos de sessão, quóruns, maioria
 
 - **Implementado na etapa 011:** tipos de sessão habilitados, secretário obrigatório e mínimo de matérias por Câmara; snapshot da política na publicação inicial.
 - **Implementado na etapa 012:** emendas à pauta convocatória respeitam o mínimo vigente da Câmara e guardam justificativa, diferença e política por revisão; o portal apresenta a revisão atual.
+- **Implementado na etapa 013:** antecedência mínima da convocação por Câmara; conteúdo e política congelados em cada emissão/retificação, com hash público verificável.
 - **Próximas etapas:** política regimental por tipo de sessão/votação (quórum de instalação e deliberação, elegibilidade, maiorias, desempate, Presidência), tempos de fala, atos de alteração de pauta e publicação, modelos documentais, regras de privacidade e acessibilidade.
 - **Transmissão:** destinos, contas, perfis de encoder, retenção e publicação do replay por Câmara, com segredo em cofre e capacidade dependente do plano; nenhum canal social deve ser global para todas.
 - **Infraestrutura:** PostgreSQL, isolamento testado entre tenants, migrações e ensaio de alterações de política sob concorrência antes de produção.

@@ -360,6 +360,8 @@ model SessionAgendaRevision {
   policyJson  String
   changeJson  String?
   justification String?
+  noticeJson  String?
+  noticeSha256 String?
   actorId     String?
   createdAt   DateTime @default(now())
 

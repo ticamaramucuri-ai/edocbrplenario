@@ -24,5 +24,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
     policy: JSON.parse(revision.policyJson),
     change: revision.changeJson ? JSON.parse(revision.changeJson) : null,
     justification: revision.justification,
+    notice: revision.noticeJson ? JSON.parse(revision.noticeJson) : null,
+    noticeSha256: revision.noticeSha256,
   })) })
 })
