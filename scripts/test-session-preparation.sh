@@ -12,3 +12,4 @@ DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice-deadlines.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice-calendar.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice-alerts.test.ts
+DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice-recipient-policy.test.ts

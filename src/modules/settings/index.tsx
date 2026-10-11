@@ -84,6 +84,7 @@ export default function SettingsModule() {
       minimumAmendmentHours: 0,
       urgentNoticeExceptionTypes: [],
       noticeAlertLeadHours: 24,
+      noticeRecipientPolicy: 'active',
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -104,6 +105,7 @@ export default function SettingsModule() {
       })
       queryClient.invalidateQueries({ queryKey: ['bootstrap'] })
       queryClient.invalidateQueries({ queryKey: ['notice-calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['notice-recipient-preview'] })
     },
   })
 
@@ -383,6 +385,16 @@ export default function SettingsModule() {
                   aria-invalid={!!errors.noticeAlertLeadHours} />
                 <p className="text-xs text-muted-foreground">Notificação interna para a administração e os operadores de sessão; padrão 24 horas.</p>
                 {errors.noticeAlertLeadHours && <p className="text-xs text-destructive">{errors.noticeAlertLeadHours}</p>}
+              </div>
+              <div className="grid gap-2 sm:max-w-md">
+                <Label htmlFor="tenant-notice-recipients">Destinatários da convocação</Label>
+                <select id="tenant-notice-recipients" className="h-9 rounded-md border bg-background px-3 text-sm"
+                  value={settings.noticeRecipientPolicy}
+                  onChange={(e) => setSetting('noticeRecipientPolicy', e.target.value as TenantSettings['noticeRecipientPolicy'])}>
+                  <option value="active">Todos os parlamentares ativos</option>
+                  <option value="mandate_and_leave">Mandato vigente, afastamentos e suplentes</option>
+                </select>
+                <p className="text-xs text-muted-foreground">A segunda opção exige mandatos e afastamentos corretos na Estrutura Institucional. A lista é congelada em cada publicação ou retificação da pauta.</p>
               </div>
             </CardContent>
           </Card>

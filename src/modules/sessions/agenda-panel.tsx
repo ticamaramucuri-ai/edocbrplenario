@@ -44,6 +44,11 @@ export function AgendaPanel({
     enabled: can('session.transition') && sessionStatus !== 'draft',
     refetchInterval: 15_000,
   })
+  const { data: recipientPreview } = useQuery({
+    queryKey: ['notice-recipient-preview', sessionId],
+    queryFn: () => api.noticeRecipientPreview(sessionId),
+    enabled: can('session.transition') && (sessionStatus === 'draft' || sessionStatus === 'scheduled'),
+  })
 
   // Comandos de pauta exigem session.transition no servidor (RBAC real)
   const canEdit =
@@ -89,9 +94,15 @@ export function AgendaPanel({
         <ListOrdered className="size-3.5" aria-hidden /> Pauta da sessão ({agenda.length} itens)
       </p>
       {can('session.transition') && sessionStatus === 'scheduled' && data && <Button variant="outline" size="sm" className="justify-self-start" onClick={() => setAmending(true)}>Emendar pauta publicada</Button>}
+      {recipientPreview && <div className="rounded-md border bg-muted/30 p-3 text-sm">
+        <p className="font-medium">Prévia da próxima convocação: {recipientPreview.total} destinatário(s)</p>
+        <p className="text-xs text-muted-foreground">Critério: {recipientPreview.policy === 'active' ? 'parlamentares ativos' : 'mandato na data da sessão, afastamentos e suplentes registrados'}. A lista será congelada ao publicar ou retificar.</p>
+        {recipientPreview.total === 0 && recipientPreview.policy === 'mandate_and_leave' && <p className="mt-1 text-xs text-destructive">Cadastre os mandatos vigentes antes de publicar.</p>}
+        {recipientPreview.recipients.length > 0 && <p className="mt-1 text-xs">{recipientPreview.recipients.map((person) => person.name).join(', ')}</p>}
+      </div>}
       {noticeRecipients?.revision && <div className="rounded-md border bg-muted/30 p-3 text-sm">
         <p className="font-medium">Ciência da convocação · revisão {noticeRecipients.revision}: {noticeRecipients.acknowledged}/{noticeRecipients.total}</p>
-        <p className="text-xs text-muted-foreground">Destinatários ativos no momento da emissão. A ciência não comprova entrega externa.</p>
+        <p className="text-xs text-muted-foreground">Destinatários definidos pela política vigente na emissão. A ciência não comprova entrega externa.</p>
         {noticeRecipients.recipients.length > 0 && <ul className="mt-2 space-y-1 text-xs">
           {noticeRecipients.recipients.map((person) => <li key={person.parliamentarianId}>{person.name} — {person.acknowledgedAt ? `ciência em ${new Date(person.acknowledgedAt).toLocaleString('pt-BR')}` : 'pendente'}</li>)}
         </ul>}

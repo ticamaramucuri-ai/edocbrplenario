@@ -12,7 +12,7 @@ Arquivos: [modelo](../../prisma/schema.prisma), [migração](../../prisma/sql/01
 
 ## Decisões e limites
 
-O registro é de **ciência declarada dentro do sistema**. Ele não demonstra entrega por e-mail, WhatsApp ou outro canal; não é voto, assinatura digital qualificada ou ciência regimental automaticamente válida. O universo de destinatários usa `active=true`, sem inferir mandato vigente ou substituição por licença; esse critério precisa ser definido por Câmara antes de uso oficial. Revisões anteriores à migração não são preenchidas retrospectivamente. A interface de ciência cobre a sessão-alvo do PWA; o histórico completo segue disponível no banco e na auditoria.
+O registro é de **ciência declarada dentro do sistema**. Ele não demonstra entrega por e-mail, WhatsApp ou outro canal; não é voto, assinatura digital qualificada ou ciência regimental automaticamente válida. Nesta etapa o universo de destinatários usava `active=true`; a [etapa 018](018-destinatarios-mandato-licenca.md) acrescentou política opcional de mandato, afastamento e suplência por Câmara. Revisões anteriores não são recalculadas. Revisões anteriores à migração não são preenchidas retrospectivamente. A interface de ciência cobre a sessão-alvo do PWA; o histórico completo segue disponível no banco e na auditoria.
 
 ## Verificação
 

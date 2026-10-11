@@ -191,6 +191,7 @@ export function tenantSettings(
     noticeAlertLeadHours: Number.isInteger(parsed.noticeAlertLeadHours)
       && Number(parsed.noticeAlertLeadHours) >= 1 && Number(parsed.noticeAlertLeadHours) <= 168
       ? Number(parsed.noticeAlertLeadHours) : 24,
+    noticeRecipientPolicy: parsed.noticeRecipientPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
   }
 }
 

@@ -136,6 +136,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication,
       minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours,
       minimumAmendmentHours: change.policy.minimumAmendmentHours, urgentNoticeExceptionTypes: change.policy.urgentNoticeExceptionTypes,
+      noticeRecipientPolicy: change.policy.noticeRecipientPolicy,
       exceptionReason: change.deadline.exceptionReason }
     const notice = createSessionNotice({ tenant: change.tenant, session: updated, revision: change.revision,
       issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification,

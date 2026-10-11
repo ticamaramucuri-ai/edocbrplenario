@@ -795,6 +795,7 @@ export const api = {
   acknowledgeNotice: (notice: { sessionId: string; revision: number; noticeSha256: string }) =>
     request<{ notice: { acknowledgedAt: string } }>('/me/notices', { method: 'POST', body: JSON.stringify(notice) }),
   noticeRecipients: (sessionId: string) => request<{ revision: number | null; total: number; acknowledged: number; recipients: Array<{ parliamentarianId: string; name: string; acknowledgedAt: string | null }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipients`),
+  noticeRecipientPreview: (sessionId: string) => request<{ policy: 'active' | 'mandate_and_leave'; total: number; recipients: Array<{ id: string; name: string }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipient-preview`),
   meCheckIn: (note?: string) =>
     request<{
       attendance: { status: string; present: boolean; lastEventAt: string | null }

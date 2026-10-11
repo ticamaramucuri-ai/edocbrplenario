@@ -142,6 +142,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           minimumNoticeHours: policy.minimumNoticeHours,
           minimumAmendmentHours: policy.minimumAmendmentHours,
           urgentNoticeExceptionTypes: policy.urgentNoticeExceptionTypes,
+          noticeRecipientPolicy: policy.noticeRecipientPolicy,
           exceptionReason: deadline.exceptionReason,
         }),
         tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name, city: tenant.city, uf: tenant.uf, timezone: tenant.timezone },

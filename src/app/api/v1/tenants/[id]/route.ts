@@ -31,6 +31,7 @@ const settingsSchema = z
     minimumAmendmentHours: z.number().int().min(0).max(720).optional(),
     urgentNoticeExceptionTypes: z.array(z.enum(['ordinaria', 'extraordinaria', 'solene', 'especial'])).max(4).refine((v) => new Set(v).size === v.length).optional(),
     noticeAlertLeadHours: z.number().int().min(1).max(168).optional(),
+    noticeRecipientPolicy: z.enum(['active', 'mandate_and_leave']).optional(),
   })
   .strict()
 

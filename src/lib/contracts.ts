@@ -100,6 +100,7 @@ export type MatterStatus =
   | 'vetado'
 export type MatterType = 'projeto_de_lei' | 'decreto_legislativo' | 'requerimento' | 'indicacao' | 'mocao' | 'emenda'
 export type SessionType = 'ordinaria' | 'extraordinaria' | 'solene' | 'especial'
+export type NoticeRecipientPolicy = 'active' | 'mandate_and_leave'
 
 export type TenantSettings = {
   quorumMinimum: number
@@ -117,6 +118,7 @@ export type TenantSettings = {
   minimumAmendmentHours: number
   urgentNoticeExceptionTypes: SessionType[]
   noticeAlertLeadHours: number
+  noticeRecipientPolicy: NoticeRecipientPolicy
 }
 
 export type TenantView = {

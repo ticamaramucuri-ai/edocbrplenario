@@ -96,6 +96,9 @@ Sem autenticação, mas escopado pela Câmara pública e por sessão não rascun
 ### GET `/api/v1/sessions/:id/notice-recipients`
 Exige `session.transition`; devolve a revisão vigente, hash, total, número de ciências e lista de nomes/horários dos destinatários daquela Câmara. Revisões legadas sem convocação retornam revisão nula.
 
+### GET `/api/v1/sessions/:id/notice-recipient-preview`
+Exige `session.transition`; devolve `{ policy, total, recipients: [{ id, name }] }` para a próxima publicação/retificação. `active` inclui parlamentares ativos. `mandate_and_leave` exige mandato na data civil da sessão no fuso da Câmara, exclui titular afastado e inclui suplente ativo explicitamente indicado. A política é configurada em `PATCH /api/v1/tenants/:id` pelo campo `settings.noticeRecipientPolicy`. A prévia pode mudar; só a lista gravada na revisão é definitiva. Sem elegíveis nesse modo, publicar ou retificar retorna 409.
+
 ### GET `/api/v1/sessions/notice-calendar`
 Exige `session.transition`; retorna `{ timezone, generatedAt, rows }` para até 50 sessões futuras em `draft` ou `scheduled` da Câmara do ator. Cada linha contém `sessionId`, número/ano/tipo, fase (`initial` ou `amendment`), horário da sessão, vencimento, mínimo de horas, estado (`on_time`, `due_soon`, `passed`) e possibilidade de exceção configurada para o tipo. `Cache-Control: no-store`.
 
