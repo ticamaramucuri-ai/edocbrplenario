@@ -97,7 +97,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
     // ── open ────────────────────────────────────────────────────────────
     if (body.action === 'open') {
-      const { quorum } = await currentAttendance(tx, session.id, session.tenantId)
+      const frozenIds = voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null
+      const { quorum, rows } = await currentAttendance(tx, session.id, session.tenantId, frozenIds)
       const required = voting.requiredQuorum ?? quorum.required
       if (quorum.present < required) {
         throw new DomainError(
@@ -115,6 +116,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           presentAtOpen: voting.presentAtOpen ?? quorum.present,
           quorumAtOpen: voting.quorumAtOpen ?? required,
           memberBaseAtOpen: voting.memberBaseAtOpen ?? quorum.total,
+          eligibleVoterIdsAtOpen: voting.eligibleVoterIdsAtOpen ?? JSON.stringify(rows.map((row) => row.parliamentarianId)),
           version: voting.version + 1,
         },
       })
@@ -126,7 +128,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         aggregateId: voting.id,
         summary: `Votação aberta: ${voting.question.slice(0, 80)} (presentes: ${quorum.present}).`,
         before: { status: voting.status },
-        after: { status: 'open', presentAtOpen: quorum.present },
+        after: { status: 'open', presentAtOpen: quorum.present, quorumAtOpen: required,
+          eligibleVoterIdsAtOpen: voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) : rows.map((row) => row.parliamentarianId) },
         correlationId,
         ip: clientIp(req),
       })
@@ -156,7 +159,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
     // ── close ───────────────────────────────────────────────────────────
     if (body.action === 'close') {
-      const { quorum, statuses } = await currentAttendance(tx, session.id, session.tenantId)
+      const frozenIds = voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null
+      const { quorum, statuses } = await currentAttendance(tx, session.id, session.tenantId, frozenIds)
       const required = voting.quorumAtOpen ?? voting.requiredQuorum ?? quorum.required
       const [votes, optionRows] = await Promise.all([
         tx.vote.findMany({

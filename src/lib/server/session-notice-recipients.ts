@@ -1,44 +1,15 @@
 import type { Prisma } from '@prisma/client'
 import { tenantSettings } from './domain'
 import { DomainError } from './errors'
-
-/** Data civil da sessão no fuso da Câmara; mandatos usam datas ISO sem hora. */
-function sessionDay(at: Date, timezone: string) {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(at)
-    const value = (part: string) => parts.find((item) => item.type === part)?.value
-    return `${value('year')}-${value('month')}-${value('day')}`
-  } catch {
-    return at.toISOString().slice(0, 10)
-  }
-}
-
-function covers(day: string, start: Date, end: Date | null) {
-  return start.toISOString().slice(0, 10) <= day && (!end || end.toISOString().slice(0, 10) >= day)
-}
+import { institutionalRosterIds } from './institutional-roster'
 
 /** Calcula o universo institucional antes de congelar cada revisão. */
 export async function eligibleNoticeRecipients(tx: Prisma.TransactionClient, tenantId: string, sessionId: string) {
-  const tenant = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { settings: true, timezone: true } })
-  const session = await tx.session.findFirstOrThrow({ where: { id: sessionId, tenantId }, select: { scheduledAt: true } })
+  const tenant = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { settings: true } })
   const people = await tx.parliamentarian.findMany({ where: { tenantId, active: true }, select: { id: true, name: true } })
   if (tenantSettings(tenant).noticeRecipientPolicy === 'active') return people
-
-  const day = sessionDay(session.scheduledAt, tenant.timezone)
-  const [mandates, leaves] = await Promise.all([
-    tx.mandate.findMany({ where: { tenantId }, select: { parliamentarianId: true, startDate: true, endDate: true } }),
-    tx.leave.findMany({ where: { tenantId, kind: { in: ['licenca', 'afastamento'] } },
-      select: { parliamentarianId: true, substituteId: true, startDate: true, endDate: true } }),
-  ])
-  const mandated = new Set(mandates.filter((row) => covers(day, row.startDate, row.endDate)).map((row) => row.parliamentarianId))
-  const away = new Set<string>()
-  const substitutes = new Set<string>()
-  for (const leave of leaves) {
-    if (!covers(day, leave.startDate, leave.endDate)) continue
-    away.add(leave.parliamentarianId)
-    if (leave.substituteId && mandated.has(leave.parliamentarianId)) substitutes.add(leave.substituteId)
-  }
-  return people.filter((person) => !away.has(person.id) && (mandated.has(person.id) || substitutes.has(person.id)))
+  const roster = await institutionalRosterIds(tx, tenantId, sessionId)
+  return people.filter((person) => roster.has(person.id))
 }
 
 /** Congela os destinatários da política vigente no instante da emissão da revisão. */

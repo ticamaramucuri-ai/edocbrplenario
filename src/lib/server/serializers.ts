@@ -464,13 +464,18 @@ export async function buildSessionDetail(
     ...v,
     votes: [...v.votes].sort((a, b) => a.parliamentarian.order - b.parliamentarian.order),
   }))
+  const activeVoting = [...votings].reverse().find((v) => v.status === 'open' || v.status === 'paused')
+  const votingAttendance = activeVoting?.eligibleVoterIdsAtOpen
+    ? await currentAttendance(client, session.id, session.tenantId, JSON.parse(activeVoting.eligibleVoterIdsAtOpen) as string[])
+    : attendance
+  const required = activeVoting?.quorumAtOpen ?? activeVoting?.requiredQuorum ?? votingAttendance.quorum.required
 
   const [summary] = await buildSessionSummaries(client, session.tenantId, [session])
   return {
     session: summary,
     agenda: agenda.map(toAgendaItemView),
-    attendance: attendance.rows,
-    quorum: attendance.quorum,
+    attendance: votingAttendance.rows,
+    quorum: { ...votingAttendance.quorum, required, ok: votingAttendance.quorum.present >= required },
     votings: withVotesOrdered.map((v) => toVotingView(v, v.votes)),
     speeches: speeches.map(toSpeechView),
   }

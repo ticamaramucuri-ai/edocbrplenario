@@ -83,7 +83,8 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     orderBy: { updatedAt: 'desc' },
     include: { votes: true, options: { orderBy: { order: 'asc' } } },
   })
-  if (openVoting) {
+  const votingEligibleIds = openVoting?.eligibleVoterIdsAtOpen ? JSON.parse(openVoting.eligibleVoterIdsAtOpen) as string[] : null
+  if (openVoting && (!votingEligibleIds || votingEligibleIds.includes(parliamentarian.id))) {
     const secret = openVoting.mode === 'secreto'
     const myVoteRow = openVoting.votes.find((v) => v.parliamentarianId === parliamentarian.id) ?? null
     // Fase 18: `options` é aditivo (MeActiveVoting no contrato permanece válido)

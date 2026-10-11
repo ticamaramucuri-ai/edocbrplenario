@@ -120,6 +120,7 @@ export type TenantSettings = {
   urgentNoticeExceptionTypes: SessionType[]
   noticeAlertLeadHours: number
   noticeRecipientPolicy: NoticeRecipientPolicy
+  deliberativeRosterPolicy: NoticeRecipientPolicy
   votingPoliciesByMatterType: Partial<Record<MatterType, MatterVotingPolicy>>
 }
 

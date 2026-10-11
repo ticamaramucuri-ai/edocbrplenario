@@ -85,6 +85,7 @@ export default function SettingsModule() {
       urgentNoticeExceptionTypes: [],
       noticeAlertLeadHours: 24,
       noticeRecipientPolicy: 'active',
+      deliberativeRosterPolicy: 'active',
       votingPoliciesByMatterType: {},
     }
   )
@@ -405,6 +406,16 @@ export default function SettingsModule() {
                 <div>
                   <p className="text-sm font-medium">Quórum e maioria por tipo de matéria</p>
                   <p className="text-xs text-muted-foreground">Opcional. Sem regra específica, a votação usa o quórum geral e a regra escolhida pela Mesa. Com regra específica, ambos são obrigatórios e congelados na votação.</p>
+                </div>
+                <div className="grid gap-2 sm:max-w-md">
+                  <Label htmlFor="tenant-deliberative-roster">Base deliberativa da sessão</Label>
+                  <select id="tenant-deliberative-roster" className="h-9 rounded-md border bg-background px-3 text-sm"
+                    value={settings.deliberativeRosterPolicy}
+                    onChange={(e) => setSetting('deliberativeRosterPolicy', e.target.value as TenantSettings['deliberativeRosterPolicy'])}>
+                    <option value="active">Todos os parlamentares ativos</option>
+                    <option value="mandate_and_leave">Mandatos, afastamentos e suplentes</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">Afeta presença, quórum e votos. A votação congela os participantes elegíveis ao abrir. Ative somente após conferir mandatos e licenças.</p>
                 </div>
                 {(Object.keys(MATTER_TYPE_LABEL) as MatterType[]).map((type) => {
                   const policy = settings.votingPoliciesByMatterType[type]

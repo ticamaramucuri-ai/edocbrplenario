@@ -528,6 +528,7 @@ model Voting {
   presentAtOpen  Int?
   quorumAtOpen   Int?
   memberBaseAtOpen Int?    // denominador da maioria absoluta congelado na abertura
+  eligibleVoterIdsAtOpen String? // JSON IDs da base deliberativa congelada
   presentAtClose Int?
   quorumAtClose  Int?
   hidePartial    Boolean   @default(false)

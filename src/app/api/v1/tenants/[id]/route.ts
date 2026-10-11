@@ -32,6 +32,7 @@ const settingsSchema = z
     urgentNoticeExceptionTypes: z.array(z.enum(['ordinaria', 'extraordinaria', 'solene', 'especial'])).max(4).refine((v) => new Set(v).size === v.length).optional(),
     noticeAlertLeadHours: z.number().int().min(1).max(168).optional(),
     noticeRecipientPolicy: z.enum(['active', 'mandate_and_leave']).optional(),
+    deliberativeRosterPolicy: z.enum(['active', 'mandate_and_leave']).optional(),
     votingPoliciesByMatterType: z.partialRecord(z.enum(['projeto_de_lei', 'decreto_legislativo', 'requerimento', 'indicacao', 'mocao', 'emenda']),
       z.object({ rule: z.enum(['maioria_simples', 'maioria_absoluta', 'unanimidade']), quorumMinimum: z.number().int().min(1).max(100) }).strict()).optional(),
   })

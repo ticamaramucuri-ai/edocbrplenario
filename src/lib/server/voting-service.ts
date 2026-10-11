@@ -68,7 +68,8 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
   assertVoteValueAllowed(value, options)
 
   return withTransaction(async (tx) => {
-    const { statuses } = await currentAttendance(tx, voting.sessionId, voting.session.tenantId)
+    const frozenIds = voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null
+    const { statuses } = await currentAttendance(tx, voting.sessionId, voting.session.tenantId, frozenIds)
     if (statuses.get(parliamentarian.id) !== 'presente') {
       throw new DomainError(
         'VOTE_PARLIAMENTARIAN_NOT_PRESENT',

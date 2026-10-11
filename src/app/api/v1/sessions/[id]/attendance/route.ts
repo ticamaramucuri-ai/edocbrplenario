@@ -69,6 +69,14 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   }
 
   const result = await withTransaction(async (tx) => {
+    const openVoting = await tx.voting.findFirst({ where: { sessionId: session.id, status: { in: ['open', 'paused'] } },
+      orderBy: { openedAt: 'desc' }, select: { eligibleVoterIdsAtOpen: true } })
+    const frozenIds = openVoting?.eligibleVoterIdsAtOpen ? JSON.parse(openVoting.eligibleVoterIdsAtOpen) as string[] : null
+    const eligible = await currentAttendance(tx, session.id, session.tenantId, frozenIds)
+    if (!eligible.statuses.has(parliamentarian.id)) {
+      throw new DomainError('SESSION_PRECONDITION', 409, 'Fora da base deliberativa',
+        'Este parlamentar não integra a base deliberativa da sessão segundo os mandatos e afastamentos cadastrados.')
+    }
     const last = await tx.attendanceEvent.findFirst({
       where: { sessionId: session.id, parliamentarianId: parliamentarian.id },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

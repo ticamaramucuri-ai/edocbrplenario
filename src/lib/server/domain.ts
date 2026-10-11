@@ -15,6 +15,7 @@ import type {
 } from '@/lib/contracts'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { DomainError } from './errors'
+import { institutionalRosterIds } from './institutional-roster'
 
 type Tx = Prisma.TransactionClient | PrismaClient
 
@@ -192,6 +193,7 @@ export function tenantSettings(
       && Number(parsed.noticeAlertLeadHours) >= 1 && Number(parsed.noticeAlertLeadHours) <= 168
       ? Number(parsed.noticeAlertLeadHours) : 24,
     noticeRecipientPolicy: parsed.noticeRecipientPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
+    deliberativeRosterPolicy: parsed.deliberativeRosterPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
     votingPoliciesByMatterType: parseVotingPolicies(parsed.votingPoliciesByMatterType),
   }
 }
@@ -291,23 +293,28 @@ export function deriveAttendance(
 export async function currentAttendance(
   client: Tx,
   sessionId: string,
-  tenantId: string
+  tenantId: string,
+  eligibleVoterIds?: string[] | null
 ): Promise<{ rows: AttendanceRow[]; statuses: Map<string, AttendanceStatus>; quorum: QuorumInfo }> {
   const [tenant, parliamentarians, events] = await Promise.all([
     client.tenant.findUnique({ where: { id: tenantId } }),
     client.parliamentarian.findMany({
-      where: { tenantId, active: true },
+      where: eligibleVoterIds ? { tenantId, id: { in: eligibleVoterIds } } : { tenantId, active: true },
       orderBy: [{ order: 'asc' }, { name: 'asc' }],
     }),
     client.attendanceEvent.findMany({ where: { sessionId } }),
   ])
   const settings = tenantSettings(tenant ?? { settings: '{}' }, parliamentarians.length)
-  const { rows, statuses, present } = deriveAttendance(parliamentarians, events)
+  const eligible = eligibleVoterIds ? new Set(eligibleVoterIds)
+    : settings.deliberativeRosterPolicy === 'mandate_and_leave'
+      ? await institutionalRosterIds(client, tenantId, sessionId) : null
+  const members = eligible ? parliamentarians.filter((person) => eligible.has(person.id)) : parliamentarians
+  const { rows, statuses, present } = deriveAttendance(members, events)
   const required = settings.quorumMinimum
   return {
     rows,
     statuses,
-    quorum: { present, total: parliamentarians.length, required, ok: present >= required },
+    quorum: { present, total: members.length, required, ok: present >= required },
   }
 }
 

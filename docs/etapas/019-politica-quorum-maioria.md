@@ -18,4 +18,4 @@ A migração acrescenta `Voting.requiredQuorum` e `Voting.memberBaseAtOpen`, opc
 
 ## Limites e próxima etapa
 
-O total usado é o de parlamentares ativos na abertura, pois o modelo atual de presença ainda não aplica automaticamente substituição por mandato/licença à base deliberativa. O sistema não modela impedimento de voto por matéria nem hipóteses de voto de desempate/peso do presidente. Esses pontos requerem regra regimental e modelo próprio antes de um piloto oficial. A próxima etapa deve definir a base deliberativa por mandato/suplência, impedimento e exceções por tipo de deliberação, com trilha auditável. Integrações Nextcloud e Alfresco permanecem para o final do projeto.
+O total usado era o de parlamentares ativos na abertura. A [etapa 020](020-base-deliberativa.md) acrescentou política opcional de mandato, licença e suplência com lista congelada na abertura. O sistema ainda não modela impedimento de voto por matéria nem hipóteses de voto de desempate/peso do presidente. Esses pontos requerem regra regimental e modelo próprio antes de um piloto oficial. Integrações Nextcloud e Alfresco permanecem para o final do projeto.
