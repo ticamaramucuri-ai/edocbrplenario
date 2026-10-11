@@ -42,6 +42,9 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
 - O ensaio conjunto e as migrações SQL iniciais estão descritos na
   [etapa 036](etapas/036-ensaio-integrado-postgres.md). O baseline 0001 só pode
   ser aplicado em banco PostgreSQL vazio; o rollback 0002 remove apenas índices.
+- O executor com histórico e a cópia transacional SQLite→PostgreSQL estão na
+  [etapa 037](etapas/037-executor-copia-postgres.md). Use apenas com destino
+  vazio e uma réplica autorizada da origem; o piloto ativo continua em SQLite.
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

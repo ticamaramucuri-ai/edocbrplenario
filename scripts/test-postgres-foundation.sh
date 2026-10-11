@@ -35,8 +35,10 @@ for attempt in {1..30}; do
   sleep 1
 done
 docker exec "$container" pg_isready -U postgres -d postgres >/dev/null
-docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres < prisma/postgres/migrations/0001_baseline.sql >/dev/null
-docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres < prisma/postgres/migrations/0002_delivery_indexes.sql >/dev/null
+port="$(docker port "$container" 5432/tcp | sed 's/.*://')"
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py status
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
 docker exec "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c \
   "INSERT INTO \"Tenant\" (id, slug, name, city, uf, \"updatedAt\") VALUES ('tenant-restore-proof', 'restore-proof', 'Ensaio', 'Teste', 'BA', now());" >/dev/null
 docker exec "$container" pg_dump -U postgres -d postgres -Fc > "$temporary/backup.dump"
@@ -46,14 +48,47 @@ restored="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT
 test "$restored" = 1
 indexes_before="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('OutboxEvent_pending_createdAt_id_idx','WebhookDelivery_pending_due_idx')")"
 test "$indexes_before" = 2
-docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d restored < prisma/postgres/rollback/0002_delivery_indexes.sql >/dev/null
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/restored" python3 scripts/postgres-migrate.py rollback-indexes
 indexes_after="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('OutboxEvent_pending_createdAt_id_idx','WebhookDelivery_pending_due_idx')")"
 test "$indexes_after" = 0
 test "$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM \"Tenant\" WHERE slug='restore-proof'")" = 1
-docker exec -i "$container" psql -v ON_ERROR_STOP=1 -U postgres -d restored < prisma/postgres/migrations/0002_delivery_indexes.sql >/dev/null
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/restored" python3 scripts/postgres-migrate.py apply
 test "$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('OutboxEvent_pending_createdAt_id_idx','WebhookDelivery_pending_due_idx')")" = 2
-tables="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
-port="$(docker port "$container" 5432/tcp | sed 's/.*://')"
+: > "$temporary/source.db"
+DATABASE_URL="file:$temporary/source.db" bunx prisma db push --skip-generate >/dev/null
+python3 scripts/create-postgres-copy-fixture.py "$temporary/source.db"
+docker exec "$container" createdb -U postgres copyproof
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/copyproof" python3 scripts/postgres-migrate.py apply
+POSTGRES_COPY_URL="postgresql://postgres:test-only@127.0.0.1:$port/copyproof" \
+  python3 scripts/postgres-copy.py --source "$temporary/source.db"
+test "$(docker exec "$container" psql -At -U postgres -d copyproof -c 'SELECT count(*) FROM "Tenant"')" = 2
+test "$(docker exec "$container" psql -At -U postgres -d copyproof -c 'SELECT count(*) FROM "AuditEvent"')" = 2
+if POSTGRES_COPY_URL="postgresql://postgres:test-only@127.0.0.1:$port/copyproof" \
+  python3 scripts/postgres-copy.py --source "$temporary/source.db" > "$temporary/repeat.log" 2>&1; then
+  echo 'A cópia aceitou destino não vazio.' >&2
+  exit 1
+fi
+cp "$temporary/source.db" "$temporary/source-bad.db"
+sqlite3 "$temporary/source-bad.db" \
+  "INSERT INTO \"Session\" (id, tenantId, number, year, scheduledAt, updatedAt) VALUES ('orphan', 'missing-tenant', 2, 2026, 0, 0);"
+docker exec "$container" createdb -U postgres copybad
+POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/copybad" python3 scripts/postgres-migrate.py apply
+if POSTGRES_COPY_URL="postgresql://postgres:test-only@127.0.0.1:$port/copybad" \
+  python3 scripts/postgres-copy.py --source "$temporary/source-bad.db" > "$temporary/bad-copy.log" 2>&1; then
+  echo 'A cópia aceitou referência inválida.' >&2
+  exit 1
+fi
+test "$(docker exec "$container" psql -At -U postgres -d copybad -c 'SELECT count(*) FROM "Tenant"')" = 0
+test "$(docker exec "$container" psql -At -U postgres -d copybad -c 'SELECT count(*) FROM "Session"')" = 0
+docker exec "$container" createdb -U postgres blocked
+docker exec "$container" psql -v ON_ERROR_STOP=1 -U postgres -d blocked -c 'CREATE TABLE "Tenant" (id text PRIMARY KEY)' >/dev/null
+if POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/blocked" \
+  python3 scripts/postgres-migrate.py apply > "$temporary/blocked.log" 2>&1; then
+  echo 'O baseline aceitou banco não vazio.' >&2
+  exit 1
+fi
+test "$(docker exec "$container" psql -At -U postgres -d blocked -c 'SELECT count(*) FROM "_edocbr_schema_migration"')" = 0
+tables="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> '_edocbr_schema_migration'")"
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun test tests/tenant-health-postgres.test.ts
