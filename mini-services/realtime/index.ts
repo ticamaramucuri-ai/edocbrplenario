@@ -12,11 +12,9 @@
  * Os campos auxiliares `origin`/`aggregateVersion`/`correlationId` são "erguidos"
  * do payload para o envelope e REMOVIDOS da cópia emitida em `payload`.
  *
- * IMPORTANTE (correção de contenção): este processo é SOMENTE-LEITURA no banco
- * principal. Nada de UPDATE de status — o avanço é feito por checkpoint
- * (último rowid lido) persistido em arquivo PRÓPRIO. Motivo: qualquer escrita
- * concorrente deste processo provocava SQLITE_BUSY nas transações da API
- * (Prisma) durante operações de plenário com múltiplos votos simultâneos.
+ * SQLite: somente leitura, com checkpoint de rowid em arquivo para não causar
+ * SQLITE_BUSY nas transações da API. PostgreSQL: eventos pendentes são marcados
+ * como publicados depois da emissão; execute um publicador por banco.
  *
  * Porta fixa 3003 · path '/' OBRIGATÓRIO (gateway Caddy) · poller 500ms.
  */
@@ -24,14 +22,23 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Server, type Socket } from 'socket.io'
 import { Database } from 'bun:sqlite'
+import { PrismaClient } from '@prisma/client'
 import { readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import { realtimeSecret, verifyRealtimeGrant } from '../../src/lib/realtime-auth'
+import { publishPostgresOutboxBatch } from './postgres-outbox'
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
 const PORT = 3003
 const DB_PATH = process.env.REALTIME_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
+if (process.env.REALTIME_DATABASE_PROVIDER && process.env.REALTIME_DATABASE_PROVIDER !== 'postgresql') {
+  throw new Error('REALTIME_DATABASE_PROVIDER deve ser postgresql ou vazio (SQLite)')
+}
+const USE_POSTGRES = process.env.REALTIME_DATABASE_PROVIDER === 'postgresql'
+if (USE_POSTGRES && !/^postgres(ql)?:\/\//.test(process.env.DATABASE_URL ?? '')) {
+  throw new Error('REALTIME_DATABASE_PROVIDER=postgresql exige DATABASE_URL PostgreSQL')
+}
 const CHECKPOINT_PATH = import.meta.dir + '/checkpoint.json'
 const POLL_INTERVAL_MS = 500
 const POLL_BATCH_LIMIT = 50
@@ -50,12 +57,13 @@ function log(level: LogLevel, msg: string, fields: Record<string, unknown> = {})
   console.log(JSON.stringify({ ts: new Date().toISOString(), level, msg, ...fields }))
 }
 
-// ─── Banco de dados (bun:sqlite, SOMENTE LEITURA) ─────────────────────────────
+// ─── Banco de dados ───────────────────────────────────────────────────────────
 
-const db = new Database(DB_PATH, { readonly: true, strict: true })
+const db = USE_POSTGRES ? null : new Database(DB_PATH, { readonly: true, strict: true })
+const pgDb = USE_POSTGRES ? new PrismaClient() : null
 
 interface OutboxRow {
-  rowid: number
+  rowid?: number
   id: string
   tenantId: string
   eventType: string
@@ -65,14 +73,14 @@ interface OutboxRow {
   publicPayload: string | null
   status: string
   /** Integer epoch millis (gravação via Prisma) ou string SQLite ("YYYY-MM-DD HH:MM:SS"). */
-  createdAt: number | string
-  publishedAt: number | string | null
+  createdAt: number | string | Date
+  publishedAt: number | string | Date | null
 }
 
-const selectAfterStmt = db.prepare(
+const selectAfterStmt = db?.prepare(
   'SELECT rowid, * FROM OutboxEvent WHERE rowid > ? ORDER BY rowid ASC LIMIT ?',
 )
-const maxRowidStmt = db.prepare('SELECT COALESCE(MAX(rowid), 0) AS maxRowid FROM OutboxEvent')
+const maxRowidStmt = db?.prepare('SELECT COALESCE(MAX(rowid), 0) AS maxRowid FROM OutboxEvent')
 
 // ─── Checkpoint (avanço por rowid, persistido em arquivo próprio) ────────────────
 
@@ -100,7 +108,7 @@ function saveCheckpoint(lastRowid: number): void {
 // Primeira execução (sem checkpoint): começa do fim da fila — eventos antigos
 // são reconstruídos pelos clientes via snapshot (public/live + queries).
 let checkpoint: number =
-  loadCheckpoint() ?? (maxRowidStmt.get() as { maxRowid: number }).maxRowid
+  USE_POSTGRES ? 0 : loadCheckpoint() ?? (maxRowidStmt!.get() as { maxRowid: number }).maxRowid
 
 // ─── Conversão de datas → ISO 8601 ──────────────────────────────────────────
 
@@ -108,7 +116,8 @@ let checkpoint: number =
  * `createdAt` pode chegar como epoch millis (Prisma grava INTEGER) ou como texto
  * "YYYY-MM-DD HH:MM:SS[.SSS]" (CURRENT_TIMESTAMP do SQLite) — ambos em UTC.
  */
-function toIsoDate(value: number | string | null | undefined): string {
+function toIsoDate(value: number | string | Date | null | undefined): string {
+  if (value instanceof Date) return value.toISOString()
   if (typeof value === 'number' && Number.isFinite(value)) {
     return new Date(value).toISOString()
   }
@@ -307,11 +316,20 @@ function roomHasClients(room: string): boolean {
   return io.sockets.adapter.rooms.has(room)
 }
 
-/** Lê até 50 eventos após o checkpoint (ordem de inserção) e publica. */
+/** Publica um lote; SQLite usa checkpoint, PostgreSQL usa status pendente. */
 async function publishPendingBatch(): Promise<void> {
+  if (pgDb) {
+    try {
+      const rows = await publishPostgresOutboxBatch(pgDb, (row) => emitOutboxRow(row), POLL_BATCH_LIMIT)
+      if (rows.length > 0) logBatch(rows)
+    } catch (err) {
+      log('error', 'falha ao publicar outbox PostgreSQL; evento permanece pendente', { error: String(err) })
+    }
+    return
+  }
   let rows: OutboxRow[] = []
   try {
-    rows = selectAfterStmt.all(checkpoint, POLL_BATCH_LIMIT) as OutboxRow[]
+    rows = selectAfterStmt!.all(checkpoint, POLL_BATCH_LIMIT) as OutboxRow[]
   } catch (err) {
     log('error', 'falha ao selecionar eventos do outbox', { error: String(err) })
     return
@@ -320,15 +338,7 @@ async function publishPendingBatch(): Promise<void> {
   let last = checkpoint
   for (const row of rows) {
     try {
-      const internalEnvelope = buildEnvelope(row, row.internalPayload)
-      if (internalEnvelope !== null) {
-        io.to(`tenant:${row.tenantId}`).emit(row.eventType, internalEnvelope)
-      }
-
-      const publicEnvelope = buildEnvelope(row, row.publicPayload)
-      if (publicEnvelope !== null) {
-        io.to(`public:${row.tenantId}`).emit(row.eventType, publicEnvelope)
-      }
+      emitOutboxRow(row)
     } catch (err) {
       log('error', 'falha ao emitir evento', {
         eventId: row.id,
@@ -336,21 +346,32 @@ async function publishPendingBatch(): Promise<void> {
         error: String(err),
       })
     }
-    last = row.rowid
+    last = row.rowid!
   }
 
   if (rows.length > 0) {
     checkpoint = last
     saveCheckpoint(checkpoint)
-    log('info', 'lote do outbox publicado', {
-      batch: rows.length,
-      checkpoint,
-      eventTypes: [...new Set(rows.map((r) => r.eventType))],
-      tenants: [...new Set(rows.map((r) => r.tenantId))],
-      internalRoomsOccupied: rows.some((r) => roomHasClients(`tenant:${r.tenantId}`)),
-      publicRoomsOccupied: rows.some((r) => roomHasClients(`public:${r.tenantId}`)),
-    })
+    logBatch(rows)
   }
+}
+
+function emitOutboxRow(row: OutboxRow): void {
+  const internalEnvelope = buildEnvelope(row, row.internalPayload)
+  if (internalEnvelope !== null) io.to(`tenant:${row.tenantId}`).emit(row.eventType, internalEnvelope)
+  const publicEnvelope = buildEnvelope(row, row.publicPayload)
+  if (publicEnvelope !== null) io.to(`public:${row.tenantId}`).emit(row.eventType, publicEnvelope)
+}
+
+function logBatch(rows: OutboxRow[]): void {
+  log('info', 'lote do outbox publicado', {
+    batch: rows.length,
+    ...(USE_POSTGRES ? {} : { checkpoint }),
+    eventTypes: [...new Set(rows.map((r) => r.eventType))],
+    tenants: [...new Set(rows.map((r) => r.tenantId))],
+    internalRoomsOccupied: rows.some((r) => roomHasClients(`tenant:${r.tenantId}`)),
+    publicRoomsOccupied: rows.some((r) => roomHasClients(`public:${r.tenantId}`)),
+  })
 }
 
 let polling = true
@@ -365,9 +386,10 @@ async function pollLoop(): Promise<void> {
 // ─── Início + graceful shutdown ─────────────────────────────────────────────
 
 httpServer.listen(PORT, () => {
-  log('info', 'serviço de tempo real iniciado (somente leitura)', {
+  log('info', 'serviço de tempo real iniciado', {
     port: PORT,
-    dbPath: DB_PATH,
+    provider: USE_POSTGRES ? 'postgresql' : 'sqlite',
+    ...(USE_POSTGRES ? {} : { dbPath: DB_PATH }),
     pollIntervalMs: POLL_INTERVAL_MS,
     batchLimit: POLL_BATCH_LIMIT,
   })
@@ -394,7 +416,8 @@ async function shutdown(signal: string): Promise<void> {
   }
 
   try {
-    db.close()
+    db?.close()
+    await pgDb?.$disconnect()
   } catch {
     /* banco já fechado */
   }

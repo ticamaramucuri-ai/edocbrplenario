@@ -26,6 +26,10 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
 - `REALTIME_DB_PATH`: caminho absoluto opcional para o SQLite lido pelo serviço realtime;
   por padrão usa `db/custom.db` do projeto. Use a mesma base configurada em
   `DATABASE_URL` na API.
+- Para ensaio PostgreSQL do realtime, defina `REALTIME_DATABASE_PROVIDER=postgresql`
+  e `DATABASE_URL` PostgreSQL, após gerar o cliente Prisma para esse provedor.
+  Execute apenas um publicador por banco; a migração integral da aplicação ainda
+  está em andamento na [etapa 030](etapas/030-base-operacional-saas.md).
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,
@@ -177,8 +181,9 @@ Verificação pós-restauração: health checks (§1) + `GET /api/v1/audit?verif
 
 1. Status de conexão na sidebar (`Conectado`?).
 2. `curl localhost:3003/health` — serviço de pé? Ver `service.log`.
-3. O serviço é somente-leitura no banco com checkpoint próprio
-   (`mini-services/realtime/checkpoint.json`); restart seguro a qualquer momento.
+3. Em SQLite, o serviço é somente leitura e usa checkpoint próprio
+   (`mini-services/realtime/checkpoint.json`). Em PostgreSQL, confira os eventos
+   `pending`; falha de emissão mantém o evento pendente para nova tentativa.
 4. Clientes refazem subscribe automaticamente (reconexão com backoff no hook).
 
 ### 6.5 SQLITE_BUSY / timeout de escrita
