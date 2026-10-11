@@ -518,6 +518,7 @@ model Voting {
   id             String    @id @default(cuid())
   sessionId      String
   agendaItemId   String?
+  agendaBefore   String?   // JSON {status,resultSummary} anterior à criação; usado no cancelamento
   matterId       String?
   question       String
   mode           String    @default("nominal") // nominal|simbolico|secreto

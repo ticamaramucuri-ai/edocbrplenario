@@ -129,10 +129,22 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   const requiredQuorum = policy?.quorumMinimum ?? settings.quorumMinimum
 
   const voting = await withTransaction(async (tx) => {
+    const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    if (!['open', 'suspended', 'resumed'].includes(currentSession.status)) {
+      throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Sessão indisponível', 'A sessão mudou de estado. Recarregue antes de criar a votação.')
+    }
+    const unresolved = await tx.voting.findFirst({ where: { sessionId: session.id,
+      status: { in: ['ready', 'open', 'paused'] } }, select: { id: true } })
+    if (unresolved) throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Votação pendente',
+      'Conclua ou cancele a votação pendente antes de criar outra.')
+    const currentAgendaItem = agendaItem
+      ? await tx.agendaItem.findUniqueOrThrow({ where: { id: agendaItem.id } }) : null
     const created = await tx.voting.create({
       data: {
         sessionId: session.id,
         agendaItemId: agendaItem?.id ?? null,
+        agendaBefore: currentAgendaItem ? JSON.stringify({ status: currentAgendaItem.status,
+          resultSummary: currentAgendaItem.resultSummary }) : null,
         matterId: agendaItem?.matterId ?? null,
         question: body.question ?? agendaItem!.title,
         mode: body.mode,

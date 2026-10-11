@@ -81,6 +81,7 @@ export function VotingStatusBadge({ status }: { status: VotingStatus }) {
     paused: { variant: 'outline', icon: <PauseCircle /> },
     closed: { variant: 'secondary', icon: <Lock /> },
     annulled: { variant: 'destructive', icon: <CircleSlash /> },
+    cancelled: { variant: 'outline', icon: <CircleSlash /> },
   }
   const { variant, icon } = map[status] ?? map.draft
   return (

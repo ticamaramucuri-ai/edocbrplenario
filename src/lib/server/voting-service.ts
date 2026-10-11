@@ -68,6 +68,11 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
   assertVoteValueAllowed(value, options)
 
   return withTransaction(async (tx) => {
+    const currentVoting = await tx.voting.findUniqueOrThrow({ where: { id: voting.id }, include: { session: true } })
+    if (currentVoting.status !== 'open' || !['open', 'resumed'].includes(currentVoting.session.status)) {
+      throw new DomainError('VOTING_NOT_OPEN', 409, 'Votação indisponível',
+        'A votação e a sessão precisam estar abertas para registrar votos.')
+    }
     const frozenIds = voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null
     const { statuses } = await currentAttendance(tx, voting.sessionId, voting.session.tenantId, frozenIds)
     if (statuses.get(parliamentarian.id) !== 'presente') {

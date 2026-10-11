@@ -89,6 +89,7 @@ const TRANSITION_SUCCESS: Record<string, string> = {
   resume: 'Votação retomada',
   close: 'Votação encerrada — resultado apurado',
   annul: 'Votação anulada',
+  cancel: 'Votação cancelada',
 }
 
 /** Fase 18 — opções regimentais da votação ([] = padrão Sim/Não/Abstenção). */
@@ -147,6 +148,7 @@ function VotingPanel({
   const options = votingOptions(voting)
   const [closeOpen, setCloseOpen] = useState(false)
   const [annulOpen, setAnnulOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
   const [impededPerson, setImpededPerson] = useState('')
   const [impedimentReason, setImpedimentReason] = useState('')
   const [revokingId, setRevokingId] = useState<string | null>(null)
@@ -205,13 +207,14 @@ function VotingPanel({
           {canWrite && (
             <div className="flex flex-wrap items-center gap-2">
               {voting.status === 'ready' && (
-                <Button
-                  size="sm"
-                  onClick={() => transition.mutate({ action: 'open' })}
-                  disabled={transition.isPending}
-                >
-                  <PlayCircle /> Abrir votação
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)} disabled={transition.isPending}>
+                    <CircleSlash /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={() => transition.mutate({ action: 'open' })} disabled={transition.isPending}>
+                    <PlayCircle /> Abrir votação
+                  </Button>
+                </>
               )}
 
               {voting.status === 'open' && (
@@ -261,7 +264,7 @@ function VotingPanel({
         </div>
 
         {/* Progresso de participação */}
-        <div>
+        {voting.status !== 'cancelled' && <div>
           <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span className="tabular-nums">
               {registered} de {presentCount} {presentCount === 1 ? 'parlamentar registrou' : 'parlamentares registraram'}{' '}
@@ -270,7 +273,7 @@ function VotingPanel({
             <span className="tabular-nums">{pct}%</span>
           </div>
           <Progress value={pct} aria-label={`${registered} de ${presentCount} votos registrados`} />
-        </div>
+        </div>}
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
@@ -320,6 +323,11 @@ function VotingPanel({
         {voting.status === 'annulled' && voting.justification && (
           <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
             <strong>Votação anulada.</strong> Justificativa: {voting.justification}
+          </p>
+        )}
+        {voting.status === 'cancelled' && voting.justification && (
+          <p className="rounded-lg border border-dashed p-3 text-sm">
+            <strong>Votação cancelada antes da abertura.</strong> Justificativa: {voting.justification}
           </p>
         )}
 
@@ -392,6 +400,8 @@ function VotingPanel({
           transition.mutate({ action: 'annul', extra: { justification } })
         }}
       />
+      <CancelVotingDialog open={cancelOpen} onOpenChange={setCancelOpen} busy={transition.isPending}
+        onConfirm={(justification) => { setCancelOpen(false); transition.mutate({ action: 'cancel', extra: { justification } }) }} />
       <Dialog open={!!revokingId} onOpenChange={(open) => { if (!open) { setRevokingId(null); setRevocationReason('') } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Revogar impedimento</DialogTitle>
@@ -942,6 +952,34 @@ function CloseSymbolicDialog({
 }
 
 // ─── Anulação ──────────────────────────────────────────────────────────────
+
+function CancelVotingDialog({ open, onOpenChange, busy, onConfirm }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  busy: boolean
+  onConfirm: (justification: string) => void
+}) {
+  const [justification, setJustification] = useState('')
+  return <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Cancelar votação antes da abertura?</AlertDialogTitle>
+        <AlertDialogDescription>O item de pauta voltará ao estado anterior. O cancelamento e sua justificativa ficarão na auditoria.</AlertDialogDescription>
+      </AlertDialogHeader>
+      <div className="grid gap-2">
+        <Label htmlFor="cancel-voting-reason">Justificativa</Label>
+        <Textarea id="cancel-voting-reason" value={justification} onChange={(e) => setJustification(e.target.value)}
+          rows={3} maxLength={2000} placeholder="Informe o motivo do cancelamento" />
+      </div>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Voltar</AlertDialogCancel>
+        <AlertDialogAction disabled={busy || justification.trim().length < 3} onClick={(e) => {
+          e.preventDefault(); onConfirm(justification.trim()); setJustification('')
+        }}>Cancelar votação</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+}
 
 function AnnulDialog({
   open,

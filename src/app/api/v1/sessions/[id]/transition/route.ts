@@ -82,6 +82,15 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
   const result = await withTransaction(async (tx) => {
     const now = new Date()
+    if (body.action === 'suspend' || body.action === 'close') {
+      const blockingStatuses = body.action === 'suspend' ? ['open'] : ['ready', 'open', 'paused']
+      const pendingVoting = await tx.voting.findFirst({ where: { sessionId: session.id,
+        status: { in: blockingStatuses } }, select: { id: true, status: true } })
+      if (pendingVoting) throw new DomainError('SESSION_PRECONDITION', 409, 'Votação pendente',
+        body.action === 'suspend'
+          ? 'Pause a votação aberta antes de suspender a sessão.'
+          : 'Conclua ou cancele a votação pendente antes de encerrar a sessão.')
+    }
     // Pré-condições (dentro da tx para consistência)
     if (transition.requires.includes('agenda')) {
       const count = await tx.agendaItem.count({ where: { sessionId: session.id } })

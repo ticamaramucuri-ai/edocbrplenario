@@ -183,15 +183,18 @@ Cria votação `ready` vinculada ao item da pauta (e à matéria do item, se hou
 → `{ voting: VotingView }`. Emite `voting.created` + `agenda.updated`.
 
 ### POST `/api/v1/votings/:id/transition`
-Body: `{ action: 'open'|'pause'|'resume'|'close'|'annul', version, justification?, sim?, nao?, abstencoes? }`
-- `open`: ready|paused→open; snapshot `presentAtOpen` + quórum atual; exigir sessão aberta
+Body: `{ action: 'open'|'pause'|'resume'|'close'|'annul'|'cancel', version, justification?, sim?, nao?, abstencoes? }`
+- `open`: ready→open; snapshot `presentAtOpen` + quórum atual; exigir sessão aberta
   (open|resumed) e quórum OK → se quórum insuficiente: 409 `QUORUM_INSUFFICIENT`.
 - `pause`/`resume`: open⇄paused.
 - `close`: open|paused→closed; snapshot close; **simbólico exige `sim`/`nao`/`abstencoes` no body**;
   calcula resultado determinístico (ADR-002); atualiza matéria (aprovado/rejeitado) e item
   da pauta (+`resultSummary`); emite `voting.result` + `agenda.updated`.
 - `annul`: closed→annulled; **exige justificativa**; reverte item/matéria; emite eventos.
+- `cancel`: ready→cancelled; **exige justificativa**; restaura o estado e resumo anteriores do item de pauta, preserva o registro e emite auditoria/eventos. Não houve abertura nem resultado.
 → `{ voting: VotingView }`.
+
+Uma sessão não pode ser suspensa com votação aberta: pause a votação primeiro. Também não pode ser encerrada com votação `ready`, `open` ou `paused`: conclua ou cancele. A criação de outra votação fica bloqueada enquanto houver uma pendente na sessão. Registro de voto e retomada/fechamento exigem sessão aberta ou retomada.
 
 ### POST `/api/v1/votings/:id/votes`
 Body: `{ parliamentarianId, value: 'sim'|'nao'|'abstencao', commandId: uuid }`

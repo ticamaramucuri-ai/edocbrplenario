@@ -49,7 +49,7 @@ export const SESSION_TRANSITIONS: Record<SessionAction, SessionTransition> = {
 
 // ─── Máquina de estados da Votação ──────────────────────────────────────────
 
-export type VotingAction = 'open' | 'pause' | 'resume' | 'close' | 'annul'
+export type VotingAction = 'open' | 'pause' | 'resume' | 'close' | 'annul' | 'cancel'
 
 export type VotingTransition = {
   from: VotingStatus[]
@@ -63,6 +63,7 @@ export const VOTING_TRANSITIONS: Record<VotingAction, VotingTransition> = {
   resume: { from: ['paused'], to: 'open', requires: [] },
   close: { from: ['open', 'paused'], to: 'closed', requires: [] },
   annul: { from: ['closed'], to: 'annulled', requires: ['justification'] },
+  cancel: { from: ['ready'], to: 'cancelled', requires: ['justification'] },
 }
 
 // ─── Cálculo de resultado (determinístico) ──────────────────────────────────

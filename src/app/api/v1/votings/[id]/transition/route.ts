@@ -3,8 +3,9 @@
  * open (sessão aberta + quórum ok, senão 409 QUORUM_INSUFFICIENT; snapshot),
  * pause/resume, close (snapshot, cálculo determinístico — Fase 18: multi-opção
  * via voting-service + emissão idempotente de recibos verificáveis ADR-019 —,
- * matéria/item atualizados, resultDetail nominal por bancada) e annul
- * (justificativa, reverte item/matéria, limpa resultados).
+ * matéria/item atualizados, resultDetail nominal por bancada), annul
+ * (justificativa, reverte item/matéria, limpa resultados) e cancel
+ * (antes da abertura, com justificativa e restauração da pauta).
  */
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
@@ -37,9 +38,9 @@ export const dynamic = 'force-dynamic'
 
 const bodySchema = z
   .object({
-    action: z.enum(['open', 'pause', 'resume', 'close', 'annul']),
+    action: z.enum(['open', 'pause', 'resume', 'close', 'annul', 'cancel']),
     version: z.number({ message: 'version é obrigatório (controle otimista).' }).int().min(1),
-    justification: z.string().min(3).max(2000).optional(),
+    justification: z.string().trim().min(3).max(2000).optional(),
     sim: z.number().int().min(0).optional(),
     nao: z.number().int().min(0).optional(),
     abstencoes: z.number().int().min(0).optional(),
@@ -47,11 +48,11 @@ const bodySchema = z
     customCounts: z.record(z.string(), z.number().int().min(0)).optional(),
   })
   .superRefine((body, ctx) => {
-    if (body.action === 'annul' && !body.justification) {
+    if ((body.action === 'annul' || body.action === 'cancel') && !body.justification) {
       ctx.addIssue({
         code: 'custom',
         path: ['justification'],
-        message: 'Justificativa é obrigatória para anular a votação.',
+        message: 'Justificativa é obrigatória para anular ou cancelar a votação.',
       })
     }
   })
@@ -97,6 +98,11 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     const current = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
     if (current.version !== body.version || current.status !== voting.status) {
       throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A votação mudou. Recarregue antes de executar a ação.')
+    }
+    if (['open', 'resume', 'close'].includes(body.action)) {
+      const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+      if (!['open', 'resumed'].includes(currentSession.status)) throw new DomainError('SESSION_PRECONDITION', 409,
+        'Sessão indisponível', 'A sessão precisa estar aberta ou retomada para esta ação.')
     }
     const now = new Date()
 
@@ -175,6 +181,35 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         correlationId,
         ip: clientIp(req),
       })
+      return { voting: updated }
+    }
+
+    // ── cancel: votação pronta, sem abertura ou votos ─────────────────────
+    if (body.action === 'cancel') {
+      const updated = await tx.voting.update({ where: { id: voting.id }, data: {
+        status: 'cancelled', justification: body.justification, version: { increment: 1 },
+      } })
+      if (voting.agendaItemId) {
+        const before = voting.agendaBefore
+          ? JSON.parse(voting.agendaBefore) as { status: string; resultSummary: string | null }
+          : { status: 'em_discussao', resultSummary: null }
+        const changed = await tx.agendaItem.updateMany({ where: { id: voting.agendaItemId, status: 'em_votacao' },
+          data: { status: before.status, resultSummary: before.resultSummary } })
+        if (changed.count !== 1) throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Pauta alterada',
+          'O item de pauta mudou desde a criação da votação. Revise a pauta antes de cancelar.')
+      }
+      await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'voting.cancelled',
+        aggregateType: 'voting', aggregateId: voting.id,
+        summary: `Votação cancelada antes da abertura: ${voting.question.slice(0, 80)}.`,
+        before: { status: voting.status }, after: { status: 'cancelled' },
+        justification: body.justification, correlationId, ip: clientIp(req) })
+      const payload = { votingId: voting.id, sessionId: session.id, status: 'cancelled', question: voting.question }
+      await emitOutbox(tx, { tenantId: session.tenantId, eventType: 'voting.state_changed',
+        aggregateId: voting.id, sessionId: session.id, aggregateVersion: updated.version,
+        correlationId, internalPayload: payload, publicPayload: payload })
+      if (voting.agendaItemId) await emitOutbox(tx, { tenantId: session.tenantId, eventType: 'agenda.updated',
+        aggregateId: session.id, sessionId: session.id, aggregateVersion: session.version,
+        correlationId, internalPayload: { sessionId: session.id }, publicPayload: { sessionId: session.id } })
       return { voting: updated }
     }
 

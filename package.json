@@ -17,6 +17,7 @@
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",
     "test:voting:impediments": "bash scripts/test-voting-impediments.sh",
     "test:voting:report-basis": "bash scripts/test-voting-report-basis.sh",
+    "test:voting:flow-guards": "bash scripts/test-voting-flow-guards.sh",
     "media:reconcile": "bun scripts/media-reconcile.ts",
     "media:health": "bun scripts/media-health.ts",
     "test:realtime:smoke": "bun scripts/realtime-auth-smoke.ts",

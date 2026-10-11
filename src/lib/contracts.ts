@@ -73,7 +73,7 @@ export type MediaRecordingView = {
   latestSegmentAt: string | null
 }
 
-export type VotingStatus = 'draft' | 'ready' | 'open' | 'paused' | 'closed' | 'annulled'
+export type VotingStatus = 'draft' | 'ready' | 'open' | 'paused' | 'closed' | 'annulled' | 'cancelled'
 export type VotingMode = 'nominal' | 'simbolico' | 'secreto'
 export type VotingRule = 'maioria_simples' | 'maioria_absoluta' | 'unanimidade'
 export type VoteValue = 'sim' | 'nao' | 'abstencao'
@@ -470,6 +470,7 @@ export const VOTING_STATUS_LABEL: Record<VotingStatus, string> = {
   paused: 'Pausada',
   closed: 'Encerrada',
   annulled: 'Anulada',
+  cancelled: 'Cancelada',
 }
 
 export const AGENDA_STATUS_LABEL: Record<AgendaItemStatus, string> = {

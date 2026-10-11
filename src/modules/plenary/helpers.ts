@@ -64,7 +64,7 @@ export function sortSessionsForPicker(sessions: SessionSummary[]): SessionSummar
 
 /**
  * Votação em foco: a mais recente com status ready|open|paused;
- * se nenhuma, a última encerrada (para exibir o resultado).
+ * se nenhuma, a última concluída, anulada ou cancelada.
  */
 export function pickActiveVoting(votings: VotingView[]): VotingView | null {
   for (let i = votings.length - 1; i >= 0; i -= 1) {
@@ -72,7 +72,7 @@ export function pickActiveVoting(votings: VotingView[]): VotingView | null {
     if (v.status === 'ready' || v.status === 'open' || v.status === 'paused') return v
   }
   for (let i = votings.length - 1; i >= 0; i -= 1) {
-    if (votings[i].status === 'closed') return votings[i]
+    if (['closed', 'annulled', 'cancelled'].includes(votings[i].status)) return votings[i]
   }
   return null
 }
