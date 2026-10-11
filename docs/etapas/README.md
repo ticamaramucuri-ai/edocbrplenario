@@ -20,5 +20,6 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [014 — Ciência da convocação](014-ciencia-convocacao.md) | Concluída localmente para registro interno | Destinatários congelados por revisão, ciência individual e acompanhamento | Regras regimentais de retificação e exceção por Câmara |
 | [015 — Prazos de retificação e urgência](015-prazos-retificacao-urgencia.md) | Concluída localmente para política de prazo | Prazo de emenda por Câmara, exceção por tipo com justificativa pública | Calendário de vencimentos e homologação regimental |
 | [016 — Calendário de prazos da sessão](016-calendario-prazos-sessao.md) | Concluída localmente para acompanhamento | Vencimentos por fase e Câmara, fuso institucional e alerta visual na Mesa | Alertas persistidos e validação do regimento piloto |
+| [017 — Alertas persistidos de prazo](017-alertas-persistidos-prazo.md) | Concluída localmente para notificações internas | Avisos prévios e de atraso, deduplicação, agendador e ajuste da base demo | Homologação dos destinatários e regras regimentais |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

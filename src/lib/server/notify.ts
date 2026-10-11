@@ -20,6 +20,7 @@ export type NotifyInput = {
   module?: string | null
   /** Papel destinatário (Role) ou null para todos. */
   targetRole?: string | null
+  dedupeKey?: string | null
 }
 
 /** Cria a Notification e emite `notification.new` (interno) na mesma tx. */
@@ -32,6 +33,7 @@ export async function notify(tx: Tx, input: NotifyInput): Promise<Notification> 
       kind: input.kind,
       module: input.module ?? null,
       targetRole: input.targetRole ?? null,
+      dedupeKey: input.dedupeKey ?? null,
     },
   })
   await emitOutbox(tx, {

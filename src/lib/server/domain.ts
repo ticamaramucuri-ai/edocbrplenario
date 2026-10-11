@@ -188,6 +188,9 @@ export function tenantSettings(
     urgentNoticeExceptionTypes: Array.isArray(parsed.urgentNoticeExceptionTypes)
       && parsed.urgentNoticeExceptionTypes.every((v) => ['ordinaria', 'extraordinaria', 'solene', 'especial'].includes(String(v)))
       ? [...new Set(parsed.urgentNoticeExceptionTypes)] as TenantSettings['urgentNoticeExceptionTypes'] : [],
+    noticeAlertLeadHours: Number.isInteger(parsed.noticeAlertLeadHours)
+      && Number(parsed.noticeAlertLeadHours) >= 1 && Number(parsed.noticeAlertLeadHours) <= 168
+      ? Number(parsed.noticeAlertLeadHours) : 24,
   }
 }
 

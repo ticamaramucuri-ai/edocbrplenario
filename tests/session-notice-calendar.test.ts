@@ -13,7 +13,7 @@ test('calendário calcula prazos por fase, isola Câmaras e informa o fuso insti
   const adminB = await db.user.create({ data: { tenantId: b.id, name: 'Admin B', email: 'calendario-b@example.invalid', role: 'tenant_admin' } })
   const date = new Date(Date.now() + 5 * 60 * 60 * 1000)
   const draft = await db.session.create({ data: { tenantId: a.id, number: 1, year: 2026, type: 'ordinaria', scheduledAt: date } })
-  const scheduled = await db.session.create({ data: { tenantId: a.id, number: 2, year: 2026, type: 'extraordinaria', scheduledAt: date, status: 'scheduled' } })
+  const scheduled = await db.session.create({ data: { tenantId: a.id, number: 2, year: 2026, type: 'extraordinaria', scheduledAt: date, status: 'scheduled', agendaPublished: true } })
   await db.session.create({ data: { tenantId: b.id, number: 1, year: 2026, type: 'ordinaria', scheduledAt: date } })
   const read = (actorId: string) => noticeCalendar(new NextRequest('http://localhost/api/v1/sessions/notice-calendar', { headers: { 'x-actor-id': actorId } }), { params: Promise.resolve({}) })
   const responseA = await read(adminA.id)

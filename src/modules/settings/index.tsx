@@ -83,6 +83,7 @@ export default function SettingsModule() {
       minimumNoticeHours: 0,
       minimumAmendmentHours: 0,
       urgentNoticeExceptionTypes: [],
+      noticeAlertLeadHours: 24,
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -142,6 +143,8 @@ export default function SettingsModule() {
       errs.minimumNoticeHours = 'Informe um número entre 0 e 720 horas.'
     if (!Number.isInteger(settings.minimumAmendmentHours) || settings.minimumAmendmentHours < 0 || settings.minimumAmendmentHours > 720)
       errs.minimumAmendmentHours = 'Informe um número entre 0 e 720 horas.'
+    if (!Number.isInteger(settings.noticeAlertLeadHours) || settings.noticeAlertLeadHours < 1 || settings.noticeAlertLeadHours > 168)
+      errs.noticeAlertLeadHours = 'Informe um número entre 1 e 168 horas.'
     setErrors(errs)
     if (Object.keys(errs).length > 0 || !tenant) return
     save.mutate()
@@ -371,6 +374,15 @@ export default function SettingsModule() {
                     </label>
                   ))}
                 </div>
+              </div>
+              <div className="grid gap-2 sm:max-w-64">
+                <Label htmlFor="tenant-notice-alert-lead">Avisar antes do prazo (horas)</Label>
+                <Input id="tenant-notice-alert-lead" type="number" min={1} max={168}
+                  value={settings.noticeAlertLeadHours}
+                  onChange={(e) => setSetting('noticeAlertLeadHours', Number(e.target.value))}
+                  aria-invalid={!!errors.noticeAlertLeadHours} />
+                <p className="text-xs text-muted-foreground">Notificação interna para a administração e os operadores de sessão; padrão 24 horas.</p>
+                {errors.noticeAlertLeadHours && <p className="text-xs text-destructive">{errors.noticeAlertLeadHours}</p>}
               </div>
             </CardContent>
           </Card>

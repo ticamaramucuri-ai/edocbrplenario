@@ -924,12 +924,14 @@ model Notification {
   kind       String // session|voting|task|webhook|system
   module     String? // ModuleId para navegação no frontend
   targetRole String? // papel destinatário; null = todos os papéis do tenant
+  dedupeKey  String? // alertas automáticos: idempotência por tenant e evento
   readAt     DateTime?
   createdAt  DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, createdAt])
+  @@unique([tenantId, dedupeKey])
 }
 
 // ─── Fase 7: IA assistiva (rastreabilidade + revisão humana obrigatória) ────
@@ -1203,7 +1205,7 @@ model RoadmapTask {
 
 model ScheduledJob {
   id           String    @id @default(cuid())
-  kind         String    @unique // alert.scan|export.watchdog|health.check|tenant.health_snapshot
+  kind         String    @unique // alert.scan|export.watchdog|health.check|tenant.health_snapshot|notice.deadline_alerts
   title        String
   everySeconds Int       @default(300) // mínimo 60s no PATCH
   lastRunAt    DateTime?

@@ -31,6 +31,8 @@
  *                               src/lib/server/tenant-health — imports são
  *                               `import type`, apagados em runtime: seguro sob
  *                               Bun). No máximo 1 captura/dia/tenant.
+ *   - notice.deadline_alerts → avisos internos de prazo de convocação,
+ *                               idempotentes por Câmara/sessão/prazo/papel.
  *
  * IMPORTANTE (SQLite/Prisma): DateTime é armazenado como epoch MILLISECONDS
  * (INTEGER). Cortes de tempo em SQL SEMPRE com
@@ -44,12 +46,14 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Database, type Statement, type SQLQueryBindings } from 'bun:sqlite'
+import { resolve } from 'path'
 import { healthScoreFromMetrics, TENANT_HEALTH_SQL } from '../../src/lib/server/tenant-health'
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
 const PORT = 3005
-const DB_PATH = '/home/z/my-project/db/custom.db'
+const DB_PATH = process.env.SCHEDULER_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
+process.env.DATABASE_URL ??= `file:${DB_PATH}?connection_limit=1&socket_timeout=30`
 const TICK_INTERVAL_MS = 30_000
 const HEALTH_TIMEOUT_MS = 2_000
 const WATCHDOG_STALE_MS = 10 * 60_000 // export running há > 10 min = órfão
@@ -485,12 +489,17 @@ async function runKind(kind: string): Promise<KindResult> {
       return runHealthCheck()
     case 'tenant.health_snapshot':
       return runTenantHealthSnapshot()
+    case 'notice.deadline_alerts': {
+      const { scanNoticeDeadlineAlerts } = await import('../../src/lib/server/notice-deadline-alerts')
+      const result = await scanNoticeDeadlineAlerts()
+      return { status: 'ok', note: `${result.due} prazo(s) em atenção; ${result.created} notificação(ões) nova(s).` }
+    }
     default:
       throw new Error(`Kind de agendamento desconhecido: "${kind}".`)
   }
 }
 
-const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot']
+const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot', 'notice.deadline_alerts']
 
 // ─── Tick de 30s (agenda recalcada após CADA execução agendada) ─────────────
 

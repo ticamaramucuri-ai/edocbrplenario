@@ -99,6 +99,8 @@ Exige `session.transition`; devolve a revisão vigente, hash, total, número de 
 ### GET `/api/v1/sessions/notice-calendar`
 Exige `session.transition`; retorna `{ timezone, generatedAt, rows }` para até 50 sessões futuras em `draft` ou `scheduled` da Câmara do ator. Cada linha contém `sessionId`, número/ano/tipo, fase (`initial` ou `amendment`), horário da sessão, vencimento, mínimo de horas, estado (`on_time`, `due_soon`, `passed`) e possibilidade de exceção configurada para o tipo. `Cache-Control: no-store`.
 
+O agendador `notice.deadline_alerts` usa o mesmo cálculo e cria notificações internas para administração e operação de sessão. A Câmara configura `noticeAlertLeadHours` (1–168; padrão 24). A chave `Notification.dedupeKey` impede duplicação por sessão, prazo, estado e papel. Não há envio externo.
+
 ### POST `/api/v1/sessions/:id/agenda-amendments`
 Permissão `session.transition`. Body: `{ action: 'add'|'move'|'retire', mode: 'preview'|'apply', version, justification, exceptionReason?, matterId? | itemId?, position? }`. `position` é índice zero da Ordem do Dia. Disponível somente em `scheduled`, com pauta publicada e revisão inicial. `preview` → `{ preview: { before, after, summary, revision, policy } }` sem mutação. `apply` → `{ amendment: ... }` (201); grava revisão, auditoria e outbox atomicamente. Exige mínimo de matérias e `minimumAmendmentHours` conforme política da Câmara; exceção exige tipo habilitado em `urgentNoticeExceptionTypes` e justificativa pública. Mesmo com mínimo 0, a sessão deve estar no futuro. Versão antiga → 409; matéria de outra Câmara → 404; outra Câmara não acessa a sessão → 403.
 

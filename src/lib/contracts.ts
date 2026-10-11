@@ -116,6 +116,7 @@ export type TenantSettings = {
   minimumNoticeHours: number
   minimumAmendmentHours: number
   urgentNoticeExceptionTypes: SessionType[]
+  noticeAlertLeadHours: number
 }
 
 export type TenantView = {
@@ -1662,12 +1663,14 @@ export type ScheduledJobKind =
   | 'export.watchdog'
   | 'health.check'
   | 'tenant.health_snapshot'
+  | 'notice.deadline_alerts'
 
 export const SCHEDULED_JOB_KIND_LABEL: Record<ScheduledJobKind, string> = {
   'alert.scan': 'Varredura de alertas',
   'export.watchdog': 'Watchdog de exportações',
   'health.check': 'Health check de serviços',
   'tenant.health_snapshot': 'Snapshot de saúde dos tenants',
+  'notice.deadline_alerts': 'Avisos de prazo de convocação',
 }
 
 export type ScheduledJobView = {

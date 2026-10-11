@@ -5,6 +5,7 @@ import { apiHandler, notFound } from '@/lib/server/errors'
 import { resolveActor, resolveTenantScope } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { tenantSettings } from '@/lib/server/domain'
+import { noticeDeadline } from '@/lib/server/notice-deadline'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,9 +22,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }], take: 50,
   })
   const rows = sessions.map((session) => {
-    const phase = session.status === 'draft' ? 'initial' : 'amendment'
-    const minimumHours = phase === 'initial' ? policy.minimumNoticeHours : policy.minimumAmendmentHours
-    const deadlineAt = new Date(session.scheduledAt.getTime() - minimumHours * 60 * 60 * 1000)
+    const { phase, minimumHours, deadlineAt } = noticeDeadline(session, policy)
     const remainingMs = deadlineAt.getTime() - now.getTime()
     return {
       sessionId: session.id, number: session.number, year: session.year, type: session.type,
