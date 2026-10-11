@@ -19,6 +19,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run test:security
       - run: bun run test:session:preparation
+      - run: bun run test:session:journey
       - run: bun run test:voting:policy
       - run: bun run test:deliberative:roster
       - run: bun run test:voting:impediments

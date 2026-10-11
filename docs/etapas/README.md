@@ -32,5 +32,7 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [026 — Continuidade da transmissão](026-continuidade-transmissao.md) | Validação integrada local concluída | Testes de perda/retorno de sinal, reconciliação e roteiro operacional | Ensaio físico e homologação social |
 | [027 — Ensaio físico de mídia local](027-homologacao-midia-local.md) | Ensaio local concluído | RTMP→RTMPS, gravação, recuperação do encoder e receptor com evidência | Homologação com conta institucional e ambiente dedicado |
 | [028 — Replay local verificável](028-replay-local-verificavel.md) | Concluída localmente | Manifesto SHA-256, MP4, publicação controlada, player e isolamento por Câmara | Jornada completa e aceite institucional do vídeo |
+| [029 — Jornada completa em ensaio](029-jornada-completa-ensaio.md) | Concluída localmente para cenário fictício | Pauta, convocação, fala, votos, correção, ata, perda de mídia e duas Câmaras no mesmo teste | PostgreSQL e homologação regimental |
+| [030 — Base operacional PostgreSQL](030-base-operacional-saas.md) | Em andamento | DDL PostgreSQL e backup/restauração em contêiner efêmero | Adaptar cliente Prisma e mini-serviços SQLite antes de migrar dados |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

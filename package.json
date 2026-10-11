@@ -16,6 +16,8 @@
     "test:media:public-link": "bash scripts/test-media-public-link.sh",
     "test:media:archive": "bash scripts/test-recording-archive.sh",
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
+    "test:session:journey": "bash scripts/test-session-journey.sh",
+    "test:postgres:foundation": "bash scripts/test-postgres-foundation.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",
     "test:voting:impediments": "bash scripts/test-voting-impediments.sh",
