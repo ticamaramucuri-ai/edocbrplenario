@@ -31,7 +31,7 @@ import {
   issueVoteReceipts,
   type VotingOptionLite,
 } from '@/lib/server/voting-service'
-import { toVotingView, sessionLabel } from '@/lib/server/serializers'
+import { toVotingView, sessionLabel, parseResultCounts } from '@/lib/server/serializers'
 import { VOTING_MODE_LABEL } from '@/lib/contracts'
 
 export const dynamic = 'force-dynamic'
@@ -493,6 +493,28 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     }
 
     // ── annul ───────────────────────────────────────────────────────────
+    if (voting.matterId || voting.agendaItemId) {
+      const related = await tx.voting.findMany({ where: {
+        ...(voting.matterId ? { matterId: voting.matterId } : { agendaItemId: voting.agendaItemId }),
+        status: { in: ['ready', 'open', 'paused', 'closed'] },
+      }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } })
+      if (related[0]?.id !== voting.id) throw new DomainError('VOTING_INVALID_TRANSITION', 409,
+        'Deliberação posterior', 'Há outra votação válida ou pendente para esta matéria. Revise a deliberação mais recente antes de anular esta.')
+    }
+    const expectedMatterStatus = voting.resultStatus === 'aprovado' ? 'aprovado'
+      : voting.resultStatus === 'rejeitado' ? 'rejeitado' : 'incluida_pauta'
+    const expectedAgendaStatus = voting.resultStatus === 'aprovado' ? 'aprovado'
+      : voting.resultStatus === 'rejeitado' ? 'rejeitado' : 'em_discussao'
+    if (voting.matterId) {
+      const matter = await tx.legislativeMatter.findUniqueOrThrow({ where: { id: voting.matterId } })
+      if (matter.status !== expectedMatterStatus) throw new DomainError('VOTING_INVALID_TRANSITION', 409,
+        'Matéria alterada', 'A situação da matéria mudou após esta votação. Revise o processo antes de anular.')
+    }
+    if (voting.agendaItemId) {
+      const item = await tx.agendaItem.findUniqueOrThrow({ where: { id: voting.agendaItemId } })
+      if (item.status !== expectedAgendaStatus) throw new DomainError('VOTING_INVALID_TRANSITION', 409,
+        'Pauta alterada', 'O item de pauta mudou após esta votação. Revise a pauta antes de anular.')
+    }
     const updated = await tx.voting.update({
       where: { id: voting.id },
       data: {
@@ -524,7 +546,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       aggregateType: 'voting',
       aggregateId: voting.id,
       summary: `Votação anulada: ${voting.question.slice(0, 60)} — item e matéria revertidos.`,
-      before: { status: voting.status, resultStatus: voting.resultStatus },
+      before: { status: voting.status, resultStatus: voting.resultStatus,
+        resultCounts: parseResultCounts(voting.resultCounts),
+        memberBaseAtOpen: voting.memberBaseAtOpen },
       after: { status: 'annulled', resultStatus: 'anulado' },
       justification: body.justification ?? null,
       correlationId,

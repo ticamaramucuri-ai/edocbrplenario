@@ -84,12 +84,12 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
         select: { id: true, name: true, party: true, order: true },
       }),
       db.voting.findFirst({
-        where: { sessionId: selected.id, status: { in: ['open', 'paused', 'closed'] } },
+        where: { sessionId: selected.id, status: { in: ['open', 'paused', 'closed', 'annulled'] } },
         orderBy: { updatedAt: 'desc' },
         include: { votes: true, options: { orderBy: { order: 'asc' } } },
       }),
       db.voting.findMany({
-        where: { sessionId: selected.id, status: 'closed', resultStatus: { not: null } },
+        where: { sessionId: selected.id, status: { in: ['closed', 'annulled'] }, resultStatus: { not: null } },
         orderBy: { closedAt: 'desc' },
         take: 10,
         include: { options: { orderBy: { order: 'asc' } } },
@@ -110,6 +110,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
   let currentVoting: PublicLiveView['currentVoting'] = null
   if (currentVotingRaw) {
     const closed = currentVotingRaw.status === 'closed'
+    const resolved = closed || currentVotingRaw.status === 'annulled'
     const nominalDetail =
       closed && currentVotingRaw.mode !== 'secreto'
         ? (parseNominalDetail(currentVotingRaw.resultDetail) ?? []).map((d) => ({
@@ -125,7 +126,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       status: currentVotingRaw.status as VotingStatus,
       registeredCount: currentVotingRaw.votes.length,
       hidePartial: currentVotingRaw.hidePartial,
-      resultStatus: closed ? currentVotingRaw.resultStatus : null,
+      resultStatus: resolved ? currentVotingRaw.resultStatus : null,
       resultCounts: closed ? parseResultCounts(currentVotingRaw.resultCounts) : null,
       nominalDetail,
       // Aditivo (Fase 18): rótulos das opções regimentais customizadas
@@ -173,7 +174,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       resultCounts: parseResultCounts(v.resultCounts),
       closedAt: v.closedAt ? v.closedAt.toISOString() : null,
       nominalDetail:
-        v.mode !== 'secreto'
+        v.status === 'closed' && v.mode !== 'secreto'
           ? (parseNominalDetail(v.resultDetail) ?? []).map((d) => ({
               name: d.name,
               party: partyById.get(d.parliamentarianId) ?? '',

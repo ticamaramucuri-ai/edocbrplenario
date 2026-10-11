@@ -38,7 +38,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       db.agendaItem.findMany({ where: { sessionId: session.id }, orderBy: { order: 'asc' } }),
       currentAttendance(db, session.id, session.tenantId),
       db.voting.findMany({
-        where: { sessionId: session.id, status: 'closed', resultStatus: { not: null } },
+        where: { sessionId: session.id, status: { in: ['closed', 'annulled'] }, resultStatus: { not: null } },
         orderBy: { createdAt: 'asc' },
       }),
       db.speech.findMany({
@@ -113,7 +113,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     votings: votings.map((v) => {
       const partyByName = new Map(attendance.rows.map((r) => [r.name, r.party]))
       const nominal =
-        v.mode === 'nominal' && v.resultDetail
+        v.status === 'closed' && v.mode === 'nominal' && v.resultDetail
           ? (parseNominalDetail(v.resultDetail) ?? []).map((d) => ({
               name: d.name,
               party: partyByName.get(d.name) ?? '',

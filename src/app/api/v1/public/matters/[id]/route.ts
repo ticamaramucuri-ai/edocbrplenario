@@ -26,8 +26,8 @@ export const GET = apiHandler(async (req: Request, ctx, _correlationId) => {
   const [proceedings, votings, versions, parliamentarians, outcomes] = await Promise.all([
     db.proceeding.findMany({ where: { matterId: matter.id }, orderBy: { seq: 'asc' } }),
     db.voting.findMany({
-      where: { matterId: matter.id, status: 'closed', resultStatus: { not: null } },
-      orderBy: { closedAt: 'desc' },
+      where: { matterId: matter.id, status: { in: ['closed', 'annulled'] }, resultStatus: { not: null } },
+      orderBy: [{ closedAt: 'desc' }, { id: 'desc' }],
     }),
     db.matterVersion.findMany({
       where: { matterId: matter.id },

@@ -74,7 +74,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
         }
       : null,
     votings: votings
-      .filter((v) => v.status === 'closed' && v.resultStatus !== null)
+      .filter((v) => ['closed', 'annulled'].includes(v.status) && v.resultStatus !== null)
       .map((v) => toPublicVotingResult(v, partyById, v.impediments.length)),
     speeches: speeches.map(toPublicSpeech),
   })

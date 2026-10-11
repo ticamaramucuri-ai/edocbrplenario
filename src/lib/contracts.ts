@@ -960,6 +960,7 @@ export type PublicSessionDetail = {
     id: string
     question: string
     mode: VotingMode
+    status: 'closed' | 'annulled'
     resultStatus: string | null
     resultCounts: ResultCounts | null
     closedAt: string | null

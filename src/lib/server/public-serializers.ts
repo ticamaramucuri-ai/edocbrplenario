@@ -98,8 +98,9 @@ export function toPublicVotingResult(
     id: voting.id,
     question: voting.question,
     mode: voting.mode as 'nominal' | 'simbolico' | 'secreto',
+    status: voting.status as 'closed' | 'annulled',
     resultStatus: voting.resultStatus ?? null,
-    resultCounts: parseResultCounts(voting.resultCounts),
+    resultCounts: voting.status === 'closed' ? parseResultCounts(voting.resultCounts) : null,
     closedAt: voting.closedAt ? voting.closedAt.toISOString() : null,
     nominalDetail: voting.status === 'closed' ? publicNominalDetail(voting, partyById) : null,
     votingBasis: {
@@ -137,9 +138,9 @@ export function toPublicMatterDetail(
             question: lastVoting.question,
             mode: lastVoting.mode as 'nominal' | 'simbolico' | 'secreto',
             resultStatus: lastVoting.resultStatus,
-            resultCounts: parseResultCounts(lastVoting.resultCounts),
+            resultCounts: lastVoting.status === 'closed' ? parseResultCounts(lastVoting.resultCounts) : null,
             closedAt: lastVoting.closedAt ? lastVoting.closedAt.toISOString() : null,
-            nominalDetail: publicNominalDetail(lastVoting, partyById),
+            nominalDetail: lastVoting.status === 'closed' ? publicNominalDetail(lastVoting, partyById) : null,
           }
         : null,
     versions: versions

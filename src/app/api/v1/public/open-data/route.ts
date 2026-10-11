@@ -101,7 +101,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     const sessions = await db.session.findMany({
       where: { tenantId: tenant.id, status: { not: 'draft' } },
       orderBy: { scheduledAt: 'desc' },
-      include: { votings: { where: { status: 'closed', resultStatus: { not: null } } } },
+      include: { votings: { where: { status: { in: ['closed', 'annulled'] }, resultStatus: { not: null } } } },
     })
     const data = sessions.map((s) => ({
       id: s.id,
@@ -114,8 +114,9 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       results: s.votings.map((v) => ({
         question: v.question,
         mode: v.mode,
+        status: v.status,
         resultStatus: v.resultStatus,
-        counts: parseResultCounts(v.resultCounts),
+        counts: v.status === 'closed' ? parseResultCounts(v.resultCounts) : null,
       })),
     }))
     if (format === 'csv') {
@@ -127,7 +128,8 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
         dataHora: s.scheduledAt.toISOString(),
         situacao: s.status,
         pautaPublicada: s.agendaPublished ? 'sim' : 'não',
-        votacoesEncerradas: s.votings.length,
+        votacoesEncerradas: s.votings.filter((v) => v.status === 'closed').length,
+        votacoesAnuladas: s.votings.filter((v) => v.status === 'annulled').length,
         resultados: s.votings
           .map((v) => `${v.question.slice(0, 60)}: ${v.resultStatus}`)
           .join(' | '),
@@ -216,11 +218,11 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
   // ── dataset: votes (resultados por votação, sigilo preservado) ─────────
   const votings = await db.voting.findMany({
     where: {
-      status: 'closed',
+      status: { in: ['closed', 'annulled'] },
       resultStatus: { not: null },
       session: { tenantId: tenant.id },
     },
-    orderBy: { closedAt: 'desc' },
+    orderBy: [{ closedAt: 'desc' }, { id: 'desc' }],
     include: { session: true, impediments: { where: { revokedAt: null }, select: { id: true } } },
   })
   const parliamentarians = await db.parliamentarian.findMany({
@@ -235,9 +237,10 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     sessionYear: v.session.year,
     question: v.question,
     mode: v.mode,
+    status: v.status,
     rule: v.rule,
     resultStatus: v.resultStatus,
-    counts: parseResultCounts(v.resultCounts) as ResultCounts | null,
+    counts: v.status === 'closed' ? parseResultCounts(v.resultCounts) as ResultCounts | null : null,
     closedAt: v.closedAt ? v.closedAt.toISOString() : null,
     votingBasis: {
       presentAtOpen: v.presentAtOpen,
@@ -248,7 +251,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       impedimentCount: v.impediments.length,
     },
     // Votação secreta: nominalDetail SEMPRE null (sigilo do valor individual).
-    nominalDetail: publicNominalDetail(v, partyById),
+    nominalDetail: v.status === 'closed' ? publicNominalDetail(v, partyById) : null,
   }))
 
   if (format === 'csv') {
@@ -257,13 +260,14 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       sessao: `${v.session.number}/${v.session.year}`,
       pergunta: v.question,
       modo: v.mode,
+      situacaoVotacao: v.status,
       regra: v.rule,
       resultado: v.resultStatus ?? '',
-      sim: parseResultCounts(v.resultCounts)?.sim ?? 0,
-      nao: parseResultCounts(v.resultCounts)?.nao ?? 0,
-      abstencoes: parseResultCounts(v.resultCounts)?.abstencoes ?? 0,
-      naoRegistraram: parseResultCounts(v.resultCounts)?.naoRegistraram ?? 0,
-      presentes: parseResultCounts(v.resultCounts)?.presentes ?? 0,
+      sim: parseResultCounts(v.resultCounts)?.sim ?? null,
+      nao: parseResultCounts(v.resultCounts)?.nao ?? null,
+      abstencoes: parseResultCounts(v.resultCounts)?.abstencoes ?? null,
+      naoRegistraram: parseResultCounts(v.resultCounts)?.naoRegistraram ?? null,
+      presentes: parseResultCounts(v.resultCounts)?.presentes ?? null,
       presentesAbertura: v.presentAtOpen,
       presentesEncerramento: v.presentAtClose,
       quorumExigido: v.quorumAtOpen ?? v.requiredQuorum,
@@ -271,7 +275,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       politicaImpedimento: v.impedimentPolicyAtOpen,
       impedimentos: v.impediments.length,
       encerradaEm: fmt(v.closedAt),
-      nominal: v.mode === 'secreto' ? 'VOTAÇÃO SECRETA — SIGILO PRESERVADO' : nominalToText(publicNominalDetail(v, partyById)),
+      nominal: v.status === 'annulled' ? 'VOTAÇÃO ANULADA' : v.mode === 'secreto' ? 'VOTAÇÃO SECRETA — SIGILO PRESERVADO' : nominalToText(publicNominalDetail(v, partyById)),
     }))
     return new Response(toCsv(rows), {
       headers: {
