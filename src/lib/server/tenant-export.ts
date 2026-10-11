@@ -117,7 +117,7 @@ export async function buildTenantExport(tenantId: string): Promise<TenantExportP
         attendanceEvents: { orderBy: { createdAt: 'asc' } },
         votings: {
           orderBy: { createdAt: 'asc' },
-          include: { votes: { orderBy: { receivedAt: 'asc' } } },
+          include: { votes: { orderBy: { receivedAt: 'asc' } }, impediments: { orderBy: { createdAt: 'asc' } } },
         },
         speeches: { orderBy: { createdAt: 'asc' } },
       },
@@ -179,6 +179,7 @@ export async function buildTenantExport(tenantId: string): Promise<TenantExportP
       votings: s.votings.map((v) => ({
         ...v,
         // Voto secreto: participação mantida, valor JAMAIS exportado.
+        resultDetail: v.mode === 'secreto' ? null : v.resultDetail,
         votes: v.votes.map((vote) => ({ ...vote, value: v.mode === 'secreto' ? null : vote.value })),
       })),
     })),
@@ -217,6 +218,9 @@ export async function buildTenantExport(tenantId: string): Promise<TenantExportP
     (acc, s) => acc + s.votings.reduce((a, v) => a + v.votes.length, 0),
     0
   )
+  const impedimentsTotal = sessions.reduce(
+    (acc, s) => acc + s.votings.reduce((a, v) => a + v.impediments.length, 0), 0
+  )
 
   const counts: Record<string, number> = {
     users: users.length,
@@ -242,6 +246,7 @@ export async function buildTenantExport(tenantId: string): Promise<TenantExportP
     attendanceEvents: sum(sessions as unknown as Array<Record<string, unknown>>, 'attendanceEvents'),
     votings: sum(sessions as unknown as Array<Record<string, unknown>>, 'votings'),
     votes: votesTotal,
+    votingImpediments: impedimentsTotal,
     speeches: sum(sessions as unknown as Array<Record<string, unknown>>, 'speeches'),
     publications: publications.length,
     publicHearings: hearings.length,

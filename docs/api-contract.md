@@ -39,6 +39,7 @@ limit dos endpoints públicos.
   | session.transition | session_operator, presiding_officer, tenant_admin |
   | attendance.write | session_operator, tenant_admin |
   | voting.write (criar/transições) | session_operator, presiding_officer, tenant_admin |
+  | voting.impediment.reason.read (motivo no espelho e na minuta) | session_operator, presiding_officer, tenant_admin, legislative_admin, auditor, platform_owner |
   | vote.cast | session_operator, presiding_officer, parliamentarian (próprio) |
   | speech.write | session_operator, tenant_admin |
   | display.command | session_operator, tenant_admin |
@@ -48,6 +49,8 @@ limit dos endpoints públicos.
   | platform.read (system-status/alerts/help) | platform_owner, platform_support |
   | impersonation.manage | platform_owner, platform_support |
   | public.* | sem autenticação (rate limit REAL desde a Fase 19 — ver Onda 4) |
+
+O espelho (`GET /reports/session/:id`) e a minuta (`GET /reports/session/:id/ata`) incluem a base congelada e os impedimentos por votação. `reason` é `null` quando o papel não possui `voting.impediment.reason.read`. O dataset público `votes` e o detalhe público da sessão expõem apenas quórum, base, política e quantidade de impedimentos, sem nomes ou motivos.
 
 ## Rotas
 

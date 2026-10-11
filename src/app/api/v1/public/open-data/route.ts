@@ -221,7 +221,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       session: { tenantId: tenant.id },
     },
     orderBy: { closedAt: 'desc' },
-    include: { session: true },
+    include: { session: true, impediments: { where: { revokedAt: null }, select: { id: true } } },
   })
   const parliamentarians = await db.parliamentarian.findMany({
     where: { tenantId: tenant.id },
@@ -239,6 +239,14 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     resultStatus: v.resultStatus,
     counts: parseResultCounts(v.resultCounts) as ResultCounts | null,
     closedAt: v.closedAt ? v.closedAt.toISOString() : null,
+    votingBasis: {
+      presentAtOpen: v.presentAtOpen,
+      presentAtClose: v.presentAtClose,
+      requiredQuorum: v.quorumAtOpen ?? v.requiredQuorum,
+      memberBaseAtOpen: v.memberBaseAtOpen,
+      impedimentPolicyAtOpen: v.impedimentPolicyAtOpen,
+      impedimentCount: v.impediments.length,
+    },
     // Votação secreta: nominalDetail SEMPRE null (sigilo do valor individual).
     nominalDetail: publicNominalDetail(v, partyById),
   }))
@@ -256,6 +264,12 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       abstencoes: parseResultCounts(v.resultCounts)?.abstencoes ?? 0,
       naoRegistraram: parseResultCounts(v.resultCounts)?.naoRegistraram ?? 0,
       presentes: parseResultCounts(v.resultCounts)?.presentes ?? 0,
+      presentesAbertura: v.presentAtOpen,
+      presentesEncerramento: v.presentAtClose,
+      quorumExigido: v.quorumAtOpen ?? v.requiredQuorum,
+      baseMaioriaAbsoluta: v.memberBaseAtOpen,
+      politicaImpedimento: v.impedimentPolicyAtOpen,
+      impedimentos: v.impediments.length,
       encerradaEm: fmt(v.closedAt),
       nominal: v.mode === 'secreto' ? 'VOTAÇÃO SECRETA — SIGILO PRESERVADO' : nominalToText(publicNominalDetail(v, partyById)),
     }))

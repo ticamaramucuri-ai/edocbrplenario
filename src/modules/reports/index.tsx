@@ -51,6 +51,7 @@ import {
   type SessionSummary,
   type VoteRow,
   type VotingView,
+  type VotingBasisReportView,
 } from '@/lib/contracts'
 import { EmptyState, PageHeader } from '@/components/app/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -104,7 +105,25 @@ function VoteCounts({ voting }: { voting: VotingView }) {
   )
 }
 
-function VotingBlock({ voting }: { voting: VotingView }) {
+function VotingBasisBlock({ basis }: { basis: VotingBasisReportView | undefined }) {
+  if (!basis || basis.memberBaseAtOpen === null) return null
+  return <div className="mt-1 text-xs">
+    <p>Base da maioria absoluta: <strong>{basis.memberBaseAtOpen}</strong> membros · Quórum exigido: <strong>{basis.requiredQuorum ?? '—'}</strong>
+      {' '}· Presentes na abertura: <strong>{basis.presentAtOpen ?? '—'}</strong>
+      {basis.presentAtClose !== null && <> · Presentes no encerramento: <strong>{basis.presentAtClose}</strong></>}</p>
+    {basis.impediments.length > 0 && <>
+      <p>Impedimentos: {basis.impediments.length} · {basis.impedimentPolicyAtOpen === 'reduce_base'
+        ? 'base reduzida' : 'base mantida'}.</p>
+      <ul className="ml-4 list-disc">
+        {basis.impediments.map((item) => <li key={item.parliamentarianId}>
+          {item.name}{item.reason ? ` — ${item.reason}` : ''}
+        </li>)}
+      </ul>
+    </>}
+  </div>
+}
+
+function VotingBlock({ voting, basis }: { voting: VotingView; basis?: VotingBasisReportView }) {
   const isSecret = voting.mode === 'secreto'
   const nominalVotes: VoteRow[] =
     voting.mode === 'nominal' && voting.votes ? voting.votes.filter((v) => v.value !== null) : []
@@ -125,6 +144,7 @@ function VotingBlock({ voting }: { voting: VotingView }) {
       <div className="mt-0.5 text-xs">
         <VoteCounts voting={voting} />
       </div>
+      <VotingBasisBlock basis={basis} />
       {isSecret ? (
         <p className="mt-1 text-xs italic">
           Votação secreta — votos individuais preservados ({voting.registeredCount} voto(s) registrados).
@@ -241,6 +261,7 @@ function AtaDoc({ ata }: { ata: AtaReportView }) {
                       {v.counts.naoRegistraram} · Presentes: {v.counts.presentes}
                     </p>
                   )}
+                  <VotingBasisBlock basis={v.basis} />
                   {v.nominal && v.nominal.length > 0 ? (
                     <ul className="mt-1 ml-4 list-disc text-xs">
                       {v.nominal.map((n) => (
@@ -963,7 +984,7 @@ export default function ReportsModule() {
                       </p>
                       {item.resultSummary && <p className="ml-4 text-xs">{item.resultSummary}</p>}
                       {linked.map((v) => (
-                        <VotingBlock key={v.id} voting={v} />
+                        <VotingBlock key={v.id} voting={v} basis={report.votingBases[v.id]} />
                       ))}
                     </li>
                   )
@@ -979,7 +1000,7 @@ export default function ReportsModule() {
                 <span id="report-votings">3. Votações realizadas na sessão</span>
               </DocHeading>
               {unlinkedVotings.map((v) => (
-                <VotingBlock key={v.id} voting={v} />
+                <VotingBlock key={v.id} voting={v} basis={report.votingBases[v.id]} />
               ))}
             </section>
           )}

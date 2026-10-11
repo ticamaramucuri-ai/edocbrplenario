@@ -19,6 +19,8 @@ import {
   speechElapsedSeconds,
 } from '@/lib/server/serializers'
 import { SESSION_TYPE_LABEL, type AtaReportView } from '@/lib/contracts'
+import { loadVotingBases } from '@/lib/server/voting-report'
+import { PERMISSIONS } from '@/lib/server/rbac'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +53,8 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       }),
     ])
   if (!tenant) throw notFound('Câmara não encontrada.')
+
+  const votingBases = await loadVotingBases(db, votings, PERMISSIONS['voting.impediment.reason.read'].includes(actor.role))
 
   const settings = tenantSettings(tenant, parliamentarianCount)
   const chain = verifyChain(chainEvents)
@@ -124,6 +128,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
         result: v.resultStatus ?? '—',
         counts: parseResultCounts(v.resultCounts),
         nominal,
+        basis: votingBases[v.id],
       }
     }),
     speeches: speeches.map((s) => ({

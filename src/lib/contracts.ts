@@ -334,8 +334,18 @@ export type BootstrapView = {
 export type ReportView = {
   tenant: TenantView
   session: SessionDetail
+  votingBases: Record<string, VotingBasisReportView>
   auditChain: { events: number; valid: boolean; head: string | null }
   verificationCode: string
+}
+
+export type VotingBasisReportView = {
+  presentAtOpen: number | null
+  presentAtClose: number | null
+  requiredQuorum: number | null
+  memberBaseAtOpen: number | null
+  impedimentPolicyAtOpen: 'retain_base' | 'reduce_base' | null
+  impediments: Array<{ parliamentarianId: string; name: string; reason: string | null }>
 }
 
 export type PublicLiveView = {
@@ -953,6 +963,14 @@ export type PublicSessionDetail = {
     resultCounts: ResultCounts | null
     closedAt: string | null
     nominalDetail: Array<{ name: string; party: string; value: VoteValueOrEmpty }> | null
+    votingBasis: {
+      presentAtOpen: number | null
+      presentAtClose: number | null
+      requiredQuorum: number | null
+      memberBaseAtOpen: number | null
+      impedimentPolicyAtOpen: 'retain_base' | 'reduce_base' | null
+      impedimentCount: number
+    }
   }>
   speeches: Array<{ speakerName: string; kind: string; subject: string | null; durationSeconds: number }>
 }
@@ -993,6 +1011,7 @@ export type AtaReportView = {
     result: string
     counts: ResultCounts | null
     nominal: Array<{ name: string; party: string; value: VoteValueOrEmpty }> | null
+    basis: VotingBasisReportView
   }>
   speeches: Array<{ speakerName: string; kind: string; subject: string | null; durationSeconds: number }>
   closing: string

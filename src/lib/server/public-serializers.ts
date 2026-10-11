@@ -91,7 +91,8 @@ export function publicNominalDetail(
 
 export function toPublicVotingResult(
   voting: VotingRow,
-  partyById: Map<string, string>
+  partyById: Map<string, string>,
+  impedimentCount = 0
 ): PublicSessionDetail['votings'][number] {
   return {
     id: voting.id,
@@ -101,6 +102,15 @@ export function toPublicVotingResult(
     resultCounts: parseResultCounts(voting.resultCounts),
     closedAt: voting.closedAt ? voting.closedAt.toISOString() : null,
     nominalDetail: voting.status === 'closed' ? publicNominalDetail(voting, partyById) : null,
+    votingBasis: {
+      presentAtOpen: voting.presentAtOpen,
+      presentAtClose: voting.presentAtClose,
+      requiredQuorum: voting.quorumAtOpen ?? voting.requiredQuorum,
+      memberBaseAtOpen: voting.memberBaseAtOpen,
+      impedimentPolicyAtOpen: voting.impedimentPolicyAtOpen === 'retain_base' || voting.impedimentPolicyAtOpen === 'reduce_base'
+        ? voting.impedimentPolicyAtOpen : null,
+      impedimentCount,
+    },
   }
 }
 

@@ -87,6 +87,7 @@ const RBAC: Record<string, Role[]> = {
   'session.transition': ['session_operator', 'presiding_officer', 'tenant_admin'],
   'attendance.write': ['session_operator', 'tenant_admin'],
   'voting.write': ['session_operator', 'presiding_officer', 'tenant_admin'],
+  'voting.impediment.reason.read': ['session_operator', 'presiding_officer', 'tenant_admin', 'legislative_admin', 'auditor', 'platform_owner'],
   'vote.cast': ['session_operator', 'presiding_officer', 'parliamentarian'],
   'speech.write': ['session_operator', 'tenant_admin'],
   'display.command': ['session_operator', 'tenant_admin'],

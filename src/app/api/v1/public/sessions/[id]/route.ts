@@ -34,6 +34,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     db.voting.findMany({
       where: { sessionId: session.id },
       orderBy: { createdAt: 'asc' },
+      include: { impediments: { where: { revokedAt: null }, select: { id: true } } },
     }),
     db.speech.findMany({
       where: { sessionId: session.id, status: 'encerrado' },
@@ -74,7 +75,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       : null,
     votings: votings
       .filter((v) => v.status === 'closed' && v.resultStatus !== null)
-      .map((v) => toPublicVotingResult(v, partyById)),
+      .map((v) => toPublicVotingResult(v, partyById, v.impediments.length)),
     speeches: speeches.map(toPublicSpeech),
   })
 })

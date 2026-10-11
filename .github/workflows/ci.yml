@@ -22,6 +22,7 @@ jobs:
       - run: bun run test:voting:policy
       - run: bun run test:deliberative:roster
       - run: bun run test:voting:impediments
+      - run: bun run test:voting:report-basis
       - run: bun run test:media:domain
       - run: bun run test:media:integration
       - run: bun run build
