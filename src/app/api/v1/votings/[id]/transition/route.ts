@@ -21,6 +21,7 @@ import {
   VOTING_TRANSITIONS,
   currentAttendance,
   resultSummaryPhrase,
+  tenantSettings,
 } from '@/lib/server/domain'
 import {
   computeVotingResultAdvanced,
@@ -93,13 +94,31 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   }
 
   const result = await withTransaction(async (tx) => {
+    const current = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
+    if (current.version !== body.version || current.status !== voting.status) {
+      throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A votação mudou. Recarregue antes de executar a ação.')
+    }
     const now = new Date()
 
     // ── open ────────────────────────────────────────────────────────────
     if (body.action === 'open') {
-      const frozenIds = voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null
-      const { quorum, rows } = await currentAttendance(tx, session.id, session.tenantId, frozenIds)
+      const { quorum: fullQuorum, rows: fullRows } = await currentAttendance(tx, session.id, session.tenantId)
+      const tenant = await tx.tenant.findUniqueOrThrow({ where: { id: session.tenantId } })
+      const policy = tenantSettings(tenant).votingImpedimentPolicy
+      const impediments = await tx.votingImpediment.findMany({ where: { votingId: voting.id, revokedAt: null } })
+      if (impediments.length > 0 && policy === 'disabled') throw new DomainError('VOTING_INVALID_TRANSITION', 409,
+        'Política desativada', 'Há impedimentos registrados. Defina a política da Câmara ou revogue-os antes de abrir.')
+      const impededIds = new Set(impediments.map((row) => row.parliamentarianId))
+      if (impediments.some((row) => !fullRows.some((person) => person.parliamentarianId === row.parliamentarianId))) {
+        throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Base deliberativa alterada',
+          'Um parlamentar impedido não pertence mais à base deliberativa. Revogue o registro antes de abrir.')
+      }
+      const eligibleIds = fullRows.map((row) => row.parliamentarianId).filter((id) => !impededIds.has(id))
+      const { quorum } = impediments.length > 0
+        ? await currentAttendance(tx, session.id, session.tenantId, eligibleIds)
+        : { quorum: fullQuorum }
       const required = voting.requiredQuorum ?? quorum.required
+      const memberBase = policy === 'reduce_base' ? eligibleIds.length : fullQuorum.total
       if (quorum.present < required) {
         throw new DomainError(
           'QUORUM_INSUFFICIENT',
@@ -115,8 +134,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           openedAt: voting.openedAt ?? now,
           presentAtOpen: voting.presentAtOpen ?? quorum.present,
           quorumAtOpen: voting.quorumAtOpen ?? required,
-          memberBaseAtOpen: voting.memberBaseAtOpen ?? quorum.total,
-          eligibleVoterIdsAtOpen: voting.eligibleVoterIdsAtOpen ?? JSON.stringify(rows.map((row) => row.parliamentarianId)),
+          memberBaseAtOpen: memberBase,
+          eligibleVoterIdsAtOpen: JSON.stringify(eligibleIds),
+          impedimentPolicyAtOpen: impediments.length > 0 ? policy : null,
           version: voting.version + 1,
         },
       })
@@ -129,7 +149,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         summary: `Votação aberta: ${voting.question.slice(0, 80)} (presentes: ${quorum.present}).`,
         before: { status: voting.status },
         after: { status: 'open', presentAtOpen: quorum.present, quorumAtOpen: required,
-          eligibleVoterIdsAtOpen: voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) : rows.map((row) => row.parliamentarianId) },
+          memberBaseAtOpen: memberBase, impedimentPolicyAtOpen: impediments.length > 0 ? policy : null,
+          eligibleVoterIdsAtOpen: eligibleIds },
         correlationId,
         ip: clientIp(req),
       })

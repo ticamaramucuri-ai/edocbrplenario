@@ -15,6 +15,7 @@
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",
+    "test:voting:impediments": "bash scripts/test-voting-impediments.sh",
     "media:reconcile": "bun scripts/media-reconcile.ts",
     "media:health": "bun scripts/media-health.ts",
     "test:realtime:smoke": "bun scripts/realtime-auth-smoke.ts",

@@ -58,7 +58,7 @@ export type VotingTransition = {
 }
 
 export const VOTING_TRANSITIONS: Record<VotingAction, VotingTransition> = {
-  open: { from: ['ready', 'paused'], to: 'open', requires: [] },
+  open: { from: ['ready'], to: 'open', requires: [] },
   pause: { from: ['open'], to: 'paused', requires: [] },
   resume: { from: ['paused'], to: 'open', requires: [] },
   close: { from: ['open', 'paused'], to: 'closed', requires: [] },
@@ -194,6 +194,8 @@ export function tenantSettings(
       ? Number(parsed.noticeAlertLeadHours) : 24,
     noticeRecipientPolicy: parsed.noticeRecipientPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
     deliberativeRosterPolicy: parsed.deliberativeRosterPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
+    votingImpedimentPolicy: parsed.votingImpedimentPolicy === 'retain_base' || parsed.votingImpedimentPolicy === 'reduce_base'
+      ? parsed.votingImpedimentPolicy : 'disabled',
     votingPoliciesByMatterType: parseVotingPolicies(parsed.votingPoliciesByMatterType),
   }
 }

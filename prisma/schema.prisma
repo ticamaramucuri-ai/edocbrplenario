@@ -264,6 +264,7 @@ model Parliamentarian {
   users           User[]
   attendanceEvents AttendanceEvent[]
   votes           Vote[]
+  votingImpediments VotingImpediment[]
   speeches        Speech[]
   boardPositions  BoardPosition[]
   committeeMembers CommitteeMember[]
@@ -529,6 +530,7 @@ model Voting {
   quorumAtOpen   Int?
   memberBaseAtOpen Int?    // denominador da maioria absoluta congelado na abertura
   eligibleVoterIdsAtOpen String? // JSON IDs da base deliberativa congelada
+  impedimentPolicyAtOpen String? // retain_base|reduce_base; congelada na abertura
   presentAtClose Int?
   quorumAtClose  Int?
   hidePartial    Boolean   @default(false)
@@ -546,6 +548,7 @@ model Voting {
   votes       Vote[]
   options     VotingOption[]
   receipts    VoteReceipt[]
+  impediments VotingImpediment[]
 
   @@index([sessionId, status])
 }
@@ -569,6 +572,24 @@ model Vote {
 }
 
 // ─── Discursos ──────────────────────────────────────────────────────────────
+
+model VotingImpediment {
+  id                String    @id @default(cuid())
+  votingId          String
+  parliamentarianId String
+  reason            String
+  actorId           String
+  createdAt         DateTime  @default(now())
+  revokedAt         DateTime?
+  revokedBy         String?
+  revocationReason  String?
+
+  voting        Voting        @relation(fields: [votingId], references: [id], onDelete: Cascade)
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+
+  @@unique([votingId, parliamentarianId])
+  @@index([votingId, revokedAt])
+}
 
 model Speech {
   id                String    @id @default(cuid())

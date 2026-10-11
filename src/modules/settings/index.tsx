@@ -86,6 +86,7 @@ export default function SettingsModule() {
       noticeAlertLeadHours: 24,
       noticeRecipientPolicy: 'active',
       deliberativeRosterPolicy: 'active',
+      votingImpedimentPolicy: 'disabled',
       votingPoliciesByMatterType: {},
     }
   )
@@ -416,6 +417,17 @@ export default function SettingsModule() {
                     <option value="mandate_and_leave">Mandatos, afastamentos e suplentes</option>
                   </select>
                   <p className="text-xs text-muted-foreground">Afeta presença, quórum e votos. A votação congela os participantes elegíveis ao abrir. Ative somente após conferir mandatos e licenças.</p>
+                </div>
+                <div className="grid gap-2 sm:max-w-md">
+                  <Label htmlFor="tenant-voting-impediment">Impedimento por votação</Label>
+                  <select id="tenant-voting-impediment" className="h-9 rounded-md border bg-background px-3 text-sm"
+                    value={settings.votingImpedimentPolicy}
+                    onChange={(e) => setSetting('votingImpedimentPolicy', e.target.value as TenantSettings['votingImpedimentPolicy'])}>
+                    <option value="disabled">Desativado — aguarda definição regimental</option>
+                    <option value="retain_base">Exclui o voto; mantém a base para maioria absoluta</option>
+                    <option value="reduce_base">Exclui o voto e reduz a base da maioria absoluta</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">Em ambas as opções, o parlamentar impedido não conta como presente para o quórum da votação; o mínimo numérico exigido permanece o configurado. Defina conforme o regimento da Câmara antes de ativar.</p>
                 </div>
                 {(Object.keys(MATTER_TYPE_LABEL) as MatterType[]).map((type) => {
                   const policy = settings.votingPoliciesByMatterType[type]

@@ -147,6 +147,18 @@ function VotingPanel({
   const options = votingOptions(voting)
   const [closeOpen, setCloseOpen] = useState(false)
   const [annulOpen, setAnnulOpen] = useState(false)
+  const [impededPerson, setImpededPerson] = useState('')
+  const [impedimentReason, setImpedimentReason] = useState('')
+  const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [revocationReason, setRevocationReason] = useState('')
+  const impedimentQuery = useQuery({ queryKey: ['voting-impediments', voting.id],
+    queryFn: () => api.votingImpediments(voting.id), enabled: canWrite })
+  const impedimentMutation = useMutation({
+    mutationFn: (vars: { action: 'register' | 'revoke'; parliamentarianId: string; reason: string }) =>
+      api.changeVotingImpediment(voting.id, { ...vars, version: voting.version }),
+    onSuccess: () => { setImpededPerson(''); setImpedimentReason(''); setRevokingId(null); setRevocationReason(''); invalidate(); impedimentQuery.refetch();
+      toast.success('Impedimento atualizado') },
+  })
 
   const transition = useMutation({
     mutationFn: (vars: {
@@ -268,6 +280,38 @@ function VotingPanel({
             quórum mínimo ({voting.requiredQuorum ?? data.quorum.required} presentes).
           </p>
         )}
+        {canWrite && impedimentQuery.data && (
+          <div className="rounded-lg border p-3 text-sm">
+            <h3 className="font-semibold">Impedimentos desta votação</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{impedimentQuery.data.policyAtOpen
+              ? `Política congelada na abertura: ${impedimentQuery.data.policyAtOpen === 'reduce_base' ? 'reduz a base da maioria absoluta' : 'mantém a base da maioria absoluta'}.`
+              : impedimentQuery.data.policy === 'disabled' ? 'Recurso desativado nas configurações desta Câmara.'
+                : `Política atual: ${impedimentQuery.data.policy === 'reduce_base' ? 'reduz' : 'mantém'} a base da maioria absoluta.`}</p>
+            {impedimentQuery.data.impediments.map((item) => <div key={item.id} className="mt-2 flex items-start justify-between gap-2 border-t pt-2">
+              <span><strong>{item.parliamentarianName}</strong> — {item.reason}</span>
+              {voting.status === 'ready' && <Button size="sm" variant="outline" disabled={impedimentMutation.isPending}
+                onClick={() => setRevokingId(item.parliamentarianId)}>
+                Revogar
+              </Button>}
+            </div>)}
+            {voting.status === 'ready' && impedimentQuery.data.policy !== 'disabled' && (
+              <div className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-[1fr_2fr_auto]">
+                <select aria-label="Parlamentar impedido" className="h-9 rounded-md border bg-background px-2" value={impededPerson}
+                  onChange={(e) => setImpededPerson(e.target.value)}>
+                  <option value="">Selecione o parlamentar</option>
+                  {data.attendance.filter((row) => !impedimentQuery.data.impediments.some((item) => item.parliamentarianId === row.parliamentarianId))
+                    .map((row) => <option key={row.parliamentarianId} value={row.parliamentarianId}>{row.name}</option>)}
+                </select>
+                <Input aria-label="Justificativa do impedimento" placeholder="Justificativa (mínimo 10 caracteres)" value={impedimentReason}
+                  onChange={(e) => setImpedimentReason(e.target.value)} />
+                <Button size="sm" disabled={!impededPerson || impedimentReason.trim().length < 10 || impedimentMutation.isPending}
+                  onClick={() => impedimentMutation.mutate({ action: 'register', parliamentarianId: impededPerson, reason: impedimentReason.trim() })}>
+                  Registrar
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
         {voting.status === 'paused' && (
           <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
             Votação pausada — os votos já registrados são mantidos.
@@ -280,7 +324,8 @@ function VotingPanel({
         )}
 
         {showGrid && (
-          <VotingGrid voting={voting} present={data.attendance.filter((a) => a.present)} invalidate={invalidate} />
+          <VotingGrid voting={voting} present={data.attendance.filter((a) => a.present &&
+            (!voting.eligibleVoterIdsAtOpen || voting.eligibleVoterIdsAtOpen.includes(a.parliamentarianId)))} invalidate={invalidate} />
         )}
 
         {showResult && <VotingResult voting={voting} />}
@@ -347,6 +392,21 @@ function VotingPanel({
           transition.mutate({ action: 'annul', extra: { justification } })
         }}
       />
+      <Dialog open={!!revokingId} onOpenChange={(open) => { if (!open) { setRevokingId(null); setRevocationReason('') } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Revogar impedimento</DialogTitle>
+            <DialogDescription>Informe o motivo da correção. A revogação ficará registrada na auditoria.</DialogDescription>
+          </DialogHeader>
+          <Textarea aria-label="Justificativa da revogação" value={revocationReason}
+            onChange={(e) => setRevocationReason(e.target.value)} placeholder="Justificativa (mínimo 10 caracteres)" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRevokingId(null); setRevocationReason('') }}>Cancelar</Button>
+            <Button disabled={!revokingId || revocationReason.trim().length < 10 || impedimentMutation.isPending}
+              onClick={() => { if (revokingId) impedimentMutation.mutate({ action: 'revoke', parliamentarianId: revokingId,
+                reason: revocationReason.trim() }) }}>Confirmar revogação</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

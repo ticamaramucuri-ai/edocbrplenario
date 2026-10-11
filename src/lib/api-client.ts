@@ -278,6 +278,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, version, ...extra }),
     }),
+  votingImpediments: (id: string) => request<{ policy: 'disabled' | 'retain_base' | 'reduce_base'; policyAtOpen: string | null;
+    impediments: Array<{ id: string; parliamentarianId: string; parliamentarianName: string; reason: string }> }>(`/votings/${id}/impediments`),
+  changeVotingImpediment: (id: string, data: { action: 'register' | 'revoke'; parliamentarianId: string; version: number; reason: string }) =>
+    request<{ version: number }>(`/votings/${id}/impediments`, { method: 'POST', body: JSON.stringify(data) }),
   castVote: (votingId: string, parliamentarianId: string, value: string, commandId: string) =>
     request<{ vote: VoteRow; registeredCount: number }>(`/votings/${votingId}/votes`, {
       method: 'POST',

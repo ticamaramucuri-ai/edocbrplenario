@@ -368,6 +368,8 @@ export function toVotingView(
     presentAtOpen: voting.presentAtOpen ?? null,
     requiredQuorum: voting.requiredQuorum ?? null,
     memberBaseAtOpen: voting.memberBaseAtOpen ?? null,
+    eligibleVoterIdsAtOpen: voting.eligibleVoterIdsAtOpen ? JSON.parse(voting.eligibleVoterIdsAtOpen) as string[] : null,
+    impedimentPolicyAtOpen: (voting.impedimentPolicyAtOpen as VotingView['impedimentPolicyAtOpen']) ?? null,
     presentAtClose: voting.presentAtClose ?? null,
     resultStatus: (voting.resultStatus as VotingView['resultStatus']) ?? null,
     resultCounts: parseResultCounts(voting.resultCounts),

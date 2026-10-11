@@ -121,6 +121,7 @@ export type TenantSettings = {
   noticeAlertLeadHours: number
   noticeRecipientPolicy: NoticeRecipientPolicy
   deliberativeRosterPolicy: NoticeRecipientPolicy
+  votingImpedimentPolicy: 'disabled' | 'retain_base' | 'reduce_base'
   votingPoliciesByMatterType: Partial<Record<MatterType, MatterVotingPolicy>>
 }
 
@@ -241,6 +242,8 @@ export type VotingView = {
   presentAtOpen: number | null
   requiredQuorum: number | null
   memberBaseAtOpen: number | null
+  eligibleVoterIdsAtOpen: string[] | null
+  impedimentPolicyAtOpen: 'retain_base' | 'reduce_base' | null
   presentAtClose: number | null
   resultStatus: 'aprovado' | 'rejeitado' | 'empate' | 'sem_quorum' | 'anulado' | null
   resultCounts: ResultCounts | null
