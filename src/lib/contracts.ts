@@ -234,6 +234,7 @@ export type AttendanceRow = {
   bloc: string | null
   boardRole: string
   photoUrl: string | null
+  partyEmblemUrl: string | null
   status: AttendanceStatus
   present: boolean
   lastEventAt: string | null
@@ -341,6 +342,8 @@ export type ParliamentarianView = {
   committee: string | null
   email: string | null
   phone: string | null
+  photoUrl: string | null
+  partyEmblemUrl: string | null
   active: boolean
 }
 
@@ -403,7 +406,7 @@ export type PublicLiveView = {
   } | null
   transmissionLink: { url: string; publishedAt: string } | null
   localReplay: { durationSeconds: number; publishedAt: string; expiresAt: string | null } | null
-  presentMembers: Array<{ name: string; party: string }>
+  presentMembers: Array<{ name: string; party: string; photoUrl: string | null; partyEmblemUrl: string | null }>
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   currentVoting: {
     id: string
@@ -414,7 +417,7 @@ export type PublicLiveView = {
     hidePartial: boolean
     resultStatus: string | null
     resultCounts: ResultCounts | null
-    nominalDetail: Array<{ name: string; party: string; value: VoteValueOrEmpty }> | null
+    nominalDetail: Array<{ name: string; party: string; photoUrl: string | null; partyEmblemUrl: string | null; value: VoteValueOrEmpty }> | null
   } | null
   lastResults: Array<{
     id: string
@@ -422,9 +425,9 @@ export type PublicLiveView = {
     resultStatus: string | null
     resultCounts: ResultCounts | null
     closedAt: string | null
-    nominalDetail: Array<{ name: string; party: string; value: VoteValueOrEmpty }> | null
+    nominalDetail: Array<{ name: string; party: string; photoUrl: string | null; partyEmblemUrl: string | null; value: VoteValueOrEmpty }> | null
   }>
-  speakingNow: { speakerName: string; subject: string | null; plannedSeconds: number; elapsedSeconds: number; status: SpeechStatus } | null
+  speakingNow: { speakerName: string; photoUrl: string | null; party: string | null; partyEmblemUrl: string | null; subject: string | null; plannedSeconds: number; elapsedSeconds: number; status: SpeechStatus } | null
 }
 
 // ─── Erros (Problem Details) ────────────────────────────────────────────────

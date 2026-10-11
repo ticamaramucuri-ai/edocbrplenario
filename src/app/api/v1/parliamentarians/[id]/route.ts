@@ -7,12 +7,13 @@ import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { withTransaction } from '@/lib/server/tx'
-import { apiHandler, clientIp } from '@/lib/server/errors'
+import { apiHandler, clientIp, DomainError } from '@/lib/server/errors'
 import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { loadParliamentarian } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { toParliamentarianView } from '@/lib/server/serializers'
+import { isTenantImageUrl } from '@/lib/server/parliamentarian-images'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,8 @@ const patchSchema = z.object({
   committee: z.string().max(120).nullable().optional(),
   email: z.string().email().nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
+  photoUrl: z.string().nullable().optional(),
+  partyEmblemUrl: z.string().nullable().optional(),
   order: z.number().int().min(0).optional(),
   active: z.boolean().optional(),
 })
@@ -35,6 +38,10 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
   const body = patchSchema.parse(await req.json())
 
   const current = await loadParliamentarian(actor, id)
+  if ((body.photoUrl !== current.photoUrl && !isTenantImageUrl(body.photoUrl, current.tenantId)) ||
+      (body.partyEmblemUrl !== current.partyEmblemUrl && !isTenantImageUrl(body.partyEmblemUrl, current.tenantId))) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Imagem inválida', 'A imagem deve pertencer à Câmara atual.')
+  }
   const updated = await withTransaction(async (tx) => {
     const parliamentarian = await tx.parliamentarian.update({
       where: { id: current.id },
@@ -54,6 +61,8 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
         boardRole: current.boardRole,
         committee: current.committee,
         active: current.active,
+        photoUrl: current.photoUrl,
+        partyEmblemUrl: current.partyEmblemUrl,
       },
       after: {
         name: parliamentarian.name,
@@ -62,6 +71,8 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
         boardRole: parliamentarian.boardRole,
         committee: parliamentarian.committee,
         active: parliamentarian.active,
+        photoUrl: parliamentarian.photoUrl,
+        partyEmblemUrl: parliamentarian.partyEmblemUrl,
       },
       correlationId,
       ip: clientIp(req),

@@ -11,6 +11,8 @@ import { resolveActor, resolveTenantScope } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { writeAudit } from '@/lib/server/audit'
 import { toParliamentarianView } from '@/lib/server/serializers'
+import { isTenantImageUrl } from '@/lib/server/parliamentarian-images'
+import { DomainError } from '@/lib/server/errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,8 @@ const createSchema = z.object({
   committee: z.string().max(120).optional(),
   email: z.string().email().optional(),
   phone: z.string().max(30).optional(),
+  photoUrl: z.string().nullable().optional(),
+  partyEmblemUrl: z.string().nullable().optional(),
 })
 
 export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => {
@@ -39,6 +43,9 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
   requirePermission(actor, 'parliamentarian.write')
   const tenantId = await resolveTenantScope(req, actor)
   const body = createSchema.parse(await req.json())
+  if (!isTenantImageUrl(body.photoUrl, tenantId) || !isTenantImageUrl(body.partyEmblemUrl, tenantId)) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Imagem inválida', 'A imagem deve pertencer à Câmara atual.')
+  }
 
   const created = await withTransaction(async (tx) => {
     const last = await tx.parliamentarian.findFirst({
@@ -56,6 +63,8 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         committee: body.committee ?? null,
         email: body.email ?? null,
         phone: body.phone ?? null,
+        photoUrl: body.photoUrl ?? null,
+        partyEmblemUrl: body.partyEmblemUrl ?? null,
         order: (last?.order ?? -1) + 1,
         active: true,
       },
@@ -67,7 +76,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       aggregateType: 'parliamentarian',
       aggregateId: parliamentarian.id,
       summary: `Parlamentar cadastrado: ${parliamentarian.name} (${parliamentarian.party}).`,
-      after: { name: parliamentarian.name, party: parliamentarian.party, boardRole: parliamentarian.boardRole },
+      after: { name: parliamentarian.name, party: parliamentarian.party, boardRole: parliamentarian.boardRole, photoUrl: parliamentarian.photoUrl, partyEmblemUrl: parliamentarian.partyEmblemUrl },
       correlationId,
       ip: clientIp(req),
     })

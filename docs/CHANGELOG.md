@@ -4,6 +4,13 @@ Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). O piloto es
 **0.x** (pré-1.0). Cada fase do prompt mestre entrega código funcional, migration, seed,
 documentação e verificação reproduzível.
 
+## [Não lançado] — Etapa 042
+
+- Cadastro e edição de parlamentares com foto e emblema do partido opcionais, prévia e remoção.
+- Imagens exibidas nos cartões, na presença e no telão (presença, discurso e resultado nominal público).
+- Upload com permissão, isolamento por Câmara, normalização WebP e migração PostgreSQL 0003.
+- Procedimento e limites operacionais em [`etapas/042-imagens-parlamentares-telao.md`](etapas/042-imagens-parlamentares-telao.md).
+
 ## [0.13.0] — Onda 5 (Fases 21–24): prontidão para produção, confiança de acesso, ecossistema de API e crescimento do SaaS
 
 Fechamento da Onda 5 com **34/34 tasks concluídas**: o sistema alcança **26 módulos**,

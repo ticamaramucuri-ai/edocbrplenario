@@ -256,6 +256,7 @@ export type AttendanceParliamentarian = {
   bloc: string | null
   boardRole: string
   photoUrl: string | null
+  partyEmblemUrl: string | null
   order: number
 }
 
@@ -286,6 +287,7 @@ export function deriveAttendance(
       bloc: p.bloc,
       boardRole: p.boardRole,
       photoUrl: p.photoUrl,
+      partyEmblemUrl: p.partyEmblemUrl,
       status,
       present: status === 'presente',
       lastEventAt: last ? last.createdAt.toISOString() : null,

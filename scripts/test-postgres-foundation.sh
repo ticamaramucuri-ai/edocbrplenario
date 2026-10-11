@@ -23,10 +23,11 @@ sed -e 's/provider = "sqlite"/provider = "postgresql"/' \
   -e "/provider = \"prisma-client-js\"/a\\  output = \"$temporary/client\"" \
   prisma/schema.prisma > "$temporary/schema.prisma"
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma validate --schema "$temporary/schema.prisma" >/dev/null
+sed '/partyEmblemUrl String?/d' "$temporary/schema.prisma" > "$temporary/schema-baseline.prisma"
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma migrate diff \
-  --from-empty --to-schema-datamodel "$temporary/schema.prisma" --script > "$temporary/generated.sql"
+  --from-empty --to-schema-datamodel "$temporary/schema-baseline.prisma" --script > "$temporary/generated.sql"
 if ! cmp -s "$temporary/generated.sql" prisma/postgres/migrations/0001_baseline.sql; then
-  echo 'Baseline PostgreSQL divergiu do schema Prisma; regenere e revise 0001_baseline.sql.' >&2
+  echo 'Baseline PostgreSQL histórico divergiu do schema anterior à migração 0003.' >&2
   exit 1
 fi
 docker run -d --rm --name "$container" -p 127.0.0.1::5432 -e POSTGRES_PASSWORD=test-only postgres:16-alpine >/dev/null

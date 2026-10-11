@@ -4,10 +4,10 @@
  * Módulo Parlamentares — cadastro da legislatura: grid de cards com filtros,
  * criação/edição (Dialog) e desativação (AlertDialog, soft delete).
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Mail, MoreVertical, Pencil, Phone, ShieldOff, Users } from 'lucide-react'
+import { ImagePlus, Mail, MoreVertical, Pencil, Phone, ShieldOff, Users } from 'lucide-react'
 
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
@@ -15,7 +15,7 @@ import { initials } from '@/lib/format'
 import { BOARD_ROLE_LABEL, type ParliamentarianView } from '@/lib/contracts'
 import { EmptyState, PageHeader } from '@/components/app/page-header'
 import { PartyBadge } from '@/components/app/badges'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -68,6 +68,8 @@ type FormState = {
   committee: string
   email: string
   phone: string
+  photoUrl: string | null
+  partyEmblemUrl: string | null
 }
 
 const emptyForm: FormState = {
@@ -78,6 +80,8 @@ const emptyForm: FormState = {
   committee: '',
   email: '',
   phone: '',
+  photoUrl: null,
+  partyEmblemUrl: null,
 }
 
 function formFromParliamentarian(p: ParliamentarianView): FormState {
@@ -89,7 +93,46 @@ function formFromParliamentarian(p: ParliamentarianView): FormState {
     committee: p.committee ?? '',
     email: p.email ?? '',
     phone: p.phone ?? '',
+    photoUrl: p.photoUrl,
+    partyEmblemUrl: p.partyEmblemUrl,
   }
+}
+
+function ImageField({ label, id, url, file, onFile, onRemove }: {
+  label: string; id: string; url: string | null; file: File | null
+  onFile: (file: File) => void; onRemove: () => void
+}) {
+  const [preview, setPreview] = useState<string | null>(null)
+  const previewRef = useRef<string | null>(null)
+  useEffect(() => {
+    return () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current) }
+  }, [])
+  const source = file ? preview : url
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-center gap-3 rounded-lg border p-2">
+        {source ? <img src={source} alt={`Prévia: ${label}`} className="size-16 rounded-md object-contain" />
+          : <div className="flex size-16 items-center justify-center rounded-md bg-muted text-muted-foreground"><ImagePlus className="size-6" /></div>}
+        <div className="min-w-0 space-y-1">
+          <Input id={id} type="file" accept="image/jpeg,image/png,image/webp" className="h-auto max-w-full text-xs" onChange={(event) => {
+            const selected = event.target.files?.[0]
+            if (!selected) return
+            if (selected.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(selected.type)) {
+              toast.error('Use JPG, PNG ou WebP de até 5 MB.')
+              event.target.value = ''
+              return
+            }
+            if (previewRef.current) URL.revokeObjectURL(previewRef.current)
+            previewRef.current = URL.createObjectURL(selected)
+            setPreview(previewRef.current)
+            onFile(selected)
+          }} />
+          {source && <button type="button" className="text-xs text-destructive hover:underline" onClick={() => { if (previewRef.current) URL.revokeObjectURL(previewRef.current); previewRef.current = null; setPreview(null); onRemove(); const input = document.getElementById(id) as HTMLInputElement | null; if (input) input.value = '' }}>Remover imagem</button>}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ParliamentarianForm({
@@ -105,9 +148,15 @@ function ParliamentarianForm({
   // Inicializado na montagem (o pai remonta o form a cada abertura com key)
   const [form, setForm] = useState<FormState>(() => (editing ? formFromParliamentarian(editing) : emptyForm))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [emblemFile, setEmblemFile] = useState<File | null>(null)
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const [photo, emblem] = await Promise.all([
+        photoFile ? api.uploadParliamentarianImage('photo', photoFile) : Promise.resolve(null),
+        emblemFile ? api.uploadParliamentarianImage('partyEmblem', emblemFile) : Promise.resolve(null),
+      ])
       const payload = {
         name: form.name.trim(),
         party: form.party.trim().toUpperCase(),
@@ -116,6 +165,8 @@ function ParliamentarianForm({
         committee: form.committee.trim() || null,
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
+        photoUrl: photo?.url ?? form.photoUrl,
+        partyEmblemUrl: emblem?.url ?? form.partyEmblemUrl,
       }
       return editing ? api.updateParliamentarian(editing.id, payload) : api.createParliamentarian(payload)
     },
@@ -126,6 +177,7 @@ function ParliamentarianForm({
       queryClient.invalidateQueries({ queryKey: ['parliamentarians'] })
       onOpenChange(false)
     },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Não foi possível salvar o parlamentar.'),
   })
 
   const submit = () => {
@@ -155,6 +207,13 @@ function ParliamentarianForm({
         </DialogHeader>
 
         <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ImageField label="Foto do parlamentar" id="parl-photo" url={form.photoUrl} file={photoFile}
+              onFile={setPhotoFile} onRemove={() => { setPhotoFile(null); setForm((f) => ({ ...f, photoUrl: null })) }} />
+            <ImageField label="Emblema do partido" id="parl-emblem" url={form.partyEmblemUrl} file={emblemFile}
+              onFile={setEmblemFile} onRemove={() => { setEmblemFile(null); setForm((f) => ({ ...f, partyEmblemUrl: null })) }} />
+          </div>
+          <p className="text-xs text-muted-foreground">Imagens opcionais, JPG/PNG/WebP até 5 MB. Elas serão exibidas no cadastro e no telão.</p>
           <div className="grid gap-2">
             <Label htmlFor="parl-name">Nome completo *</Label>
             <Input
@@ -401,6 +460,7 @@ export default function ParliamentariansModule() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="size-11">
+                      {p.photoUrl && <AvatarImage src={p.photoUrl} alt={p.name} />}
                       <AvatarFallback className="bg-primary/15 text-sm font-bold text-primary">
                         {initials(p.name) || '—'}
                       </AvatarFallback>
@@ -445,7 +505,10 @@ export default function ParliamentariansModule() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <PartyBadge party={p.party} bloc={p.bloc} />
+                  <div className="flex items-center gap-2">
+                    {p.partyEmblemUrl && <img src={p.partyEmblemUrl} alt={`Emblema ${p.party}`} className="size-7 object-contain" />}
+                    <PartyBadge party={p.party} bloc={p.bloc} />
+                  </div>
                   {!p.active && <Badge variant="destructive">Inativo</Badge>}
                 </div>
 

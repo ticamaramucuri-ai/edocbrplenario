@@ -163,6 +163,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       bloc: parliamentarian.bloc ?? null,
       boardRole: parliamentarian.boardRole,
       photoUrl: parliamentarian.photoUrl ?? null,
+      partyEmblemUrl: parliamentarian.partyEmblemUrl ?? null,
       status: spec.status,
       present: spec.status === 'presente',
       lastEventAt: new Date().toISOString(),

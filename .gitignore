@@ -14,6 +14,7 @@ db/*.backup.*
 mini-services/realtime/checkpoint.json
 tool-results/
 recordings/
+upload/parliamentarian-images/
 *.key
 *.pem
 *.p12

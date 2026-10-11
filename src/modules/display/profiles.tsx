@@ -58,6 +58,19 @@ export type ProfileProps = {
   now: number
 }
 
+function MemberImages({ photoUrl, partyEmblemUrl, name, size = 'small' }: {
+  photoUrl: string | null; partyEmblemUrl: string | null; name: string; size?: 'small' | 'large'
+}) {
+  if (!photoUrl && !partyEmblemUrl) return null
+  const large = size === 'large'
+  return (
+    <span className="flex shrink-0 items-center gap-2">
+      {photoUrl && <img src={photoUrl} alt={`Foto de ${name}`} className={cn('rounded-full border border-white/20 object-cover', large ? 'size-28 sm:size-36' : 'size-10')} />}
+      {partyEmblemUrl && <img src={partyEmblemUrl} alt="Emblema do partido" className={cn('rounded bg-white/95 p-1 object-contain', large ? 'size-16 sm:size-20' : 'size-9')} />}
+    </span>
+  )
+}
+
 export function ProfileView({ profile, view, primary, accent, now }: ProfileProps) {
   switch (profile) {
     case 'presenca':
@@ -156,7 +169,8 @@ function PresenceProfile({ view, primary }: { view: PublicLiveViewExt | null; pr
       <div className="mx-auto grid w-full max-w-6xl grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
         {members.map((m) => (
           <div key={m.name} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-            <span
+            {(m.photoUrl || m.partyEmblemUrl) && <MemberImages photoUrl={m.photoUrl} partyEmblemUrl={m.partyEmblemUrl} name={m.name} />}
+            {!m.photoUrl && <span
               className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold"
               style={{ backgroundColor: `${primary}33`, color: '#fff' }}
               aria-hidden
@@ -166,7 +180,7 @@ function PresenceProfile({ view, primary }: { view: PublicLiveViewExt | null; pr
                 .map((p) => p[0])
                 .slice(0, 2)
                 .join('')}
-            </span>
+            </span>}
             <div className="min-w-0">
               <p className="truncate text-[clamp(1rem,1.8vw,1.4rem)] font-semibold leading-tight">{m.name}</p>
               <p className="font-mono text-sm text-zinc-400">{m.party}</p>
@@ -475,7 +489,8 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
           <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
             {result.nominalDetail.map((d) => (
               <li key={d.name} className="flex items-center justify-between gap-3 border-b border-white/5 py-1.5">
-                <span className="truncate text-[clamp(0.95rem,1.6vw,1.3rem)] font-medium">
+                <span className="flex min-w-0 items-center gap-2 truncate text-[clamp(0.95rem,1.6vw,1.3rem)] font-medium">
+                  <MemberImages photoUrl={d.photoUrl} partyEmblemUrl={d.partyEmblemUrl} name={d.name} />
                   {d.name} <span className="font-mono text-sm text-zinc-500">{d.party}</span>
                 </span>
                 <VoteTag value={d.value} options={customOptions} />
@@ -567,7 +582,7 @@ function SpeechProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
   const remaining = planned - elapsed
   const over = elapsed > planned
   const warn = !over && remaining <= 30
-  const party = view?.presentMembers.find((m) => m.name === speech.speakerName)?.party
+  const party = speech.party
   const timerCls = over
     ? 'animate-pulse text-rose-400'
     : warn
@@ -584,6 +599,7 @@ function SpeechProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
       <h1 className="max-w-5xl text-[clamp(2.2rem,7vw,5.5rem)] font-bold leading-tight">
         {speech.speakerName}
       </h1>
+      <MemberImages photoUrl={speech.photoUrl} partyEmblemUrl={speech.partyEmblemUrl} name={speech.speakerName} size="large" />
       {party && <p className="font-mono text-[clamp(1rem,2vw,1.5rem)] text-zinc-400">{party}</p>}
       {speech.subject && (
         <p className="max-w-4xl text-[clamp(1.1rem,2.4vw,1.9rem)] text-zinc-300">{speech.subject}</p>

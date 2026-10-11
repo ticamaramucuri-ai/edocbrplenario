@@ -256,6 +256,7 @@ model Parliamentarian {
   email       String?
   phone       String?
   photoUrl    String?
+  partyEmblemUrl String?
   active      Boolean  @default(true)
   order       Int      @default(0)
   createdAt   DateTime @default(now())

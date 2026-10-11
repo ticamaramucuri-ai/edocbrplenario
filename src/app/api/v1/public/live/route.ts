@@ -83,7 +83,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       currentAttendance(db, selected.id, tenant.id),
       db.parliamentarian.findMany({
         where: { tenantId: tenant.id, active: true },
-        select: { id: true, name: true, party: true, order: true },
+        select: { id: true, name: true, party: true, photoUrl: true, partyEmblemUrl: true, order: true },
       }),
       db.voting.findFirst({
         where: { sessionId: selected.id, status: { in: ['open', 'paused', 'closed', 'annulled'] } },
@@ -107,7 +107,11 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       db.sessionRecording.findUnique({ where: { sessionId: selected.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
     ])
 
-  const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
+  const memberById = new Map(parliamentarians.map((p) => [p.id, p]))
+  const nominalMember = (id: string) => {
+    const member = memberById.get(id)
+    return { party: member?.party ?? '', photoUrl: member?.photoUrl ?? null, partyEmblemUrl: member?.partyEmblemUrl ?? null }
+  }
   // Fase 18: rótulos das opções customizadas são públicos (telão/portal)
   const publicOptions = (rows: Array<{ key: string; label: string; order: number }>) =>
     rows.map((o) => ({ key: o.key, label: o.label, order: o.order }))
@@ -119,7 +123,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       closed && currentVotingRaw.mode !== 'secreto'
         ? (parseNominalDetail(currentVotingRaw.resultDetail) ?? []).map((d) => ({
             name: d.name,
-            party: partyById.get(d.parliamentarianId) ?? '',
+            ...nominalMember(d.parliamentarianId),
             value: d.value,
           }))
         : null
@@ -175,7 +179,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     })),
     presentMembers: attendance.rows
       .filter((r) => r.present)
-      .map((r) => ({ name: r.name, party: r.party })),
+      .map((r) => ({ name: r.name, party: r.party, photoUrl: r.photoUrl, partyEmblemUrl: r.partyEmblemUrl })),
     currentVoting,
     lastResults: closedVotings.map((v) => ({
       id: v.id,
@@ -187,7 +191,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
         v.status === 'closed' && v.mode !== 'secreto'
           ? (parseNominalDetail(v.resultDetail) ?? []).map((d) => ({
               name: d.name,
-              party: partyById.get(d.parliamentarianId) ?? '',
+              ...nominalMember(d.parliamentarianId),
               value: d.value,
             }))
           : null,
@@ -197,6 +201,9 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     speakingNow: speaking
       ? {
           speakerName: speaking.parliamentarian?.name ?? speaking.externalSpeaker ?? 'Orador',
+          photoUrl: speaking.parliamentarian?.photoUrl ?? null,
+          party: speaking.parliamentarian?.party ?? null,
+          partyEmblemUrl: speaking.parliamentarian?.partyEmblemUrl ?? null,
           subject: speaking.subject ?? null,
           plannedSeconds: speaking.plannedSeconds,
           elapsedSeconds:

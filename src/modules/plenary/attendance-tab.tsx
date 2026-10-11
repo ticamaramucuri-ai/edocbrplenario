@@ -16,7 +16,7 @@ import type { AttendanceRow, SessionDetail } from '@/lib/contracts'
 import { ATTENDANCE_STATUS_LABEL, BOARD_ROLE_LABEL } from '@/lib/contracts'
 import { fmtTime, initials } from '@/lib/format'
 import { PartyBadge, PresenceBadge } from '@/components/app/badges'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -169,6 +169,7 @@ function MemberCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar className="size-10 border">
+              {member.photoUrl && <AvatarImage src={member.photoUrl} alt={member.name} />}
               <AvatarFallback className={cn('text-xs font-bold', avatarClass(member.bloc))}>
                 {initials(member.name)}
               </AvatarFallback>
@@ -180,7 +181,10 @@ function MemberCard({
               </p>
             </div>
           </div>
-          <PartyBadge party={member.party} bloc={member.bloc} />
+          <div className="flex items-center gap-2">
+            {member.partyEmblemUrl && <img src={member.partyEmblemUrl} alt={`Emblema ${member.party}`} className="size-7 object-contain" />}
+            <PartyBadge party={member.party} bloc={member.bloc} />
+          </div>
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-2">

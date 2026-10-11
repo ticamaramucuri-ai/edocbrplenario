@@ -315,6 +315,18 @@ export const api = {
 
   // Cadastros
   listParliamentarians: () => request<{ parliamentarians: ParliamentarianView[] }>('/parliamentarians'),
+  uploadParliamentarianImage: async (kind: 'photo' | 'partyEmblem', file: File) => {
+    const form = new FormData()
+    form.set('kind', kind)
+    form.set('file', file)
+    const headers = new Headers()
+    const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+    if (actorId) headers.set('x-actor-id', actorId)
+    const response = await fetch(`${BASE}/parliamentarians/images`, { method: 'POST', headers, body: form })
+    const result = await response.json()
+    if (!response.ok) throw new ApiRequestError(result as ApiError)
+    return result as { url: string }
+  },
   createParliamentarian: (data: Partial<ParliamentarianView>) =>
     request<{ parliamentarian: ParliamentarianView }>('/parliamentarians', {
       method: 'POST',

@@ -202,6 +202,8 @@ export function toParliamentarianView(p: ParlRow): ParliamentarianView {
     committee: p.committee ?? null,
     email: p.email ?? null,
     phone: p.phone ?? null,
+    photoUrl: p.photoUrl ?? null,
+    partyEmblemUrl: p.partyEmblemUrl ?? null,
     active: p.active,
   }
 }
