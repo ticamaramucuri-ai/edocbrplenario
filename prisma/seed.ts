@@ -729,9 +729,10 @@ async function main() {
   await db.matterVersion.create({ data: { matterId: pl43, version: 2, text: 'Art. 1º Fica criado o Dia Municipal de Conscientização sobre a Dislexia, a ser observado anualmente em 8 de outubro. § 1º As campanhas educativas serão produzidas em parceria com a Secretaria Municipal de Educação. § 2º Incluem-se atividades de formação continuada para professores da rede municipal.', authorName: 'Comissão de Educação e Cultura', createdAt: at(-6, 15) } })
   await db.matterVersion.create({ data: { matterId: pl45, version: 1, text: 'Art. 1º Fica instituída a Semana Municipal de Combate ao Desperdício de Alimentos, no período de 16 a 22 de setembro, com ações de educação alimentar e apoio a bancos de alimentos.', authorName: 'Marta Cardoso', createdAt: at(-15, 8) } })
   await db.matterVersion.create({ data: { matterId: pl46, version: 1, text: 'Art. 1º Fica o Poder Executivo autorizado a conceder auxílio-transporte aos servidores da educação básica do Município, na forma desta Lei.', authorName: 'Executivo Municipal', createdAt: at(-8, 8) } })
-  await db.matterAttachment.create({ data: { matterId: pl43, name: 'Texto integral (substitutivo).pdf', kind: 'texto_integral', sizeBytes: 182400, url: '/download/pl43-substitutivo.pdf', createdAt: at(-6, 15) } })
-  await db.matterAttachment.create({ data: { matterId: pl43, name: 'Parecer CCJ nº 12.pdf', kind: 'parecer', sizeBytes: 96700, url: '/download/pl43-parecer-ccj.pdf', createdAt: at(-6, 16) } })
-  await db.matterAttachment.create({ data: { matterId: pl46, name: 'Mensagem do Executivo.pdf', kind: 'anexo', sizeBytes: 74300, url: '/download/pl46-mensagem.pdf', createdAt: at(-8, 9) } })
+  // Exemplos de metadados: sem PDF real, não publicar URL de download fictícia.
+  await db.matterAttachment.create({ data: { matterId: pl43, name: 'Texto integral (substitutivo).pdf', kind: 'texto_integral', sizeBytes: 0, createdAt: at(-6, 15) } })
+  await db.matterAttachment.create({ data: { matterId: pl43, name: 'Parecer CCJ nº 12.pdf', kind: 'parecer', sizeBytes: 0, createdAt: at(-6, 16) } })
+  await db.matterAttachment.create({ data: { matterId: pl46, name: 'Mensagem do Executivo.pdf', kind: 'anexo', sizeBytes: 0, createdAt: at(-8, 9) } })
 
   // Protocolo (auto-numerado por ano)
   const protocolSeed = [

@@ -35,6 +35,11 @@ with sqlite3.connect(sys.argv[2]) as snapshot:
     print(f'Snapshot SQLite validado: {total} linhas.')
 PY
 snapshot_ms="$(($(date +%s%3N) - start_ms))"
+asset_args=()
+if [[ -n "${MEDIA_RECORDINGS_ROOT:-}" && -n "${MEDIA_REPLAY_ROOT:-}" ]]; then
+  asset_args=(--recordings-root "$MEDIA_RECORDINGS_ROOT" --replay-root "$MEDIA_REPLAY_ROOT")
+fi
+python3 scripts/audit-external-assets.py --source "$temporary/source.db" --strict "${asset_args[@]}"
 docker run -d --rm --name "$container" -p 127.0.0.1::5432 \
   -e POSTGRES_PASSWORD=replica-only postgres:16-alpine >/dev/null
 for attempt in {1..30}; do
@@ -59,6 +64,13 @@ for table in Tenant Session Voting Vote MatterAttachment SessionRecording; do
   restored_count="$(docker exec "$container" psql -At -U postgres -d cutoverproof -c "SELECT count(*) FROM \"$table\"")"
   test "$original_count" = "$restored_count" || { echo "Restauração divergente em $table" >&2; exit 1; }
 done
+sed -e 's/provider = "sqlite"/provider = "postgresql"/' \
+  -e "/provider = \"prisma-client-js\"/a\\  output = \"$temporary/client\"" \
+  prisma/schema.prisma > "$temporary/schema.prisma"
+DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+  bunx prisma generate --schema "$temporary/schema.prisma" >/dev/null
+DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+  POSTGRES_TEST_CLIENT="$temporary/client" bun scripts/postgres-restored-smoke.ts
 python3 - "$temporary/source.db" <<'PY'
 import sqlite3
 import sys

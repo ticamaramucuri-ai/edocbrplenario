@@ -36,5 +36,12 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [030 — Base operacional PostgreSQL](030-base-operacional-saas.md) | Em andamento | DDL PostgreSQL e backup/restauração em contêiner efêmero | Adaptar cliente Prisma e mini-serviços SQLite antes de migrar dados |
 | [031 — Operação, acessibilidade e capacidade](031-operacao-acessibilidade-capacidade.md) | Em andamento | Checklist no painel, isolamento, teclado e ensaio 21 votos/40 leituras | Leitor de tela e equipamento real |
 | [032 — Dois destinos RTMPS locais](032-multiplos-destinos-locais.md) | Prova técnica local concluída | Dois receptores, falha independente, recuperação e gravação H.264/AAC | Banda dedicada e homologação social |
+| [033 — Outbox PostgreSQL](033-realtime-postgres.md) | Concluída localmente | Leitura e confirmação dos eventos por Câmara | Operação piloto |
+| [034 — Webhooks PostgreSQL](034-webhooks-postgres.md) | Concluída localmente | Entrega e retry em PostgreSQL | Operação piloto |
+| [035 — Scheduler PostgreSQL](035-scheduler-postgres.md) | Concluída localmente | Jobs e saúde em PostgreSQL | Operação piloto |
+| [036 — Serviços integrados PostgreSQL](036-ensaio-integrado-postgres.md) | Ensaio local concluído | Serviços, DDL e testes integrados | Migração de dados |
+| [037 — Executor e cópia](037-executor-copia-postgres.md) | Ensaio sintético concluído | Migrações versionadas e cópia transacional | Réplica do piloto |
+| [038 — Réplica do piloto](038-ensaio-replica-piloto.md) | Ensaio local concluído | 70 tabelas e 448 linhas conciliadas | Inventário e leituras funcionais |
+| [039 — Ativos e réplica funcional](039-inventario-ativos-replica-funcional.md) | Ensaio local concluído | Links fictícios corrigidos, auditoria de arquivos e leitura Prisma por Câmara | Rotas HTTP e carga representativa |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

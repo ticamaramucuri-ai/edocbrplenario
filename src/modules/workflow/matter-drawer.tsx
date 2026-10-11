@@ -442,6 +442,7 @@ export default function MatterDrawer({
                           <Link2 className="size-3.5" aria-hidden /> Abrir
                         </a>
                       )}
+                      {!a.url && <span className="text-xs text-muted-foreground">Arquivo não disponível</span>}
                     </li>
                   ))}
                 </ul>
