@@ -34,6 +34,7 @@ const settingsSchema = z
     noticeRecipientPolicy: z.enum(['active', 'mandate_and_leave']).optional(),
     deliberativeRosterPolicy: z.enum(['active', 'mandate_and_leave']).optional(),
     votingImpedimentPolicy: z.enum(['disabled', 'retain_base', 'reduce_base']).optional(),
+    replayVisibilityDays: z.number().int().min(1).max(3650).nullable().optional(),
     votingPoliciesByMatterType: z.partialRecord(z.enum(['projeto_de_lei', 'decreto_legislativo', 'requerimento', 'indicacao', 'mocao', 'emenda']),
       z.object({ rule: z.enum(['maioria_simples', 'maioria_absoluta', 'unanimidade']), quorumMinimum: z.number().int().min(1).max(100) }).strict()).optional(),
   })

@@ -176,6 +176,28 @@ latestSegmentAt }` a partir da configuração e do catálogo de gravações do
 MediaMTX para o caminho exato da sessão. A presença de segmentos não atesta
 integridade, continuidade ou presença de áudio. `Cache-Control: no-store`.
 
+### GET/POST `/api/v1/sessions/:id/transmission/archive`
+Etapa 028. GET exige `media.read` e apresenta o manifesto por sessão (segmentos,
+duração, SHA-256, lacunas e estado). `?verify=1` recalcula os hashes do replay
+e dos segmentos de origem; `integrity` indica `valid|invalid`. POST exige
+`media.manage`, `{ action: 'build'|'publish'|'withdraw', version,
+idempotencyKey, gapJustification? }`. `build` só aceita sessão `closed` e
+acompanhamento de mídia `ended`, inspeciona H.264/AAC, gera MP4 local e registra
+manifesto. `publish` requer arquivo e segmentos íntegros; lacunas exigem
+justificativa de ao menos 10 caracteres. `withdraw` remove a exibição pública.
+Todas as ações registram comando idempotente, auditoria e outbox. Arquivos não
+entram no banco. `MEDIA_RECORDINGS_ROOT` e `MEDIA_REPLAY_ROOT` devem ser
+diretórios absolutos privados no servidor.
+
+### GET `/api/v1/public/sessions/:id/replay?tenant=slug`
+Serve o MP4 somente quando publicado, não expirado e pertencente à Câmara
+solicitada. Antes de servir, compara tamanho e SHA-256 com o registro. Aceita
+um intervalo `Range: bytes=início-fim` (206), rejeita intervalo inválido (416)
+e usa `Cache-Control: no-store`. O portal ao vivo e o detalhe público mostram
+o player somente enquanto o replay estiver publicado. O prazo de visibilidade
+`replayVisibilityDays` é configurável por Câmara (1–3650 dias ou `null` para
+retirada manual); sua expiração não apaga o arquivo original.
+
 ### POST `/api/v1/sessions/:id/attendance`
 Body: `{ parliamentarianId, action, note?, source? }`
 Actions: `check_in`, `check_out` (saída temporária), `return`, `mark_licenca`,

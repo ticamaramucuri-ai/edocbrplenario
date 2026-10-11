@@ -253,6 +253,10 @@ function LiveTab({
             <h3 className="font-bold">Transmissão da sessão</h3>
             <a href={data.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-medium underline" style={{ color: data.tenant.primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão na plataforma</a>
           </section>}
+          {data.localReplay && <section aria-label="Replay local da sessão" className="rounded-lg border border-zinc-200 p-4">
+            <h3 className="font-bold">Replay da sessão</h3>
+            <video controls preload="metadata" className="mt-3 w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(data.session.id)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label={`Replay da ${data.session.label}`} />
+          </section>}
           {/* Card Sessão */}
           <section aria-label="Sessão atual" className="rounded-lg border border-zinc-200 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -889,6 +893,7 @@ function SessionDetailSheet({
               </span>
             </div>
             {session.transmissionLink && <a href={session.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium underline" style={{ color: primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão desta sessão</a>}
+            {session.localReplay && <section aria-label="Replay local da sessão" className="space-y-2"><p className="font-medium">Replay local</p><video controls preload="metadata" className="w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(sessionId)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label="Replay desta sessão" /></section>}
 
             {/* Pauta publicada */}
             <section>

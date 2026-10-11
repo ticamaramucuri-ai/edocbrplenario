@@ -66,6 +66,9 @@ export type ApiErrorCode =
   | 'MEDIA_PUBLIC_NOT_READY'
   | 'MEDIA_TRANSMISSION_MISSING'
   | 'MEDIA_PUBLIC_LINK_MISSING'
+  | 'MEDIA_ARCHIVE_INVALID'
+  | 'MEDIA_ARCHIVE_UNAVAILABLE'
+  | 'MEDIA_ARCHIVE_TAMPERED'
   | 'INTERNAL_ERROR'
 
 const TYPE_SLUG: Record<ApiErrorCode, string> = {
@@ -123,6 +126,9 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   MEDIA_PUBLIC_NOT_READY: 'media-public-not-ready',
   MEDIA_TRANSMISSION_MISSING: 'media-transmission-missing',
   MEDIA_PUBLIC_LINK_MISSING: 'media-public-link-missing',
+  MEDIA_ARCHIVE_INVALID: 'media-archive-invalid',
+  MEDIA_ARCHIVE_UNAVAILABLE: 'media-archive-unavailable',
+  MEDIA_ARCHIVE_TAMPERED: 'media-archive-tampered',
   INTERNAL_ERROR: 'internal-error',
 }
 

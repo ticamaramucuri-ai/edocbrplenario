@@ -198,6 +198,9 @@ export function tenantSettings(
     votingImpedimentPolicy: parsed.votingImpedimentPolicy === 'retain_base' || parsed.votingImpedimentPolicy === 'reduce_base'
       ? parsed.votingImpedimentPolicy : 'disabled',
     votingPoliciesByMatterType: parseVotingPolicies(parsed.votingPoliciesByMatterType),
+    replayVisibilityDays: Number.isInteger(parsed.replayVisibilityDays)
+      && Number(parsed.replayVisibilityDays) >= 1 && Number(parsed.replayVisibilityDays) <= 3650
+      ? Number(parsed.replayVisibilityDays) : null,
   }
 }
 

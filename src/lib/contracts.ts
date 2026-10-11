@@ -75,6 +75,27 @@ export type MediaRecordingView = {
   latestSegmentAt: string | null
 }
 
+export type RecordingArchiveView = {
+  recording: null | {
+    id: string
+    sessionId: string
+    status: 'verified' | 'published' | 'withdrawn'
+    version: number
+    manifestSha256: string
+    replaySha256: string
+    replayBytes: string
+    durationSeconds: number
+    gapCount: number
+    segmentCount: number
+    segments: Array<{ name: string; bytes: number; sha256: string; durationSeconds: number; startedAt: string; codecs: string[] }>
+    verifiedAt: string
+    publishedAt: string | null
+    expiresAt: string | null
+  }
+  integrity?: 'valid' | 'invalid' | null
+  replayed?: boolean
+}
+
 export type VotingStatus = 'draft' | 'ready' | 'open' | 'paused' | 'closed' | 'annulled' | 'cancelled'
 export type VotingMode = 'nominal' | 'simbolico' | 'secreto'
 export type VotingRule = 'maioria_simples' | 'maioria_absoluta' | 'unanimidade'
@@ -125,6 +146,8 @@ export type TenantSettings = {
   deliberativeRosterPolicy: NoticeRecipientPolicy
   votingImpedimentPolicy: 'disabled' | 'retain_base' | 'reduce_base'
   votingPoliciesByMatterType: Partial<Record<MatterType, MatterVotingPolicy>>
+  /** Prazo de exibição do replay local; null exige retirada manual. Não apaga o original. */
+  replayVisibilityDays: number | null
 }
 
 export type TenantView = {
@@ -364,6 +387,7 @@ export type PublicLiveView = {
     requiredQuorum: number
   } | null
   transmissionLink: { url: string; publishedAt: string } | null
+  localReplay: { durationSeconds: number; publishedAt: string; expiresAt: string | null } | null
   presentMembers: Array<{ name: string; party: string }>
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   currentVoting: {
@@ -953,6 +977,7 @@ export type PublicSessionSummary = {
 export type PublicSessionDetail = {
   session: PublicSessionSummary
   transmissionLink: { url: string; publishedAt: string } | null
+  localReplay: { durationSeconds: number; publishedAt: string; expiresAt: string | null } | null
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   agendaRevision: { number: number; publishedAt: string; justification: string | null; noticeSha256: string | null } | null
   attendance: {

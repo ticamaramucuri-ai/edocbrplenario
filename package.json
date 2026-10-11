@@ -14,6 +14,7 @@
     "test:media:domain": "bun test tests/media-status.test.ts tests/media-control.test.ts",
     "test:media:integration": "bash scripts/test-media-reconciliation.sh",
     "test:media:public-link": "bash scripts/test-media-public-link.sh",
+    "test:media:archive": "bash scripts/test-recording-archive.sh",
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",

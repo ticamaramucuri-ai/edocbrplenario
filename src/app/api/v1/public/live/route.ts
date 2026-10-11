@@ -64,6 +64,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       },
       session: null,
       transmissionLink: null,
+      localReplay: null,
       presentMembers: [],
       agenda: [],
       currentVoting: null,
@@ -74,7 +75,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
   }
 
   const isLive = Boolean(live)
-  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking, transmission] =
+  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking, transmission, recording] =
     await Promise.all([
       selected.agendaPublished
         ? db.agendaItem.findMany({ where: { sessionId: selected.id }, orderBy: { order: 'asc' } })
@@ -103,6 +104,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
           })
         : Promise.resolve(null),
       db.transmission.findUnique({ where: { sessionId: selected.id }, select: { publicUrl: true, publicPublishedAt: true } }),
+      db.sessionRecording.findUnique({ where: { sessionId: selected.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
     ])
 
   const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
@@ -147,6 +149,9 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     },
     transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
+      : null,
+    localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > now)
+      ? { durationSeconds: recording.durationSeconds, publishedAt: recording.publishedAt.toISOString(), expiresAt: recording.expiresAt?.toISOString() ?? null }
       : null,
     session: {
       id: selected.id,

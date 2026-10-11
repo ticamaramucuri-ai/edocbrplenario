@@ -20,6 +20,7 @@ const LABELS = {
 export function TransmissionTab({ sessionId }: { sessionId: string }) {
   const queryClient = useQueryClient()
   const [busy, setBusy] = useState(false)
+  const [archiveBusy, setArchiveBusy] = useState(false)
   const can = useApp((state) => state.can)
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['transmission', sessionId],
@@ -36,6 +37,32 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
     queryFn: () => api.getMediaRecording(sessionId),
     refetchInterval: 10000,
   })
+  const archive = useQuery({
+    queryKey: ['recording-archive', sessionId],
+    queryFn: () => api.getRecordingArchive(sessionId),
+  })
+
+  async function archiveCommand(action: 'build' | 'publish' | 'withdraw') {
+    if (archiveBusy) return
+    const current = archive.data?.recording
+    let gapJustification: string | undefined
+    if (action === 'publish') {
+      if (current?.gapCount) {
+        const answer = window.prompt(`Foram detectadas ${current.gapCount} lacuna(s). Registre uma justificativa para publicar:`)
+        if (!answer || answer.trim().length < 10) return
+        gapJustification = answer.trim()
+      }
+      if (!window.confirm('Você conferiu o replay completo, incluindo vídeo e áudio, e autoriza sua publicação?')) return
+    }
+    setArchiveBusy(true)
+    try {
+      await api.commandRecordingArchive(sessionId, { action, version: current?.version ?? 1, idempotencyKey: crypto.randomUUID(), gapJustification })
+      await queryClient.invalidateQueries({ queryKey: ['recording-archive', sessionId] })
+      toast.success(action === 'build' ? 'Replay preparado e manifesto registrado.' : action === 'publish' ? 'Replay publicado no portal.' : 'Replay retirado do portal.')
+    } catch {
+      // A API apresenta o erro operacional.
+    } finally { setArchiveBusy(false) }
+  }
 
   async function command(action: 'prepare' | 'start_monitoring' | 'stop_monitoring') {
     if (!data || busy) return
@@ -168,6 +195,27 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
             {recording.data.latestSegmentAt && <p>Último segmento iniciado: {new Date(recording.data.latestSegmentAt).toLocaleString('pt-BR')}</p>}
             <p className="text-muted-foreground">O catálogo indica segmentos associados à sessão. A integridade e o áudio do arquivo exigem verificação separada.</p>
           </>}
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-2">
+        <CardHeader><CardTitle className="text-base">Replay local verificável</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {archive.isLoading && <p>Consultando manifesto…</p>}
+          {archive.isError && <p className="text-destructive">Não foi possível consultar o replay local.</p>}
+          {!archive.data?.recording && <p className="text-muted-foreground">Nenhum replay preparado. Encerre a sessão e o acompanhamento da mídia antes de gerar o manifesto.</p>}
+          {archive.data?.recording && <>
+            <p>Estado: <strong>{archive.data.recording.status === 'published' ? 'publicado' : archive.data.recording.status === 'withdrawn' ? 'retirado' : 'verificado, aguardando publicação'}</strong></p>
+            <p>Segmentos: {archive.data.recording.segmentCount} · Duração catalogada: {Math.round(archive.data.recording.durationSeconds)} s · Lacunas: {archive.data.recording.gapCount}</p>
+            <p className="break-all text-xs text-muted-foreground">SHA-256 do replay: {archive.data.recording.replaySha256}</p>
+            {archive.data.recording.expiresAt && <p>Exibição pública até {new Date(archive.data.recording.expiresAt).toLocaleString('pt-BR')}.</p>}
+            <p>A integridade consultada confere o replay e os segmentos de origem. O operador deve assistir e ouvir o arquivo antes de publicar.</p>
+            <Button size="sm" variant="outline" disabled={archiveBusy} onClick={() => void api.getRecordingArchive(sessionId, true).then((result) => toast[result.integrity === 'valid' ? 'success' : 'error'](result.integrity === 'valid' ? 'Arquivo e segmentos íntegros.' : 'Integridade não confirmada.')).catch(() => undefined)}>Verificar integridade</Button>
+          </>}
+          {can('media.manage') && <div className="flex flex-wrap gap-2">
+            <Button disabled={archiveBusy || transmission.status !== 'ended' || archive.data?.recording?.status === 'published'} onClick={() => void archiveCommand('build')}>{archive.data?.recording ? 'Preparar nova versão' : 'Preparar replay'}</Button>
+            {archive.data?.recording && archive.data.recording.status !== 'published' && <Button variant="outline" disabled={archiveBusy} onClick={() => void archiveCommand('publish')}>Publicar replay</Button>}
+            {archive.data?.recording?.status === 'published' && <Button variant="outline" disabled={archiveBusy} onClick={() => void archiveCommand('withdraw')}>Retirar replay</Button>}
+          </div>}
         </CardContent>
       </Card>
     </div>

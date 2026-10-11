@@ -31,5 +31,6 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [025 — Link público da transmissão](025-link-publico-transmissao.md) | Concluída localmente | Confirmação do operador, publicação e retirada do link por sessão e Câmara | Continuidade e teste físico |
 | [026 — Continuidade da transmissão](026-continuidade-transmissao.md) | Validação integrada local concluída | Testes de perda/retorno de sinal, reconciliação e roteiro operacional | Ensaio físico e homologação social |
 | [027 — Ensaio físico de mídia local](027-homologacao-midia-local.md) | Ensaio local concluído | RTMP→RTMPS, gravação, recuperação do encoder e receptor com evidência | Homologação com conta institucional e ambiente dedicado |
+| [028 — Replay local verificável](028-replay-local-verificavel.md) | Concluída localmente | Manifesto SHA-256, MP4, publicação controlada, player e isolamento por Câmara | Jornada completa e aceite institucional do vídeo |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

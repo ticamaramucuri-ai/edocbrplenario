@@ -88,6 +88,7 @@ export default function SettingsModule() {
       deliberativeRosterPolicy: 'active',
       votingImpedimentPolicy: 'disabled',
       votingPoliciesByMatterType: {},
+      replayVisibilityDays: null,
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -150,6 +151,8 @@ export default function SettingsModule() {
       errs.minimumAmendmentHours = 'Informe um número entre 0 e 720 horas.'
     if (!Number.isInteger(settings.noticeAlertLeadHours) || settings.noticeAlertLeadHours < 1 || settings.noticeAlertLeadHours > 168)
       errs.noticeAlertLeadHours = 'Informe um número entre 1 e 168 horas.'
+    if (settings.replayVisibilityDays !== null && (!Number.isInteger(settings.replayVisibilityDays) || settings.replayVisibilityDays < 1 || settings.replayVisibilityDays > 3650))
+      errs.replayVisibilityDays = 'Informe de 1 a 3650 dias ou deixe vazio.'
     for (const [type, policy] of Object.entries(settings.votingPoliciesByMatterType)) {
       if (policy && (!Number.isInteger(policy.quorumMinimum) || policy.quorumMinimum < 1 || policy.quorumMinimum > 100))
         errs[`voting-${type}`] = 'Informe quórum entre 1 e 100.'
@@ -219,6 +222,17 @@ export default function SettingsModule() {
                   {errors.uf && <p className="text-xs text-destructive">{errors.uf}</p>}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Regras regimentais */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Replay local</CardTitle><CardDescription>Prazo de exibição pública por Câmara. O original permanece preservado até uma política documental aprovada.</CardDescription></CardHeader>
+            <CardContent className="grid gap-2 sm:max-w-64">
+              <Label htmlFor="tenant-replay-days">Dias de visibilidade pública</Label>
+              <Input id="tenant-replay-days" type="number" min={1} max={3650} value={settings.replayVisibilityDays ?? ''} placeholder="Sem prazo automático"
+                onChange={(e) => setSetting('replayVisibilityDays', e.target.value ? Number(e.target.value) : null)} aria-invalid={!!errors.replayVisibilityDays} />
+              {errors.replayVisibilityDays && <p className="text-xs text-destructive">{errors.replayVisibilityDays}</p>}
             </CardContent>
           </Card>
 

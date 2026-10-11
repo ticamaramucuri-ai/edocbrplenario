@@ -26,7 +26,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     throw notFound('Sessão não encontrada neste tenant.')
   }
 
-  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision, transmission] = await Promise.all([
+  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision, transmission, recording] = await Promise.all([
     session.agendaPublished
       ? db.agendaItem.findMany({ where: { sessionId: session.id }, orderBy: { order: 'asc' } })
       : Promise.resolve([]),
@@ -47,6 +47,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     }),
     db.sessionAgendaRevision.findFirst({ where: { tenantId: tenant.id, sessionId: session.id }, orderBy: { revision: 'desc' } }),
     db.transmission.findUnique({ where: { sessionId: session.id }, select: { publicUrl: true, publicPublishedAt: true } }),
+    db.sessionRecording.findUnique({ where: { sessionId: session.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
   ])
 
   const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
@@ -64,6 +65,9 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     },
     transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
+      : null,
+    localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > new Date())
+      ? { durationSeconds: recording.durationSeconds, publishedAt: recording.publishedAt.toISOString(), expiresAt: recording.expiresAt?.toISOString() ?? null }
       : null,
     agenda: agenda.map(toPublicAgendaItem),
     agendaRevision: agendaRevision ? { number: agendaRevision.revision, publishedAt: agendaRevision.createdAt.toISOString(), justification: agendaRevision.justification, noticeSha256: agendaRevision.noticeSha256 } : null,

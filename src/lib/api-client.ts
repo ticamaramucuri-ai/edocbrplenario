@@ -81,6 +81,7 @@ import type {
   TransmissionView,
   MediaDestinationsView,
   MediaRecordingView,
+  RecordingArchiveView,
   PlatformOverviewView,
   TenantConsoleView,
   PlanView,
@@ -184,6 +185,9 @@ export const api = {
   getTransmission: (id: string) => request<TransmissionView>(`/sessions/${id}/transmission`),
   getMediaDestinations: (id: string) => request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`),
   getMediaRecording: (id: string) => request<MediaRecordingView>(`/sessions/${id}/transmission/recording`),
+  getRecordingArchive: (id: string, verify = false) => request<RecordingArchiveView>(`/sessions/${id}/transmission/archive${verify ? '?verify=1' : ''}`),
+  commandRecordingArchive: (id: string, data: { action: 'build' | 'publish' | 'withdraw'; version: number; idempotencyKey: string; gapJustification?: string }) =>
+    request<RecordingArchiveView>(`/sessions/${id}/transmission/archive`, { method: 'POST', body: JSON.stringify(data) }),
   setTransmissionPublicLink: (id: string, data: { action: 'publish' | 'withdraw'; version: number; idempotencyKey: string; destinationId?: string; platformConfirmed?: boolean }) =>
     request<TransmissionView>(`/sessions/${id}/transmission/public-link`, { method: 'POST', body: JSON.stringify(data) }),
   setMediaDestination: (id: string, destinationId: string, enabled: boolean) =>

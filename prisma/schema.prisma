@@ -63,6 +63,7 @@ model Tenant {
   healthSnapshots  TenantHealthSnapshot[] // Onda 5/F24
   documentSignatures DocumentSignature[] // Onda 5/F22
   transmissions   Transmission[]
+  sessionRecordings SessionRecording[]
 }
 
 // ─── Fase 9: Autenticação real (sessões com cookie httpOnly) ────────────────
@@ -337,6 +338,7 @@ model Session {
   votings          Voting[]
   speeches         Speech[]
   transmission     Transmission?
+  recording         SessionRecording?
 
   @@unique([tenantId, number, year])
   @@index([tenantId, status])
@@ -431,6 +433,45 @@ model TransmissionCommand {
   transmission    Transmission @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
 
   @@unique([transmissionId, idempotencyKey])
+}
+
+// Etapa 028: manifesto e replay local; arquivos permanecem fora do banco.
+model SessionRecording {
+  id              String   @id @default(cuid())
+  tenantId        String
+  sessionId       String   @unique
+  status          String   @default("verified") // verified|published|withdrawn
+  version         Int      @default(1)
+  manifestJson    String
+  manifestSha256  String
+  replaySha256    String
+  replayBytes     BigInt
+  durationSeconds Float
+  gapCount        Int
+  verifiedAt      DateTime @default(now())
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  commands        RecordingCommand[]
+
+  @@index([tenantId, status])
+}
+
+model RecordingCommand {
+  id              String @id @default(cuid())
+  recordingId     String
+  idempotencyKey  String
+  action          String
+  version         Int
+  createdAt       DateTime @default(now())
+
+  recording       SessionRecording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@unique([recordingId, idempotencyKey])
 }
 
 // Etapa 006: estado desejado sem URL/chave. Um reconciliador aplica no MediaMTX.
