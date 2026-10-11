@@ -64,6 +64,25 @@ model Tenant {
   documentSignatures DocumentSignature[] // Onda 5/F22
   transmissions   Transmission[]
   sessionRecordings SessionRecording[]
+  officialConfigurationRevisions OfficialConfigurationRevision[]
+}
+
+// Aprovação interna versionada da configuração institucional da Câmara.
+model OfficialConfigurationRevision {
+  id                String   @id @default(cuid())
+  tenantId          String
+  version           Int
+  snapshotJson      String
+  snapshotSha256    String
+  approvalReference String
+  approvedById      String
+  approvedByName    String
+  approvedAt        DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, version])
+  @@index([tenantId, approvedAt])
 }
 
 // ─── Fase 9: Autenticação real (sessões com cookie httpOnly) ────────────────
@@ -321,6 +340,8 @@ model Session {
   openedAt        DateTime?
   closedAt        DateTime?
   status          String    @default("draft") // draft|scheduled|check_in|open|suspended|resumed|closed|cancelled
+  official        Boolean   @default(false) // exige configuração institucional aprovada para publicar
+  officialConfigurationId String?
   presidentId     String?
   presidentName   String?
   secretaryName   String?

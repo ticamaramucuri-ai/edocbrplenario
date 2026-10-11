@@ -38,6 +38,7 @@ const createSchema = z.object({
   secretaryName: z.string().max(120).optional(),
   notes: z.string().max(2000).optional(),
   matterIds: z.array(z.string().min(1)).optional(),
+  official: z.boolean().optional(),
 })
 
 const EXPEDIENTE_FIXO = [
@@ -106,6 +107,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         type: body.type,
         scheduledAt,
         status: 'draft',
+        official: body.official ?? false,
         presidentId: president.id,
         presidentName: president.name,
         secretaryName: body.secretaryName ?? null,
@@ -155,7 +157,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       aggregateType: 'session',
       aggregateId: session.id,
       summary: `Sessão criada com pauta de ${items.length} itens.`,
-      after: { status: session.status, number: session.number, year, type: body.type },
+      after: { status: session.status, number: session.number, year, type: body.type, official: session.official },
       correlationId,
       ip,
     })

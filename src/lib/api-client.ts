@@ -87,6 +87,7 @@ import type {
   TenantConsoleView,
   PlanView,
   MigrationRunView,
+  OfficialConfigurationView,
 } from './contracts'
 
 /** Fase 18 — recibo verificável do próprio parlamentar (GET /me/receipts). */
@@ -157,6 +158,9 @@ async function request<T>(path: string, init?: RequestInit & { actorId?: string;
 export const api = {
   // Bootstrap
   bootstrap: () => request<BootstrapView>('/bootstrap'),
+  officialConfiguration: () => request<OfficialConfigurationView>('/official-configuration'),
+  approveOfficialConfiguration: (data: { expectedSha256: string; approvalReference: string; acknowledged: true }) =>
+    request<{ revision: { id: string; version: number } }>('/official-configuration', { method: 'POST', body: JSON.stringify(data) }),
 
   // Sessões
   listSessions: () => request<{ sessions: SessionSummary[] }>('/sessions'),
@@ -167,6 +171,7 @@ export const api = {
     secretaryName?: string
     notes?: string
     matterIds?: string[]
+    official?: boolean
   }) =>
     request<{ session: SessionSummary }>('/sessions', {
       method: 'POST',

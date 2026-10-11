@@ -238,6 +238,8 @@ export function toSessionSummary(
     openedAt: iso(session.openedAt),
     closedAt: iso(session.closedAt),
     status: session.status as SessionSummary['status'],
+    official: session.official,
+    officialConfigurationId: session.officialConfigurationId,
     presidentName: session.presidentName ?? null,
     presidentId: session.presidentId ?? null,
     secretaryName: session.secretaryName ?? null,

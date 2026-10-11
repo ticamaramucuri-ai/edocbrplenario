@@ -5,6 +5,12 @@ Cobre as Ondas 1–4 (fases 0–20): **~75 grupos de rotas** (internas, de plata
 públicas), a matriz RBAC completa, os eventos outbox e de auditoria e as regras de rate
 limit dos endpoints públicos.
 
+## Adição da etapa 046 — configuração oficial
+
+`GET /api/v1/official-configuration` retorna `{ready, approved, snapshotSha256, checks, revisions}` no escopo do ator. Cada `check` contém `id`, `label`, `ok` e `detail`. O snapshot completo fica somente no servidor. `POST /api/v1/official-configuration` exige `tenant.update` e body `{expectedSha256, approvalReference, acknowledged: true}`; retorna `201 {revision}`. Checklist incompleto ou versão já aprovada gera 409 `SESSION_PRECONDITION`/`CONFLICT_VERSION`. A referência é fornecida pelo responsável da Câmara e não é validada automaticamente contra um documento externo.
+
+`POST /api/v1/sessions` aceita `official?: boolean` (padrão `false`). Uma sessão oficial permanece em rascunho até que `POST /api/v1/sessions/:id/transition` com `action: "schedule"` confirme a configuração atual aprovada, a presidência da Mesa e o mandato na data da sessão. A publicação grava `officialConfigurationId` na sessão; alteração posterior do cadastro exige nova aprovação apenas para novas publicações. `GET /api/v1/sessions/:id/readiness` inclui `official_config` para rascunhos oficiais. As respostas interna e pública de sessão incluem `official`.
+
 ## Convenções gerais
 
 - **Ator**: rotas internas usam sessão autenticada; `x-actor-id` só funciona no modo

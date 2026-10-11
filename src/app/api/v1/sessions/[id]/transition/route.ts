@@ -20,6 +20,7 @@ import { buildSessionSummaries, sessionLabel } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 import { createSessionNotice } from '@/lib/server/session-notice'
 import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
+import { inspectOfficialConfiguration } from '@/lib/server/official-configuration'
 
 export const dynamic = 'force-dynamic'
 
@@ -116,6 +117,33 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (body.action === 'schedule') {
       const tenant = await tx.tenant.findUnique({ where: { id: session.tenantId } })
       if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Câmara não encontrada', 'Câmara não encontrada.')
+      if (session.official) {
+        const inspection = await inspectOfficialConfiguration(tx, session.tenantId)
+        const approved = await tx.officialConfigurationRevision.findFirst({
+          where: { tenantId: session.tenantId }, orderBy: { version: 'desc' },
+        })
+        if (!inspection.ready || !approved || approved.snapshotSha256 !== inspection.snapshotSha256) {
+          throw new DomainError('SESSION_PRECONDITION', 409, 'Configuração oficial pendente',
+            'Esta sessão é oficial. Complete e aprove a configuração institucional atual da Câmara antes de publicar a pauta.')
+        }
+        const officialPresident = await tx.boardPosition.findFirst({
+          where: { tenantId: session.tenantId, role: 'presidente', parliamentarianId: session.presidentId!,
+            startDate: { lte: session.scheduledAt }, OR: [{ endDate: null }, { endDate: { gte: session.scheduledAt } }] },
+          include: { legislature: true },
+        })
+        if (!officialPresident?.legislature.current || session.year < officialPresident.legislature.startYear || session.year > officialPresident.legislature.endYear) {
+          throw new DomainError('SESSION_PRECONDITION', 409, 'Presidência da Mesa',
+            'O presidente da sessão oficial deve ocupar a presidência da Mesa na legislatura vigente na data da sessão.')
+        }
+        const presidentialMandate = await tx.mandate.findFirst({ where: {
+          tenantId: session.tenantId, legislatureId: officialPresident.legislatureId,
+          parliamentarianId: session.presidentId!, startDate: { lte: session.scheduledAt },
+          OR: [{ endDate: null }, { endDate: { gte: session.scheduledAt } }],
+        } })
+        if (!presidentialMandate) throw new DomainError('SESSION_PRECONDITION', 409, 'Mandato da Presidência',
+          'O presidente da sessão oficial precisa ter mandato válido na data da sessão.')
+        await tx.session.update({ where: { id: session.id }, data: { officialConfigurationId: approved.id } })
+      }
       const policy = tenantSettings(tenant)
       const deadline = enforceNoticeDeadline({ settings: policy, sessionType: session.type,
         scheduledAt: session.scheduledAt, now, phase: 'initial', exceptionReason: body.noticeExceptionReason })

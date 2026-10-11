@@ -72,6 +72,7 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
   const [secretaryName, setSecretaryName] = useState('')
   const [notes, setNotes] = useState('')
   const [matterIds, setMatterIds] = useState<string[]>([])
+  const [official, setOfficial] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const parlQ = useQuery({ queryKey: ['parliamentarians'], queryFn: () => api.listParliamentarians(), enabled: open })
@@ -101,6 +102,7 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
         secretaryName: secretaryName.trim() || undefined,
         notes: notes.trim() || undefined,
         matterIds: matterIds.length > 0 ? matterIds : undefined,
+        official,
       }),
     onSuccess: (res) => {
       toast.success('Rascunho da sessão criado', {
@@ -286,6 +288,11 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
             </ol>
           </div>
         </div>
+
+        <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
+          <Checkbox checked={official} onCheckedChange={(checked) => setOfficial(checked === true)} aria-label="Sessão oficial" />
+          <span><strong>Sessão oficial</strong><br /><span className="text-muted-foreground">A publicação exigirá configuração institucional aprovada da Câmara. Rascunhos de ensaio podem permanecer desmarcados.</span></span>
+        </label>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 

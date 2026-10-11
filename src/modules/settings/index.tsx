@@ -5,7 +5,7 @@
  * pré-visualização e regras regimentais) e painel do plano (somente leitura).
  */
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { BadgeCheck, Info, Landmark, Palette, Save, Settings as SettingsIcon, ShieldAlert, SlidersHorizontal } from 'lucide-react'
 
@@ -92,6 +92,20 @@ export default function SettingsModule() {
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [approvalReference, setApprovalReference] = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
+  const officialQ = useQuery({ queryKey: ['official-configuration', tenant?.id], queryFn: api.officialConfiguration, enabled: !!tenant?.id })
+  const approve = useMutation({
+    mutationFn: () => api.approveOfficialConfiguration({
+      expectedSha256: officialQ.data!.snapshotSha256, approvalReference: approvalReference.trim(), acknowledged: true,
+    }),
+    onSuccess: ({ revision }) => {
+      toast.success(`Configuração institucional v${revision.version} aprovada`)
+      setApprovalReference('')
+      setAcknowledged(false)
+      queryClient.invalidateQueries({ queryKey: ['official-configuration'] })
+    },
+  })
 
   const save = useMutation({
     mutationFn: () =>
@@ -110,6 +124,7 @@ export default function SettingsModule() {
       queryClient.invalidateQueries({ queryKey: ['bootstrap'] })
       queryClient.invalidateQueries({ queryKey: ['notice-calendar'] })
       queryClient.invalidateQueries({ queryKey: ['notice-recipient-preview'] })
+      queryClient.invalidateQueries({ queryKey: ['official-configuration'] })
     },
   })
 
@@ -174,6 +189,31 @@ export default function SettingsModule() {
           </Button>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Prontidão institucional para sessões oficiais</CardTitle>
+          <CardDescription>Confira os cadastros e regras da Câmara. A aprovação registra uma versão interna; mudanças posteriores exigem nova aprovação antes de publicar outra sessão oficial.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {officialQ.isLoading ? <p className="text-sm text-muted-foreground">Verificando configuração…</p> : officialQ.isError ? <p className="text-sm text-destructive">Não foi possível verificar a configuração.</p> : officialQ.data && <>
+            <p className="text-sm font-medium">{officialQ.data.approved ? `Aprovada · versão ${officialQ.data.revisions[0]?.version}` : officialQ.data.ready ? 'Pronta para aprovação interna' : 'Há itens pendentes'}</p>
+            <div className="grid gap-2 md:grid-cols-2">
+              {officialQ.data.checks.map((check) => <div key={check.id} className="rounded-md border p-3 text-sm">
+                <p className="font-medium">{check.ok ? '✓' : '○'} {check.label}</p>
+                <p className="text-muted-foreground">{check.detail}</p>
+              </div>)}
+            </div>
+            {officialQ.data.revisions.length > 0 && <p className="text-xs text-muted-foreground">Última aprovação: v{officialQ.data.revisions[0].version}, referência {officialQ.data.revisions[0].approvalReference}, por {officialQ.data.revisions[0].approvedByName}.</p>}
+            {officialQ.data.ready && !officialQ.data.approved && <div className="space-y-3 rounded-md border p-3">
+              <Label htmlFor="approval-reference">Referência do ato ou protocolo de aprovação</Label>
+              <Input id="approval-reference" value={approvalReference} onChange={(e) => setApprovalReference(e.target.value)} placeholder="Ex.: Portaria 12/2026" />
+              <label className="flex items-start gap-2 text-sm"><Checkbox checked={acknowledged} onCheckedChange={(v) => setAcknowledged(v === true)} /> Confirmo que os dados e regras foram conferidos pela Câmara.</label>
+              <Button disabled={!acknowledged || approvalReference.trim().length < 3 || approve.isPending} onClick={() => approve.mutate()}>Aprovar configuração atual</Button>
+            </div>}
+          </>}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">

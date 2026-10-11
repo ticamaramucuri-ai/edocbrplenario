@@ -342,6 +342,7 @@ export default function SessionsModule() {
                       </TableCell>
                       <TableCell>
                         <SessionTypeBadge type={s.type} />
+                        <span className="ml-2 text-xs text-muted-foreground">{s.official ? 'Oficial' : 'Ensaio'}</span>
                       </TableCell>
                       <TableCell className="text-sm tabular-nums">{fmtDateTime(s.scheduledAt)}</TableCell>
                       <TableCell>
@@ -379,7 +380,7 @@ export default function SessionsModule() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel>
-                              {SESSION_TYPE_LABEL[s.type]} nº {s.number}/{s.year}
+                              {SESSION_TYPE_LABEL[s.type]} nº {s.number}/{s.year}{s.official ? ' · Oficial' : ' · Ensaio'}
                             </DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => conduct(s)}>
                               <Gavel /> Conduzir na mesa

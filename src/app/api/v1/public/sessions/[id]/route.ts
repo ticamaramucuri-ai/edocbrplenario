@@ -57,6 +57,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     session: {
       id: session.id,
       number: session.number,
+      official: session.official,
       year: session.year,
       type: session.type as 'ordinaria' | 'extraordinaria' | 'solene' | 'especial',
       scheduledAt: session.scheduledAt.toISOString(),

@@ -29,7 +29,10 @@ import re
 import sys
 source = Path(sys.argv[1]).read_text()
 source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 for model, fields, indexes in [
+    ('Tenant', ['officialConfigurationRevisions'], []),
+    ('Session', ['official', 'officialConfigurationId'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),

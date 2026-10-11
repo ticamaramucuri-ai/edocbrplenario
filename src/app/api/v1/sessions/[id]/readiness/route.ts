@@ -9,6 +9,7 @@ import { currentAttendance } from '@/lib/server/domain'
 import { probeMediaSource } from '@/lib/server/media-status'
 import { destinationSnapshot, loadMediaDestinations, recordingSnapshot } from '@/lib/server/media-control'
 import type { SessionReadinessView } from '@/lib/contracts'
+import { inspectOfficialConfiguration } from '@/lib/server/official-configuration'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +47,20 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
   add('president', 'legislative', president ? 'ok' : 'blocked',
     president ? 'Presidência ativa vinculada.' : 'Presidência ausente ou inativa.',
     president ? null : 'Indique uma presidência ativa desta Câmara.')
+  if (session.official) {
+    if (session.status === 'draft') {
+      const inspection = await inspectOfficialConfiguration(db, session.tenantId)
+      const approved = await db.officialConfigurationRevision.findFirst({ where: { tenantId: session.tenantId }, orderBy: { version: 'desc' } })
+      const valid = inspection.ready && approved?.snapshotSha256 === inspection.snapshotSha256
+      add('official_config', 'legislative', valid ? 'ok' : 'blocked',
+        valid ? `Configuração institucional v${approved.version} aprovada.` : 'Configuração institucional oficial pendente ou alterada.',
+        valid ? null : 'Confira e aprove a configuração em Configurações antes de publicar a pauta.')
+    } else {
+      add('official_config', 'legislative', session.officialConfigurationId ? 'ok' : 'blocked',
+        session.officialConfigurationId ? 'Sessão vinculada à revisão institucional aprovada.' : 'Vínculo de configuração oficial ausente.',
+        session.officialConfigurationId ? null : 'Solicite regularização institucional antes de conduzir a sessão.')
+    }
+  }
   const quorumObservable = ['check_in', 'open', 'suspended', 'resumed'].includes(session.status)
   add('quorum', 'legislative', !quorumObservable ? 'attention' : attendance.quorum.ok ? 'ok' : 'blocked',
     !quorumObservable ? 'Quórum será conferido após abrir o credenciamento.' :

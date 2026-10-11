@@ -48,6 +48,7 @@ export function toPublicSessionSummary(s: SessionRow): PublicSessionSummary {
     scheduledAt: s.scheduledAt.toISOString(),
     status: s.status as PublicSessionSummary['status'],
     agendaPublished: s.agendaPublished,
+    official: s.official,
   }
 }
 

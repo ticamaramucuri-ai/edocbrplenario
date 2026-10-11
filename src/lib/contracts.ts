@@ -82,7 +82,7 @@ export type SessionReadinessView = {
   sessionReady: boolean
   broadcastReady: boolean
   checks: Array<{
-    id: 'agenda' | 'notice' | 'president' | 'quorum' | 'source' | 'recording' | 'destinations'
+    id: 'agenda' | 'notice' | 'president' | 'quorum' | 'official_config' | 'source' | 'recording' | 'destinations'
     area: 'legislative' | 'media'
     state: 'ok' | 'attention' | 'blocked'
     message: string
@@ -202,6 +202,8 @@ export type SessionSummary = {
   openedAt: string | null
   closedAt: string | null
   status: SessionStatus
+  official: boolean
+  officialConfigurationId: string | null
   presidentName: string | null
   presidentId: string | null
   secretaryName: string | null
@@ -212,6 +214,14 @@ export type SessionSummary = {
   totalMembers: number
   version: number
   notes: string | null
+}
+
+export type OfficialConfigurationView = {
+  ready: boolean
+  approved: boolean
+  snapshotSha256: string
+  checks: { id: string; label: string; ok: boolean; detail: string }[]
+  revisions: { id: string; version: number; snapshotSha256: string; approvalReference: string; approvedByName: string; approvedAt: string }[]
 }
 
 export type AgendaItemView = {
@@ -991,6 +1001,7 @@ export type PublicSessionSummary = {
   scheduledAt: string
   status: SessionStatus
   agendaPublished: boolean
+  official: boolean
 }
 
 export type PublicSessionDetail = {

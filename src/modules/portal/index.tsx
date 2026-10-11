@@ -881,6 +881,7 @@ function SessionDetailSheet({
           </div>
         ) : (
           <div className="mt-4 space-y-5 text-sm text-zinc-700">
+            <p className="text-xs font-medium">{session.session.official ? 'Sessão oficial' : 'Sessão de ensaio'}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
               <span>
                 <strong>Data:</strong> {fmtDateTime(session.session.scheduledAt)}
@@ -1083,7 +1084,7 @@ function SessionsTab({ slug, primaryColor }: { slug: string; primaryColor: strin
               >
                 <span className="min-w-0">
                   <span className="block text-sm font-bold" style={{ color: primaryColor }}>
-                    {SESSION_TYPE_LABEL[s.type]} nº {s.number}/{s.year}
+                    {SESSION_TYPE_LABEL[s.type]} nº {s.number}/{s.year} · {s.official ? 'Oficial' : 'Ensaio'}
                   </span>
                   <span className="block text-xs text-zinc-500">
                     {fmtDateTime(s.scheduledAt)} · Pauta {s.agendaPublished ? 'publicada' : 'não publicada'}
