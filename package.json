@@ -18,6 +18,7 @@
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
     "test:session:journey": "bash scripts/test-session-journey.sh",
     "test:postgres:foundation": "bash scripts/test-postgres-foundation.sh",
+    "test:tenant:health-portability": "bash scripts/test-tenant-health-portability.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",
     "test:voting:impediments": "bash scripts/test-voting-impediments.sh",

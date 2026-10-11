@@ -5,9 +5,8 @@
  * (critério de aceite: "mesmo banco → mesmo score"):
  *   1. Rotas /platform/tenants/:id/health e /platform/tenants/health (Prisma);
  *   2. prisma/seed.ts (snapshots determinísticos);
- *   3. mini-services/scheduler (bun:sqlite) — importa SOMENTE a função pura
- *      `healthScoreFromMetrics` e as constantes SQL abaixo (import type é
- *      apagado em runtime, então o arquivo é seguro sob Bun sem alias).
+ *   3. mini-services/scheduler (bun:sqlite) — importa a função pura
+ *      `healthScoreFromMetrics` e as constantes SQL legadas abaixo.
  *
  * Fórmula determinística 0–100 (métricas dos últimos 30 dias):
  *   sessões   → min(35, sessões × 12)      (≥3 sessões → 35 pts)
@@ -16,9 +15,8 @@
  *   webhooks  → min(10, ativos × 5)        (integração viva)
  *   buckets   → saudavel ≥ 70 · atencao ≥ 40 · risco < 40
  *
- * IMPORTANTE (SQLite/Prisma): DateTime é armazenado como epoch MILLISSECONDS
- * (INTEGER) — o corte de 30 dias usa `(strftime('%s','now') - 30*86400)*1000`,
- * NÃO datetime('now','-30 days') (que produz string ISO e compararia errado).
+ * A coleta da aplicação usa filtros Prisma com Date, válidos tanto para SQLite
+ * quanto para PostgreSQL. O scheduler mantém SQL SQLite até a migração dele.
  */
 import type { PrismaClient } from '@prisma/client'
 
@@ -46,8 +44,8 @@ export function healthScoreFromMetrics(m: TenantHealthMetricsInput): {
 }
 
 /**
- * SQL canônico dos contadores (parâmetro posicional `?` = tenantId).
- * Idêntico no Prisma ($queryRawUnsafe) e no bun:sqlite do scheduler.
+ * SQL SQLite dos contadores do scheduler (parâmetro posicional `?` = tenantId).
+ * DateTime no SQLite/Prisma é epoch em milissegundos.
  */
 export const TENANT_HEALTH_SQL = {
   sessions30d:
@@ -59,20 +57,21 @@ export const TENANT_HEALTH_SQL = {
   activeWebhooks: 'SELECT COUNT(*) AS n FROM WebhookEndpoint WHERE tenantId = ? AND active = 1',
 } as const
 
-/** Coleta as métricas via Prisma com o SQL canônico (rotas e seed). */
+/** Coleta as métricas por tenant via Prisma (rotas e seed, ambos os provedores). */
 export async function gatherTenantHealthMetrics(
   db: PrismaClient,
-  tenantId: string
+  tenantId: string,
+  referenceTime: Date = new Date()
 ): Promise<TenantHealthMetricsInput> {
-  const one = async (sql: string): Promise<number> => {
-    const rows = (await db.$queryRawUnsafe(sql, tenantId)) as Array<{ n: number | bigint }>
-    return Number(rows[0]?.n ?? 0)
-  }
+  const since = new Date(referenceTime.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const [sessions30d, matters30d, logins30d, activeWebhooks] = await Promise.all([
+    db.session.count({ where: { tenantId, scheduledAt: { gte: since } } }),
+    db.legislativeMatter.count({ where: { tenantId, createdAt: { gte: since } } }),
+    db.auditEvent.count({ where: { tenantId, action: 'auth.login', createdAt: { gte: since } } }),
+    db.webhookEndpoint.count({ where: { tenantId, active: true } }),
+  ])
   return {
-    sessions30d: await one(TENANT_HEALTH_SQL.sessions30d),
-    matters30d: await one(TENANT_HEALTH_SQL.matters30d),
-    logins30d: await one(TENANT_HEALTH_SQL.logins30d),
-    activeWebhooks: await one(TENANT_HEALTH_SQL.activeWebhooks),
+    sessions30d, matters30d, logins30d, activeWebhooks,
   }
 }
 
