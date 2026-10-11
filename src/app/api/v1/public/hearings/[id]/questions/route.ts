@@ -55,7 +55,7 @@ const createSchema = z.object({
 
 export const POST = apiHandler(async (req: Request, ctx, correlationId) => {
   // Fase 19: rate limit por IP ANTES de qualquer trabalho (validação/DB).
-  const rl = hitRateLimit(
+  const rl = await hitRateLimit(
     'public:hearing-questions',
     rateLimitKey(clientIp(req)),
     RATE_LIMIT,

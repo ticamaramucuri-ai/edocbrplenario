@@ -50,6 +50,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [043 — Linha de base](043-linha-de-base.md) | Concluída localmente | Estado real, CI de imagens e pendências priorizadas | Identidade partidária e arquivos |
 | [044 — Identidade partidária e arquivos](044-identidade-partidaria-arquivos.md) | Implementação local concluída | Emblema por partido/Câmara, volume configurável e inventário de imagens | Homologação de persistência e restore conjunto na 045 |
 
+| [045 — Fundação operacional SaaS](045-fundacao-operacional-saas.md) | Em andamento | Leases PostgreSQL e rate limit compartilhado com provas concorrentes | E-mail, fanout realtime, backup de arquivos, RTO/RPO e homologação persistente |
+
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
 O [diagnóstico e plano de conclusão](../DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) reúne as lacunas atuais e propõe a ordem das próximas fases (043–057). As fases concluídas localmente entram nesta tabela; as demais permanecem propostas.

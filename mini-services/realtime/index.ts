@@ -14,7 +14,7 @@
  *
  * SQLite: somente leitura, com checkpoint de rowid em arquivo para não causar
  * SQLITE_BUSY nas transações da API. PostgreSQL: eventos pendentes são marcados
- * como publicados depois da emissão; execute um publicador por banco.
+ * como publicados depois da emissão; leases permitem réplicas e retomada.
  *
  * Porta fixa 3003 · path '/' OBRIGATÓRIO (gateway Caddy) · poller 500ms.
  */

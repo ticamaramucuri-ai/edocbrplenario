@@ -11,17 +11,18 @@
  * chaves, entradas com lista vazia (após a limpeza) são removidas —
  * simples e suficiente para o sandbox (2 tenants, tráfego de demo).
  *
- * PRODUÇÃO: substituir por Redis (INCR + EXPIRE ou sorted-set com
- * ZREMRANGEBYSCORE) — o contrato `hitRateLimit` não muda. Em memória o
- * limite é por processo (sem efeito atrás de múltiplas réplicas) e
- * reinicia com o processo: aceitável para o sandbox, insuficiente para
- * produção (documentado no ADR-020/ROADMAP §11.3).
+ * Em PostgreSQL, hits ficam no banco e a chave recebe advisory lock na
+ * transação. Assim réplicas partilham a mesma janela deslizante. SQLite
+ * mantém o comportamento local para desenvolvimento/demonstração.
  *
  * Limites vigentes (ROADMAP §11.3):
  *  - public:subscriptions       5 / 1h   / IP
  *  - public:verify             30 / 1min / IP
  *  - public:hearing-questions   5 / 10min / IP
  */
+import { createHash } from 'node:crypto'
+import { db } from '@/lib/db'
+
 /** Janelas de tempo convenientes (ms). */
 export const RATE_WINDOW = {
   MINUTE: 60_000,
@@ -46,7 +47,7 @@ const MAX_TRACKED_KEYS = 10_000
  * `bucket` agrupa por endpoint (ex.: 'public:verify'); `key` é a identidade
  * (normalmente o IP do cliente via clientIp()).
  */
-export function hitRateLimit(
+function hitRateLimitLocal(
   bucket: string,
   key: string,
   limit: number,
@@ -78,6 +79,34 @@ export function hitRateLimit(
     }
   }
   return { allowed: true, retryAfterSeconds: 0 }
+}
+
+/** Conta hits de uma janela deslizante no PostgreSQL com serialização por chave. */
+export async function hitRateLimit(bucket: string, key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  if (!/^postgres(ql)?:\/\//.test(process.env.DATABASE_URL ?? '')) {
+    return hitRateLimitLocal(bucket, key, limit, windowMs)
+  }
+  const digest = createHash('sha256').update(`${bucket}\0${key}`).digest('hex')
+  const lockValue = BigInt.asIntN(64, BigInt(`0x${digest.slice(0, 16)}`))
+  const now = new Date()
+  const windowStart = new Date(now.getTime() - windowMs)
+  const result = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lockValue})::text AS locked`
+    await tx.rateLimitHit.deleteMany({ where: { keyHash: digest, at: { lte: windowStart } } })
+    const count = await tx.rateLimitHit.count({ where: { keyHash: digest } })
+    if (count >= limit) {
+      const oldest = await tx.rateLimitHit.findFirst({ where: { keyHash: digest }, orderBy: { at: 'asc' }, select: { at: true } })
+      const retryAfterMs = Math.max(1000, (oldest?.at.getTime() ?? now.getTime()) + windowMs - now.getTime())
+      return { allowed: false, retryAfterSeconds: Math.ceil(retryAfterMs / 1000) }
+    }
+    await tx.rateLimitHit.create({ data: { keyHash: digest, at: now } })
+    return { allowed: true, retryAfterSeconds: 0 }
+  })
+  // Limpeza probabilística limita crescimento causado por chaves que não voltam.
+  if (Math.random() < 0.01) {
+    void db.rateLimitHit.deleteMany({ where: { at: { lt: new Date(Date.now() - RATE_WINDOW.HOUR) } } }).catch(() => undefined)
+  }
+  return result
 }
 
 /**

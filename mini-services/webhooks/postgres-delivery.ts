@@ -12,29 +12,41 @@ export type DeliverySender = (
 const MAX_ATTEMPTS = 5
 const BACKOFF_SECONDS = [5, 30, 120, 600]
 
-/** One publisher per database. HTTP delivery is at least once after process failure. */
+/** Conditional leases prevent parallel sends; crash recovery remains at least once. */
 export async function processPostgresWebhookBatch(
   db: PrismaClient,
   send: DeliverySender,
   now = new Date(),
   limit = 10,
 ): Promise<number> {
+  const owner = crypto.randomUUID()
   const rows = await db.webhookDelivery.findMany({
     where: {
       status: 'pending',
       OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }],
+      AND: [{ OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }] }],
     },
     include: { endpoint: true },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: limit,
   })
 
+  let processed = 0
   for (const row of rows) {
+    const claim = await db.webhookDelivery.updateMany({
+      where: { id: row.id, status: 'pending', AND: [
+        { OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }] },
+        { OR: [{ leaseUntil: null }, { leaseUntil: { lte: new Date() } }] },
+      ] },
+      data: { leaseOwner: owner, leaseUntil: new Date(Date.now() + 60_000) },
+    })
+    if (!claim.count) continue
+    processed++
     const endpoint = row.endpoint
     if (!endpoint.active) {
       await db.webhookDelivery.updateMany({
-        where: { id: row.id, status: 'pending' },
-        data: { nextAttemptAt: new Date(now.getTime() + 60_000) },
+        where: { id: row.id, status: 'pending', leaseOwner: owner },
+        data: { nextAttemptAt: new Date(now.getTime() + 60_000), leaseOwner: null, leaseUntil: null },
       })
       continue
     }
@@ -48,10 +60,10 @@ export async function processPostgresWebhookBatch(
     const attempts = row.attempts + 1
     if (outcome.kind === 'success') {
       await db.webhookDelivery.updateMany({
-        where: { id: row.id, status: 'pending' },
+        where: { id: row.id, status: 'pending', leaseOwner: owner },
         data: {
           status: 'success', attempts, deliveredAt: now,
-          responseStatus: outcome.responseStatus, lastError: null, nextAttemptAt: null,
+          responseStatus: outcome.responseStatus, lastError: null, nextAttemptAt: null, leaseOwner: null, leaseUntil: null,
         },
       })
       continue
@@ -61,10 +73,10 @@ export async function processPostgresWebhookBatch(
     if (attempts < MAX_ATTEMPTS) {
       const seconds = BACKOFF_SECONDS[Math.min(attempts - 1, BACKOFF_SECONDS.length - 1)]!
       await db.webhookDelivery.updateMany({
-        where: { id: row.id, status: 'pending' },
+        where: { id: row.id, status: 'pending', leaseOwner: owner },
         data: {
           attempts, lastError: reason, responseStatus: outcome.responseStatus,
-          nextAttemptAt: new Date(now.getTime() + seconds * 1000),
+          nextAttemptAt: new Date(now.getTime() + seconds * 1000), leaseOwner: null, leaseUntil: null,
         },
       })
       continue
@@ -74,10 +86,10 @@ export async function processPostgresWebhookBatch(
     // Conditional update prevents duplicate notification when two publishers race.
     await db.$transaction(async (tx) => {
       const updated = await tx.webhookDelivery.updateMany({
-        where: { id: row.id, status: 'pending' },
+        where: { id: row.id, status: 'pending', leaseOwner: owner },
         data: {
           status: 'dead', attempts, lastError: reason,
-          responseStatus: outcome.responseStatus, nextAttemptAt: null,
+          responseStatus: outcome.responseStatus, nextAttemptAt: null, leaseOwner: null, leaseUntil: null,
         },
       })
       if (updated.count === 0) return
@@ -104,5 +116,5 @@ export async function processPostgresWebhookBatch(
       })
     })
   }
-  return rows.length
+  return processed
 }

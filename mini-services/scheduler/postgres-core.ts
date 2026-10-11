@@ -155,20 +155,52 @@ export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
     }
   }
 
+  async function runManual(kind: string, now = new Date()): Promise<KindResult> {
+    const job = await db.scheduledJob.findUnique({ where: { kind } })
+    if (!job) return { status: 'skipped', note: 'Tarefa não cadastrada nesta instalação.' }
+    const owner = crypto.randomUUID()
+    const claim = await db.scheduledJob.updateMany({ where: { id: job.id,
+      OR: [{ leaseUntil: null }, { leaseUntil: { lte: new Date() } }] },
+    data: { leaseOwner: owner, leaseUntil: new Date(Date.now() + 5 * 60_000) } })
+    if (!claim.count) return { status: 'skipped', note: 'Tarefa já está em execução por outra instância.' }
+    const heartbeat = setInterval(() => {
+      void db.scheduledJob.updateMany({ where: { id: job.id, leaseOwner: owner },
+        data: { leaseUntil: new Date(Date.now() + 5 * 60_000) } }).catch(() => {})
+    }, 60_000)
+    try { return await runKind(kind, now) }
+    finally {
+      clearInterval(heartbeat)
+      await db.scheduledJob.updateMany({ where: { id: job.id, leaseOwner: owner }, data: { leaseOwner: null, leaseUntil: null } })
+    }
+  }
+
   async function tick(now = new Date()): Promise<number> {
-    const due = await db.scheduledJob.findMany({ where: { active: true, nextRunAt: { lte: now } }, orderBy: { nextRunAt: 'asc' } })
+    const owner = crypto.randomUUID()
+    const due = await db.scheduledJob.findMany({ where: { active: true, nextRunAt: { lte: now },
+      OR: [{ leaseUntil: null }, { leaseUntil: { lte: now } }] }, orderBy: { nextRunAt: 'asc' } })
+    let claimed = 0
     for (const job of due) {
+      const claim = await db.scheduledJob.updateMany({ where: { id: job.id, active: true, nextRunAt: { lte: now },
+        OR: [{ leaseUntil: null }, { leaseUntil: { lte: new Date() } }] },
+      data: { leaseOwner: owner, leaseUntil: new Date(Date.now() + 5 * 60_000) } })
+      if (!claim.count) continue
+      claimed++
+      const heartbeat = setInterval(() => {
+        void db.scheduledJob.updateMany({ where: { id: job.id, leaseOwner: owner },
+          data: { leaseUntil: new Date(Date.now() + 5 * 60_000) } }).catch(() => {})
+      }, 60_000)
       let result: KindResult
       try { result = await runKind(job.kind, now) }
       catch (error) { result = { status: 'error', note: String(error).slice(0, 300) } }
+      finally { clearInterval(heartbeat) }
       const finishedAt = new Date()
-      await db.scheduledJob.update({ where: { id: job.id }, data: {
+      await db.scheduledJob.updateMany({ where: { id: job.id, leaseOwner: owner }, data: {
         lastRunAt: finishedAt, lastStatus: result.status, lastNote: result.note,
-        nextRunAt: new Date(finishedAt.getTime() + job.everySeconds * 1000),
+        nextRunAt: new Date(finishedAt.getTime() + job.everySeconds * 1000), leaseOwner: null, leaseUntil: null,
       } })
     }
-    return due.length
+    return claimed
   }
 
-  return { runKind, tick }
+  return { runKind, runManual, tick }
 }

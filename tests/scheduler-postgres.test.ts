@@ -53,4 +53,17 @@ test('scheduler PostgreSQL aplica regras por Câmara, evita alertas duplicados e
   expect(after.lastStatus).toBe('error')
   expect(after.nextRunAt.getTime()).toBeGreaterThan(now.getTime())
   expect(await scheduler.tick(now)).toBe(0)
+
+  const expired = await db.scheduledJob.create({ data: { kind: `invalid.lease.${suffix}`, title: 'Lease vencido',
+    everySeconds: 60, nextRunAt: new Date(now.getTime() - 1000), leaseOwner: 'worker-morto',
+    leaseUntil: new Date(now.getTime() - 1000) } })
+  expect(await scheduler.tick(now)).toBe(1)
+  expect((await db.scheduledJob.findUniqueOrThrow({ where: { id: expired.id } })).leaseOwner).toBeNull()
+
+  const manual = await db.scheduledJob.create({ data: { kind: 'health.check', title: 'Saúde', active: false,
+    nextRunAt: new Date(now.getTime() + 60_000) } })
+  const slowScheduler = createPostgresScheduler(db, async () => { await Bun.sleep(80); return true })
+  const results = await Promise.all([slowScheduler.runManual('health.check'), slowScheduler.runManual('health.check')])
+  expect(results.map(result => result.status).sort()).toEqual(['ok', 'skipped'])
+  expect((await db.scheduledJob.findUniqueOrThrow({ where: { id: manual.id } })).nextRunAt.getTime()).toBe(now.getTime() + 60_000)
 })

@@ -699,10 +699,13 @@ model OutboxEvent {
   status          String    @default("pending") // pending|published
   createdAt       DateTime  @default(now())
   publishedAt     DateTime?
+  leaseOwner      String?
+  leaseUntil      DateTime?
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([status, createdAt])
+  @@index([status, leaseUntil, createdAt])
 }
 
 // ─── Fase 5: Estrutura institucional (partidos, blocos, mesa, comissões) ────
@@ -981,10 +984,13 @@ model WebhookDelivery {
   responseStatus Int?
   createdAt     DateTime  @default(now())
   deliveredAt   DateTime?
+  leaseOwner    String?
+  leaseUntil    DateTime?
 
   endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 
   @@index([status, nextAttemptAt])
+  @@index([status, leaseUntil, nextAttemptAt])
 }
 
 model Notification {
@@ -1287,6 +1293,19 @@ model ScheduledJob {
   updatedBy    String? // nome do ator (decisões de plataforma fora da cadeia de auditoria de tenant)
   updatedAt    DateTime?
   createdAt    DateTime  @default(now())
+  leaseOwner   String?
+  leaseUntil   DateTime?
+
+  @@index([active, leaseUntil, nextRunAt])
+}
+
+model RateLimitHit {
+  id      String   @id @default(cuid())
+  keyHash String
+  at      DateTime @default(now())
+
+  @@index([keyHash, at])
+  @@index([at])
 }
 
 // ─── Onda 5 / Fase 22: assinatura eletrônica de documentos (ADR-023) ────────

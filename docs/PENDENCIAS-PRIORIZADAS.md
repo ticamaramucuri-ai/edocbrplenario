@@ -5,7 +5,7 @@ Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). �
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
-| Alta | 045 | PostgreSQL ativo com serviços, leases, rate limit, correio e recuperação | Engenharia de plataforma | Ensaio de falha e restore com tempos medidos, CI e runbook |
+| Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
 | Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |
 | Alta | 047 | Convocação com prova de entrega/ciência e documentos versionados | Secretaria legislativa | Jornada e comprovantes de envio revisados |
 | Alta | 048–049 | Quórum por ato, identificação e apuração nominal/simbólica | Mesa e secretaria | Sessões simuladas, conferência humana e testes concorrentes |

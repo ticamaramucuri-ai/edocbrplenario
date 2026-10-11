@@ -48,7 +48,7 @@ const createSchema = z.object({
 
 export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
   // Rate limit ANTES de qualquer trabalho (protege também a validação/DB).
-  const rl = hitRateLimit(
+  const rl = await hitRateLimit(
     'public:subscriptions',
     rateLimitKey(clientIp(req)),
     RATE_LIMIT,

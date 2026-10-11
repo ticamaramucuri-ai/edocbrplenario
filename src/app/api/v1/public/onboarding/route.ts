@@ -79,7 +79,7 @@ function toOnboardingRequestView(r: OnboardingRequest): OnboardingRequestView {
 
 export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
   // Rate limit ANTES de qualquer trabalho (protege também validação/DB).
-  const rl = hitRateLimit(
+  const rl = await hitRateLimit(
     'public:onboarding',
     rateLimitKey(clientIp(req)),
     RATE_LIMIT,

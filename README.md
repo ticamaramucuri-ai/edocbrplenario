@@ -17,6 +17,11 @@ Onda 6**. Piloto **v0.13.0** (26 módulos).
 > sessões ou dados oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
 > continuam disponíveis exclusivamente para demonstração.
 
+O [diagnóstico de conclusão](docs/DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) orienta as
+próximas fases. A [etapa 045](docs/etapas/045-fundacao-operacional-saas.md) está em
+andamento: os workers PostgreSQL e o rate limit compartilhado já passaram em ensaio
+isolado; o corte da base, correio e recuperação institucional permanecem pendentes.
+
 ---
 
 ## Destaques

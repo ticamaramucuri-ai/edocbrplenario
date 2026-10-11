@@ -2,7 +2,7 @@
 
 **Data-base:** 11/10/2026 · **Revisão:** 1 · **Escopo:** código, esquema, testes, CI e documentos deste repositório até a etapa 042. Este plano orienta o desenvolvimento; não declara o sistema homologado para atos oficiais.
 
-**Atualização de execução:** as etapas [043](etapas/043-linha-de-base.md) e [044](etapas/044-identidade-partidaria-arquivos.md) foram implementadas localmente após o inventário abaixo. A tabela de lacunas preserva a fotografia da etapa 042; a identidade partidária e a CI de imagens já receberam correção local. Persistência institucional de arquivos e restore conjunto continuam na fase 045.
+**Atualização de execução:** as etapas [043](etapas/043-linha-de-base.md) e [044](etapas/044-identidade-partidaria-arquivos.md) foram implementadas localmente após o inventário abaixo. A tabela de lacunas preserva a fotografia da etapa 042; a identidade partidária e a CI de imagens já receberam correção local. A fase [045](etapas/045-fundacao-operacional-saas.md) está em andamento: leases e rate limit distribuído passaram em homologação descartável; persistência institucional, e-mail, fanout realtime e restore conjunto ainda faltam.
 
 ## 1. Decisão executiva
 

@@ -23,7 +23,30 @@ sed -e 's/provider = "sqlite"/provider = "postgresql"/' \
   -e "/provider = \"prisma-client-js\"/a\\  output = \"$temporary/client\"" \
   prisma/schema.prisma > "$temporary/schema.prisma"
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma validate --schema "$temporary/schema.prisma" >/dev/null
-sed -e '/partyEmblemUrl String?/d' -e '/emblemUrl String?/d' "$temporary/schema.prisma" > "$temporary/schema-baseline.prisma"
+python3 - "$temporary/schema.prisma" "$temporary/schema-baseline.prisma" <<'PY'
+from pathlib import Path
+import re
+import sys
+source = Path(sys.argv[1]).read_text()
+source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
+for model, fields, indexes in [
+    ('Parliamentarian', ['partyEmblemUrl'], []),
+    ('Party', ['emblemUrl'], []),
+    ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),
+    ('WebhookDelivery', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, nextAttemptAt']),
+    ('ScheduledJob', ['leaseOwner', 'leaseUntil'], ['active, leaseUntil, nextRunAt']),
+]:
+    pattern = rf'(model {model} \{{\n)(.*?)(\n\}})'
+    match = re.search(pattern, source, re.S)
+    if not match:
+        raise SystemExit(f'Modelo ausente no baseline: {model}')
+    body = match.group(2)
+    body = '\n'.join(line for line in body.split('\n')
+                     if not any(re.match(rf'\s*{field}\s', line) for field in fields)
+                     and not any(f'@@index([{index}])' in line for index in indexes))
+    source = source[:match.start(2)] + body + source[match.end(2):]
+Path(sys.argv[2]).write_text(source)
+PY
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma migrate diff \
   --from-empty --to-schema-datamodel "$temporary/schema-baseline.prisma" --script > "$temporary/generated.sql"
 if ! cmp -s "$temporary/generated.sql" prisma/postgres/migrations/0001_baseline.sql; then
@@ -105,6 +128,8 @@ switched_client=1
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/postgres-services-e2e.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  bun test tests/rate-limit-postgres.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/scheduler-postgres-http.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

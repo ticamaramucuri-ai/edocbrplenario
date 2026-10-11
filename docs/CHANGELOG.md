@@ -4,7 +4,13 @@ Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). O piloto es
 **0.x** (pré-1.0). Cada fase do prompt mestre entrega código funcional, migration, seed,
 documentação e verificação reproduzível.
 
-## [Não lançado] — Etapas 043–044
+## [Não lançado] — Etapa 045 (em andamento)
+
+- Leases de workers PostgreSQL para outbox, webhooks e scheduler; testes de concorrência e retomada.
+- Rate limit público/API key compartilhado no PostgreSQL com advisory lock e hash da identidade.
+- Migrações 0005–0006 e cópia conciliada de 71 tabelas em ambiente descartável.
+
+## Etapas 043–044
 
 - Linha de base documental/CI alinhada ao estado v0.13.0 e registro de pendências por fase.
 - Emblema canônico por partido e Câmara com propagação aos parlamentares, migração PostgreSQL 0004 e backfill SQLite.

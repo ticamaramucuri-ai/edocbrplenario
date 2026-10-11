@@ -41,3 +41,19 @@ test('outbox PostgreSQL entrega payload por Câmara, confirma e tenta novamente 
   expect((await db.outboxEvent.findUniqueOrThrow({ where: { id: second.id } })).publishedAt).toBeInstanceOf(Date)
   expect(await publishPostgresOutboxBatch(db, () => { throw new Error('não deve reemitir') })).toEqual([])
 })
+
+test('dois publicadores disputam um evento e lease vencido é retomado', async () => {
+  const tenant = await db.tenant.create({ data: { slug: `rt-lease-${crypto.randomUUID()}`, name: 'Câmara', city: 'Teste', uf: 'BA' } })
+  const event = await db.outboxEvent.create({ data: { tenantId: tenant.id, eventType: 'test.pg', aggregateId: tenant.id, internalPayload: '{}' } })
+  let sends = 0
+  await Promise.all([1, 2].map(() => publishPostgresOutboxBatch(db, async (row) => {
+    if (row.id !== event.id) return
+    sends++
+    await Bun.sleep(80)
+  })))
+  expect(sends).toBe(1)
+  expect((await db.outboxEvent.findUniqueOrThrow({ where: { id: event.id } })).status).toBe('published')
+  const expired = await db.outboxEvent.create({ data: { tenantId: tenant.id, eventType: 'test.pg', aggregateId: tenant.id,
+    internalPayload: '{}', leaseOwner: 'worker-morto', leaseUntil: new Date(Date.now() - 1000) } })
+  expect((await publishPostgresOutboxBatch(db, () => {})).map(e => e.id)).toContain(expired.id)
+})

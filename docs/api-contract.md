@@ -785,8 +785,8 @@ Alterações em rotas existentes:
 | `/api/v1/public/verify` | GET | público (rate limit **30/min/IP**) | `?code=` (trim+uppercase) → 200 SEMPRE: `{found, kind: 'publication'\|null, code, title, tenantName, publishedAt, revokedAt, status: valida\|revogada\|nao_encontrada}` (busca global por código de publicação; rascunho não verifica). Sem `code` → 422. **Atas** continuam verificáveis no módulo Relatórios pela cadeia de auditoria (ADR-004) — limitação documentada |
 | `/api/v1/subscriptions` | GET, DELETE | `subscription.manage` | GET → `{subscriptions: CitizenSubscriptionView[] (com confirmToken APENAS em pendentes ativas — link copiável no sandbox sem SMTP), stats {total, confirmed, pending, byTarget}}`; ordenação pendentes → confirmadas → revogadas. DELETE `?id=` → revoga (grava `revokedAt`, NUNCA apaga) + auditoria `subscription.revoked`; idempotente (200 "já estava revogada"); de outro tenant → 404 |
 
-Rate limit (janela deslizante em memória por (bucket, IP), `src/lib/server/rate-limit.ts`;
-produção: Redis): `public:subscriptions` 5/1h · `public:verify` 30/1min ·
+Rate limit (janela deslizante por bucket/identidade em `src/lib/server/rate-limit.ts`;
+PostgreSQL compartilhado e transacional, SQLite local em memória): `public:subscriptions` 5/1h · `public:verify` 30/1min ·
 `public:hearing-questions` 5/10min (aplicado no POST de perguntas — ver Fase 11). Exceder →
 429 Problem Details `RATE_LIMITED` + `retryAfterSeconds` + header `Retry-After`.
 

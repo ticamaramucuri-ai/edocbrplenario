@@ -244,9 +244,9 @@ export async function resolveExternalAuth(
     }
   }
 
-  // Rate limit por chave (janela deslizante em memória — produção: Redis, ADR-024).
+  // Rate limit por chave compartilhado em PostgreSQL (local no piloto SQLite).
   // Delegação conta no MESMO balde via keyId do payload.
-  const rl = hitRateLimit('external:key', auth.keyId, EXTERNAL_RATE_LIMIT, RATE_WINDOW.MINUTE)
+  const rl = await hitRateLimit('external:key', auth.keyId, EXTERNAL_RATE_LIMIT, RATE_WINDOW.MINUTE)
   if (!rl.allowed) {
     return {
       ok: false,

@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createServer } from 'net'
+import { db } from '@/lib/db'
 
 async function freePort(): Promise<number> {
   const server = createServer()
@@ -11,6 +12,9 @@ async function freePort(): Promise<number> {
 }
 
 test('scheduler PostgreSQL inicia e mantém health e execução manual por HTTP', async () => {
+  await db.scheduledJob.upsert({ where: { kind: 'tenant.health_snapshot' },
+    create: { kind: 'tenant.health_snapshot', title: 'Snapshot de saúde', active: false },
+    update: { active: false } })
   const port = await freePort()
   const child = Bun.spawn(['bun', 'mini-services/scheduler/postgres.ts'], {
     cwd: process.cwd(),
@@ -38,5 +42,7 @@ test('scheduler PostgreSQL inicia e mantém health e execução manual por HTTP'
   } finally {
     child.kill('SIGTERM')
     await child.exited
+    await db.scheduledJob.deleteMany({ where: { kind: 'tenant.health_snapshot' } })
+    await db.$disconnect()
   }
 })

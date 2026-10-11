@@ -33,7 +33,7 @@ const RATE_LIMIT = 30
 const RATE_WINDOW_MS = RATE_WINDOW.MINUTE
 
 export const GET = apiHandler(async (req: Request, _ctx, correlationId) => {
-  const rl = hitRateLimit(
+  const rl = await hitRateLimit(
     'public:verify',
     rateLimitKey(clientIp(req)),
     RATE_LIMIT,

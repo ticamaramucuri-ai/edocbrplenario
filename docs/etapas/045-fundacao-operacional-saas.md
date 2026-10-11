@@ -1,0 +1,13 @@
+# Etapa 045 — Fundação operacional SaaS
+
+**Data:** 11/10/2026 · **Estado:** em andamento; incremento de concorrência concluído em homologação descartável.
+
+As migrações PostgreSQL 0005 e 0006 adicionam leases a outbox, entregas de webhook e agendamentos, além de hits de rate limit com chave SHA-256. Cada worker disputa a posse por atualização condicional, libera ao confirmar e pode retomar após expiração. O agendador renova o lease durante tarefas longas; a execução manual disputa a mesma posse sem adiantar `nextRunAt`. Entrega de evento Socket.IO e webhook permanece **pelo menos uma vez** após uma falha entre o efeito externo e a confirmação. O receptor deve deduplicar `eventId`/`x-legis-delivery-id`.
+
+O limite público e de API key usa janela deslizante compartilhada no PostgreSQL, serializada por advisory lock transacional. No SQLite local ele permanece em memória. Falha do PostgreSQL não libera requisições sem limite: a rota falha, conforme política de segurança. As chaves persistidas são hashes, sem IP ou chave de API em texto claro; hits antigos são limpos ao reutilizar o bucket e periodicamente por amostragem.
+
+**Evidência:** `bun run test:postgres:foundation` aplicou 0001–0006 em PostgreSQL descartável, restaurou backup, copiou 71 tabelas e passou nas suítes dos três serviços e da jornada de sessão. Os testes novos disputam um evento e uma entrega entre dois workers, retomam leases vencidos, verificam manual/tick sem duplicação e mostram que 8 requisições concorrentes recebem exatamente 3 permissões para uma cota 3. Lint, typecheck e build de produção compõem o gate da alteração.
+
+**Limites do incremento:** para realtime com múltiplos nós Socket.IO ainda falta barramento de fanout/adapter entre instâncias; manter **um nó realtime ativo por vez**, com substituto após falha. O lease evita publicação concorrente na mesma fila, mas não distribui a emissão para os sockets de outros nós. Correio transacional, métricas/alertas externos, restore conjunto de banco e arquivos com RTO/RPO medidos e implantação persistente em homologação ainda não foram entregues. Não houve corte da base local SQLite nem envio real de e-mail.
+
+**Saída exigida da etapa 045:** provisionar ambiente de homologação independente; instalar PostgreSQL e volume/objeto de mídia; testar backup/restauração de banco + fotos + documentos + originais/replay, de forma sincronizada; operar os três serviços com falhas induzidas; implantar correio transacional e observar entrega/retentativa; provar limites em réplicas, logs/alertas, recuperação, RTO/RPO e um único publicador realtime ou barramento distribuído. Só então a etapa recebe estado concluída. A fase 046 depende também do regimento e composição oficiais da Câmara.

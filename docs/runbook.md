@@ -29,12 +29,12 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   `DATABASE_URL` na API.
 - Para ensaio PostgreSQL do realtime, defina `REALTIME_DATABASE_PROVIDER=postgresql`
   e `DATABASE_URL` PostgreSQL, após gerar o cliente Prisma para esse provedor.
-  Execute apenas um publicador por banco; a migração integral da aplicação ainda
-  está em andamento na [etapa 030](etapas/030-base-operacional-saas.md).
+  Leases impedem disputa pela mesma linha, mas mantenha apenas um nó Socket.IO
+  ativo até haver fanout entre nós; veja a [etapa 045](etapas/045-fundacao-operacional-saas.md).
 - Para ensaio PostgreSQL dos webhooks, defina `WEBHOOKS_DATABASE_PROVIDER=postgresql`
   e `DATABASE_URL` PostgreSQL com cliente Prisma correspondente. Execute um
-  trabalhador por banco até implementar claim/lease. O piloto continua usando
-  `WEBHOOKS_DB_PATH` e SQLite; veja a [etapa 034](etapas/034-webhooks-postgres.md).
+  trabalhador por banco pode ter réplicas com claim/lease; o receptor deve
+  deduplicar `x-legis-delivery-id`. O piloto continua usando SQLite.
 - Para ensaio PostgreSQL do scheduler, gere o cliente Prisma correspondente,
   defina `DATABASE_URL` PostgreSQL e use `cd mini-services/scheduler && bun run dev:postgres`.
   Execute uma instância por banco até haver claim/lease para jobs; o piloto usa
@@ -266,7 +266,7 @@ Rollback remove apenas os dados do run — seguro para reimportações.
 | Voto secreto = sigilo operacional (valor oculto), não criptográfico | DBA poderia teoricamente correlacionar | Desenho criptográfico com revisão de especialista |
 | Webhooks dependem de saída de internet | Alvos externos podem falhar em sandbox | Eco local para demonstração; rede liberada em produção |
 | Desativação de tenant é operacional (não bloqueia rotas) | Console reflete status financeiro | Middleware de bloqueio server-side quando ativado |
-| Rate limit público em memória por processo (Fase 19) | Reinicia com o dev server; sem efeito multi-réplica | Redis por bucket (contrato `hitRateLimit` estável) — ADR-020 |
+| Rate limit local em SQLite; compartilhado em PostgreSQL (etapa 045) | SQLite reinicia o contador com o processo | Usar PostgreSQL na homologação com réplicas; testar 429 concorrente |
 | Worker de export in-process (Fase 20) | Job órfão em running após restart (guarda 409 persiste) | Fila persistente + worker dedicado — ver §8 |
 
 ## 11. Checklist diário (em operação assistida)

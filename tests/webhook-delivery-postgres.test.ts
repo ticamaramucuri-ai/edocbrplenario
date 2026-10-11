@@ -52,3 +52,20 @@ test('webhooks PostgreSQL: sucesso, retry, dead-letter atômico e endpoint inati
   expect(await db.webhookDelivery.findUniqueOrThrow({ where: { id: retry.id } })).toMatchObject({ status: 'success', attempts: 2 })
   expect(await db.notification.count({ where: { dedupeKey: `webhook.dead:${dead.id}` } })).toBe(1)
 })
+
+test('duas réplicas enviam uma vez e lease vencido é retomado', async () => {
+  const tenant = await db.tenant.create({ data: { slug: `wh-lease-${crypto.randomUUID()}`, name: 'Câmara', city: 'Teste', uf: 'BA' } })
+  const endpoint = await db.webhookEndpoint.create({ data: { tenantId: tenant.id, url: 'https://example.invalid/lease', secret: 'test', events: '[]' } })
+  const row = await db.webhookDelivery.create({ data: { endpointId: endpoint.id, eventType: 'test.pg', payload: '{}' } })
+  let sends = 0
+  await Promise.all([1, 2].map(() => processPostgresWebhookBatch(db, async (_endpoint, delivery) => {
+    if (delivery.id === row.id) sends++
+    await Bun.sleep(80)
+    return { kind: 'success', responseStatus: 204 }
+  })))
+  expect(sends).toBe(1)
+  const expired = await db.webhookDelivery.create({ data: { endpointId: endpoint.id, eventType: 'test.expired', payload: '{}',
+    leaseOwner: 'worker-morto', leaseUntil: new Date(Date.now() - 1000) } })
+  await processPostgresWebhookBatch(db, async () => ({ kind: 'success', responseStatus: 204 }))
+  expect((await db.webhookDelivery.findUniqueOrThrow({ where: { id: expired.id } })).status).toBe('success')
+})

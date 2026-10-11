@@ -35,7 +35,7 @@ const server = createServer((req, res) => {
       res.end(JSON.stringify({ ok: false, error: `Kind desconhecido: "${kind}".` }))
       return
     }
-    void scheduler.runKind(kind).then((result) => {
+    void scheduler.runManual(kind).then((result) => {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(result))
     }).catch((error) => {
