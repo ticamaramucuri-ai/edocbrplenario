@@ -47,6 +47,9 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [041 — Escrita e recuperação PostgreSQL](041-homologacao-escrita-recuperacao-postgres.md) | Ensaio local concluído | Build de produção, jornada HTTP com cookie real, backup pós-escrita e recuperação HTTP | Falhas dos serviços auxiliares e métricas operacionais |
 | [042 — Imagens de parlamentares no telão](042-imagens-parlamentares-telao.md) | Implementação local concluída | Upload de foto e emblema por Câmara, cadastro e exibição no telão | Arquivos persistentes e identidade partidária centralizada |
 
+| [043 — Linha de base](043-linha-de-base.md) | Concluída localmente | Estado real, CI de imagens e pendências priorizadas | Identidade partidária e arquivos |
+| [044 — Identidade partidária e arquivos](044-identidade-partidaria-arquivos.md) | Implementação local concluída | Emblema por partido/Câmara, volume configurável e inventário de imagens | Homologação de persistência e restore conjunto na 045 |
+
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
-O [diagnóstico e plano de conclusão](../DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) reúne as lacunas atuais e propõe a ordem das próximas fases (043–057). Essas fases propostas não entram nesta tabela até terem implementação e evidência próprias.
+O [diagnóstico e plano de conclusão](../DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) reúne as lacunas atuais e propõe a ordem das próximas fases (043–057). As fases concluídas localmente entram nesta tabela; as demais permanecem propostas.

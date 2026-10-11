@@ -12,6 +12,8 @@ import { requirePermission } from '@/lib/server/rbac'
 import { writeAudit } from '@/lib/server/audit'
 import { toParliamentarianView } from '@/lib/server/serializers'
 import { isTenantImageUrl } from '@/lib/server/parliamentarian-images'
+import { partyEmblem, setPartyEmblem } from '@/lib/server/party-emblems'
+import { emitOutbox } from '@/lib/server/outbox'
 import { DomainError } from '@/lib/server/errors'
 
 export const dynamic = 'force-dynamic'
@@ -48,6 +50,15 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
   }
 
   const created = await withTransaction(async (tx) => {
+    const party = body.party.trim().toUpperCase()
+    if (body.partyEmblemUrl) {
+      const updatedParty = await setPartyEmblem(tx, tenantId, party, body.partyEmblemUrl)
+      await writeAudit(tx, { tenantId, actor, action: 'party.emblem_updated', aggregateType: 'party', aggregateId: updatedParty.id,
+        summary: `Emblema do partido ${party} atualizado.`, after: { emblemUrl: body.partyEmblemUrl }, correlationId, ip: clientIp(req) })
+      await emitOutbox(tx, { tenantId, eventType: 'structure.changed', aggregateId: updatedParty.id, aggregateVersion: 1,
+        correlationId, origin: 'operator', internalPayload: { entity: 'party', event: 'emblem_updated', id: updatedParty.id } })
+    }
+    const emblem = body.partyEmblemUrl || await partyEmblem(tx, tenantId, party)
     const last = await tx.parliamentarian.findFirst({
       where: { tenantId },
       orderBy: { order: 'desc' },
@@ -57,14 +68,14 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       data: {
         tenantId,
         name: body.name,
-        party: body.party,
+        party,
         bloc: body.bloc ?? null,
         boardRole: body.boardRole ?? 'vereador',
         committee: body.committee ?? null,
         email: body.email ?? null,
         phone: body.phone ?? null,
         photoUrl: body.photoUrl ?? null,
-        partyEmblemUrl: body.partyEmblemUrl ?? null,
+        partyEmblemUrl: emblem,
         order: (last?.order ?? -1) + 1,
         active: true,
       },

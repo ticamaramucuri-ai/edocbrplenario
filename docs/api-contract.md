@@ -267,7 +267,10 @@ Cronômetro server-side: `elapsedSeconds` + `startedAt`/`pausedAt`; `extend` adi
 `seconds` (ou 60 default) ao `plannedSeconds`. → `{ speech: SpeechView }`. Emite evento.
 
 ### GET `/api/v1/parliamentarians` · POST · PATCH `/api/v1/parliamentarians/:id` · DELETE (soft)
-POST Body: `{ name, party, bloc?, boardRole?, committee?, email?, phone? }`
+POST Body: `{ name, party, bloc?, boardRole?, committee?, email?, phone?, photoUrl?, partyEmblemUrl? }`.
+As URLs de imagem devem pertencer ao mesmo tenant e vir de `POST /api/v1/parliamentarians/images`
+(multipart com `kind=photo|partyEmblem` e arquivo JPG/PNG/WebP até 5 MB). O emblema é
+canônico no partido e propagado aos membros da mesma Câmara; `partyEmblemUrl` no membro é snapshot de exibição.
 PATCH: campos parciais. DELETE: `active: false` (soft).
 → `{ parliamentarians: ParliamentarianView[] }` / `{ parliamentarian }`.
 
@@ -330,7 +333,8 @@ POST body `{number, startYear, endYear}`; PATCH `{current?: true, startYear?, en
 marcar `current` desmarca as demais do tenant. Legislature nunca é excluída.
 
 ### GET|POST `/api/v1/parties` · PATCH `/api/v1/parties/:id`
-POST `{acronym, name, number?}`; PATCH `{active?}` (soft delete) ou `{name?, number?}`.
+POST `{acronym, name, number?}`; PATCH `{active?}` (soft delete) ou `{name?, number?, emblemUrl?}`.
+`emblemUrl` aceita URL de imagem do próprio tenant ou `null` para remover; a alteração propaga aos parlamentares da sigla.
 
 ### GET|POST `/api/v1/blocs` · PATCH `/api/v1/blocs/:id`
 POST `{name, partyAcronyms: string[]}`.

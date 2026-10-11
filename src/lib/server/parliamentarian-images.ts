@@ -1,6 +1,11 @@
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 
-export const PARLIAMENTARIAN_IMAGE_ROOT = join(process.cwd(), 'upload', 'parliamentarian-images')
+export function parliamentarianImageRoot(): string {
+  const configured = process.env.PARLIAMENTARIAN_IMAGES_ROOT
+  if (!configured) return join(process.cwd(), 'upload', 'parliamentarian-images')
+  if (!isAbsolute(configured)) throw new Error('PARLIAMENTARIAN_IMAGES_ROOT deve ser absoluto')
+  return configured
+}
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024
 
 export function imageUrl(tenantId: string, fileName: string): string {

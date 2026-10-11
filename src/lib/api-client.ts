@@ -402,7 +402,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  updateParty: (id: string, data: { name?: string; number?: number | null; active?: boolean }) =>
+  updateParty: (id: string, data: { name?: string; number?: number | null; active?: boolean; emblemUrl?: string | null }) =>
     request<{ party: PartyView }>(`/parties/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

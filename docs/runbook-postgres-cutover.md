@@ -5,8 +5,8 @@
 ## Entrada e responsáveis
 
 - Responsável técnico nomeia operador do banco, operador da aplicação/mídia e pessoa de aceite da Câmara; registra janela, canais de comunicação e ponto de decisão.
-- Conferir backup íntegro do SQLite **e** dos arquivos de anexos, gravações e replay; registrar horário, hash e teste de restauração. Uma cópia do banco sem os arquivos não conclui a migração.
-- Inventariar referências e manifests com `python3 scripts/audit-external-assets.py --source CAMINHO --strict` e raízes privadas de mídia quando houver gravações. Resolver toda pendência antes do corte.
+- Conferir backup íntegro do SQLite **e** dos arquivos de anexos, fotos/emblemas, gravações e replay; registrar horário, hash e teste de restauração. Uma cópia do banco sem os arquivos não conclui a migração.
+- Inventariar referências e manifests com `python3 scripts/audit-external-assets.py --source CAMINHO --strict` e raízes privadas de mídia quando houver gravações. Auditar fotos com `python3 scripts/audit-parliamentarian-images.py --source CAMINHO --root RAIZ_ABSOLUTA --strict`. Resolver toda pendência antes do corte.
 - Executar `bun run test:postgres:production-write -- CAMINHO` com uma réplica autorizada e máquina sem instância Next ativa. Registrar contagens, checksum das migrações, tempos de cópia/recuperação, 5xx e diferenças. Não usar o banco ativo como destino.
 - Homologar regras regimentais, usuários, papéis, sessões, resultados e equipamentos de captação com a Câmara; validar contas sociais institucionais quando disponíveis.
 

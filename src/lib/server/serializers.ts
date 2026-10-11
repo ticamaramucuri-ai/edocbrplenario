@@ -499,7 +499,7 @@ export function toLegislatureView(l: LegislatureRow): LegislatureView {
 }
 
 export function toPartyView(p: PartyRow): PartyView {
-  return { id: p.id, acronym: p.acronym, name: p.name, number: p.number ?? null, active: p.active }
+  return { id: p.id, acronym: p.acronym, name: p.name, number: p.number ?? null, emblemUrl: p.emblemUrl ?? null, active: p.active }
 }
 
 export function parseAcronyms(raw: string): string[] {

@@ -713,6 +713,7 @@ model Party {
   acronym   String
   name      String
   number    Int?
+  emblemUrl String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

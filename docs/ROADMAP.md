@@ -1,16 +1,10 @@
 # Plano de Continuidade — Legis SaaS
 
-Documento-mestre de planejamento da continuidade do desenvolvimento. Mapeia o estado
-entregue (Ondas 1–4 — fases 0–20 — mais o 24º módulo "Planejamento e Roadmap" da
-v0.12.0: **24 módulos, ~76 grupos de rotas**), define a **Onda 4 — Fases 17–20** (§11)
-com escopo completo de funcionalidades, menus, páginas, APIs, modelo de dados, eventos,
-RBAC e critérios de aceite — **ENTREGUE e verificada E2E** — e consolida o pacote de
-documentação do produto.
-
-A partir da v0.12.0, este plano também é consultável **dentro do produto**, no módulo
-**Planejamento e Roadmap** (Administração), com progresso rastreável pelas tasks da Onda 5.
-A **Onda 5 — Fases 21–24** (§12) está PLANEJADA neste documento; a **Onda 6 — Fases 25–28**
-(§13) é a prévia de longo prazo.
+Documento histórico de ondas do produto, consultável também no módulo Planejamento e
+Roadmap. A **Onda 5 (fases 21–24) foi entregue na v0.13.0**, com 26 módulos; os
+quadros de tarefas de §12 preservam o planejamento original. A **Onda 6 (§14) é
+planejada**. Para o estado verificado após a etapa 042, lacunas e ordem de execução
+043–057, consulte [Diagnóstico e plano de conclusão](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md).
 
 > Fonte de requisitos: `upload/PROMPT_MESTRE_RECONSTRUCAO_SAAS_LEGISLATIVA.md` (plano de
 > implementação obrigatório, seção 18). Adaptações de ambiente registradas em `docs/adr/`.

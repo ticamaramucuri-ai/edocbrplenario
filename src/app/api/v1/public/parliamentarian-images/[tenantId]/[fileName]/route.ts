@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { apiHandler, notFound } from '@/lib/server/errors'
-import { PARLIAMENTARIAN_IMAGE_ROOT } from '@/lib/server/parliamentarian-images'
+import { parliamentarianImageRoot } from '@/lib/server/parliamentarian-images'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +10,7 @@ export const GET = apiHandler(async (_req, ctx) => {
   if (!/^[a-z0-9]{15,35}$/.test(tenantId) || !/^[a-f0-9-]{36}\.webp$/.test(fileName)) throw notFound('Imagem não encontrada.')
   let image: Buffer
   try {
-    image = await readFile(join(PARLIAMENTARIAN_IMAGE_ROOT, tenantId, fileName))
+    image = await readFile(join(parliamentarianImageRoot(), tenantId, fileName))
   } catch {
     throw notFound('Imagem não encontrada.')
   }

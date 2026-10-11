@@ -2,6 +2,8 @@
 
 **Data-base:** 11/10/2026 · **Revisão:** 1 · **Escopo:** código, esquema, testes, CI e documentos deste repositório até a etapa 042. Este plano orienta o desenvolvimento; não declara o sistema homologado para atos oficiais.
 
+**Atualização de execução:** as etapas [043](etapas/043-linha-de-base.md) e [044](etapas/044-identidade-partidaria-arquivos.md) foram implementadas localmente após o inventário abaixo. A tabela de lacunas preserva a fotografia da etapa 042; a identidade partidária e a CI de imagens já receberam correção local. Persistência institucional de arquivos e restore conjunto continuam na fase 045.
+
 ## 1. Decisão executiva
 
 O edocBR Plenário já executa, com dados fictícios, a jornada essencial de uma sessão: preparação, pauta, convocação, presença, condução, votação, resultado, ata, portal, telão e transmissão/gravação local. A aplicação também tem isolamento de Câmaras no código, autenticação, auditoria, console SaaS e ferramentas de operação. **O próximo trabalho é fechar os limites do piloto e demonstrar confiabilidade institucional**, não recriar esses módulos.
@@ -47,7 +49,7 @@ Há ainda decisões dependentes do responsável institucional: retenção de doc
 
 ## 4. Ordem crescente de desenvolvimento
 
-As fases 043–057 são **propostas**, não entregas realizadas. Cada uma termina com código, teste, documentação numerada em `docs/etapas/`, runbook atualizado e evidência de aceite. Uma fase não avança para dados oficiais porque passou apenas em ambiente fictício. Preparação institucional de Mucuri pode ocorrer em paralelo, sem cadastrar fatos presumidos.
+As fases 043–044 tiveram incremento local após esta revisão; 045–057 continuam propostas. Cada uma termina com código, teste, documentação numerada em `docs/etapas/`, runbook atualizado e evidência de aceite. Uma fase não avança para dados oficiais porque passou apenas em ambiente fictício. Preparação institucional de Mucuri pode ocorrer em paralelo, sem cadastrar fatos presumidos.
 
 | Ordem | Fase e objetivo | Entrega mínima para passar à seguinte | Dependência/decisão |
 |---|---|---|---|

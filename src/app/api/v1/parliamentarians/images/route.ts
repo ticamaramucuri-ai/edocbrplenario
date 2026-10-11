@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import { apiHandler, DomainError } from '@/lib/server/errors'
 import { resolveActor, resolveTenantScope } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
-import { IMAGE_MAX_BYTES, PARLIAMENTARIAN_IMAGE_ROOT, imageUrl } from '@/lib/server/parliamentarian-images'
+import { IMAGE_MAX_BYTES, parliamentarianImageRoot, imageUrl } from '@/lib/server/parliamentarian-images'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +34,7 @@ export const POST = apiHandler(async (req: NextRequest) => {
     throw new DomainError('VALIDATION_ERROR', 422, 'Imagem inválida', 'Não foi possível processar esta imagem.')
   }
   const fileName = `${randomUUID()}.webp`
-  const directory = join(PARLIAMENTARIAN_IMAGE_ROOT, tenantId)
+  const directory = join(parliamentarianImageRoot(), tenantId)
   await mkdir(directory, { recursive: true, mode: 0o700 })
   await writeFile(join(directory, fileName), output, { flag: 'wx', mode: 0o600 })
   return Response.json({ url: imageUrl(tenantId, fileName) }, { status: 201 })

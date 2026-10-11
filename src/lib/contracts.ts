@@ -643,6 +643,7 @@ export type PartyView = {
   acronym: string
   name: string
   number: number | null
+  emblemUrl: string | null
   active: boolean
 }
 

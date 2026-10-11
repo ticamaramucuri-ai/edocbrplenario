@@ -23,7 +23,7 @@ sed -e 's/provider = "sqlite"/provider = "postgresql"/' \
   -e "/provider = \"prisma-client-js\"/a\\  output = \"$temporary/client\"" \
   prisma/schema.prisma > "$temporary/schema.prisma"
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma validate --schema "$temporary/schema.prisma" >/dev/null
-sed '/partyEmblemUrl String?/d' "$temporary/schema.prisma" > "$temporary/schema-baseline.prisma"
+sed -e '/partyEmblemUrl String?/d' -e '/emblemUrl String?/d' "$temporary/schema.prisma" > "$temporary/schema-baseline.prisma"
 DATABASE_URL='postgresql://postgres:test-only@localhost:5432/postgres' bunx prisma migrate diff \
   --from-empty --to-schema-datamodel "$temporary/schema-baseline.prisma" --script > "$temporary/generated.sql"
 if ! cmp -s "$temporary/generated.sql" prisma/postgres/migrations/0001_baseline.sql; then

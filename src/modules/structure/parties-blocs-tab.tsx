@@ -109,7 +109,7 @@ function PartiesCard() {
               <TableBody>
                 {parties.map((p) => (
                   <TableRow key={p.id} className={p.active ? undefined : 'opacity-70'}>
-                    <TableCell className="font-mono text-sm font-bold">{p.acronym}</TableCell>
+                    <TableCell className="font-mono text-sm font-bold"><span className="flex items-center gap-2">{p.emblemUrl && <img src={p.emblemUrl} alt="" className="size-7 object-contain" />}{p.acronym}</span></TableCell>
                     <TableCell className="max-w-[12rem] truncate text-sm text-muted-foreground" title={p.name}>
                       {p.name}
                     </TableCell>
@@ -180,12 +180,15 @@ function PartyDialog({
   const [name, setName] = useState(editing?.name ?? '')
   const [number, setNumber] = useState(editing?.number !== null && editing?.number !== undefined ? String(editing.number) : '')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [emblemUrl, setEmblemUrl] = useState<string | null>(editing?.emblemUrl ?? null)
+  const [emblemFile, setEmblemFile] = useState<File | null>(null)
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const numberVal = number.trim() === '' ? null : Number(number)
+      const uploaded = emblemFile ? await api.uploadParliamentarianImage('partyEmblem', emblemFile) : null
       return editing
-        ? api.updateParty(editing.id, { name: name.trim(), number: numberVal })
+        ? api.updateParty(editing.id, { name: name.trim(), number: numberVal, emblemUrl: uploaded?.url ?? emblemUrl })
         : api.createParty({ acronym: acronym.trim().toUpperCase(), name: name.trim(), number: numberVal })
     },
     onSuccess: () => {
@@ -256,6 +259,12 @@ function PartyDialog({
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
+          {editing && <div className="grid gap-2 sm:col-span-2">
+            <Label htmlFor="party-emblem">Emblema do partido</Label>
+            {emblemUrl && !emblemFile && <img src={emblemUrl} alt={`Emblema ${editing.acronym}`} className="size-16 object-contain" />}
+            <Input id="party-emblem" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setEmblemFile(event.target.files?.[0] ?? null)} />
+            {(emblemUrl || emblemFile) && <Button type="button" variant="outline" size="sm" onClick={() => { setEmblemUrl(null); setEmblemFile(null) }}>Remover emblema</Button>}
+          </div>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

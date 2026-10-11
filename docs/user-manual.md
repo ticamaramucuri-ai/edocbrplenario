@@ -199,7 +199,7 @@ pendências do processo legislativo (prazos vencidos, protocolos a distribuir).
 ### Estrutura Institucional (`Cadastros → Estrutura Institucional`)
 
 - **Legislaturas**: cadastro e marcação da atual (afeta defaults de mandatos).
-- **Partidos e Blocos**: partidos com sigla/nome/número; blocos com partidos componentes.
+- **Partidos e Blocos**: partidos com sigla/nome/número e emblema opcional; uma troca de emblema atualiza todos os parlamentares do mesmo partido nesta Câmara. Blocos têm partidos componentes.
 - **Mesa Diretora**: composição vigente com vigência (início/fim) e histórico — designar,
   transferir cargo ou encerrar vigência; nunca sobrescreve o passado.
 - **Comissões**: comissões permanentes/temporárias com composição (presidente, relator,

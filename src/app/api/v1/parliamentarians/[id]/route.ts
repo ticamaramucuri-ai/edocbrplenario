@@ -14,6 +14,8 @@ import { loadParliamentarian } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { toParliamentarianView } from '@/lib/server/serializers'
 import { isTenantImageUrl } from '@/lib/server/parliamentarian-images'
+import { partyEmblem, setPartyEmblem } from '@/lib/server/party-emblems'
+import { emitOutbox } from '@/lib/server/outbox'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,9 +45,23 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
     throw new DomainError('VALIDATION_ERROR', 422, 'Imagem inválida', 'A imagem deve pertencer à Câmara atual.')
   }
   const updated = await withTransaction(async (tx) => {
+    const targetParty = body.party?.trim().toUpperCase() ?? current.party
+    const changingParty = targetParty !== current.party
+    // A logo enviada junto com uma mudança de sigla pode ser a imagem antiga do formulário.
+    const emblemChanged = body.partyEmblemUrl !== undefined && body.partyEmblemUrl !== current.partyEmblemUrl
+    if (emblemChanged) {
+      const updatedParty = await setPartyEmblem(tx, current.tenantId, targetParty, body.partyEmblemUrl ?? null)
+      await writeAudit(tx, { tenantId: current.tenantId, actor, action: 'party.emblem_updated', aggregateType: 'party',
+        aggregateId: updatedParty.id, summary: `Emblema do partido ${targetParty} atualizado.`,
+        before: { emblemUrl: current.partyEmblemUrl }, after: { emblemUrl: body.partyEmblemUrl ?? null }, correlationId, ip: clientIp(req) })
+      await emitOutbox(tx, { tenantId: current.tenantId, eventType: 'structure.changed', aggregateId: updatedParty.id,
+        aggregateVersion: 1, correlationId, origin: 'operator', internalPayload: { entity: 'party', event: 'emblem_updated', id: updatedParty.id } })
+    }
+    const emblem = emblemChanged ? body.partyEmblemUrl ?? null : changingParty
+      ? await partyEmblem(tx, current.tenantId, targetParty) : current.partyEmblemUrl
     const parliamentarian = await tx.parliamentarian.update({
       where: { id: current.id },
-      data: body,
+      data: { ...body, party: targetParty, partyEmblemUrl: emblem },
     })
     await writeAudit(tx, {
       tenantId: current.tenantId,

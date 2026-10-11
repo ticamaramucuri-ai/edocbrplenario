@@ -10,7 +10,7 @@ e pesquisa global (⌘K)**, **modelos de documento versionados**, **Central de A
 in-app**, **ciclo de vida da matéria com sanção/veto e relacionamentos**, **suporte da
 plataforma com impersonação auditada** e **Planejamento e Roadmap — o plano do produto
 dentro do produto, com o progresso rastreável da Onda 5 (Fases 21–24) e a prévia da
-Onda 6**. Piloto **v0.12.0** (24 módulos).
+Onda 6**. Piloto **v0.13.0** (26 módulos).
 
 > Piloto funcional em ambiente local. A Câmara Municipal de Mucuri/BA está
 > cadastrada com identidade institucional, ainda sem usuários, legislatura,
@@ -72,10 +72,10 @@ Onda 6**. Piloto **v0.12.0** (24 módulos).
   "operar como usuário" (motivo, prazo ≤ 60 min, banner âmbar em todos os módulos e
   auditoria na Casa-alvo), **alertas persistentes com reconhecimento** e **exportação
   assíncrona com progresso real** (ADR-021).
-- **Planejamento e Roadmap (v0.12.0)**: o plano de continuidade do produto consultável
+- **Planejamento e Roadmap (v0.13.0)**: o plano de continuidade do produto consultável
   **dentro do produto** por qualquer papel autenticado — estado entregue (Ondas 1–4),
   **mapa-alvo TO-BE v5** (26 módulos), pacote documental e prévia da Onda 6; as
-  **Fases 21–24 (Onda 5) PLANEJADAS** aparecem com progresso real rastreável
+  **Fases 21–24 (Onda 5) ENTREGUES** aparecem com progresso real rastreável
   (4 fases · 34 tasks persistidas) e atualização exclusiva do dono da plataforma
   (RBAC `platform.manage`, autor e horário na própria linha).
 - **Migração auditável**: pipeline de 8 estágios do PainelDeskLegis 8.1 com validação de
@@ -155,15 +155,15 @@ entrar:
 
 | Documento | Conteúdo |
 |---|---|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Plano de continuidade: mapa de funcionalidades/menus/páginas, fases 5–20 entregues, **Onda 5 (Fases 21–24) planejada (§12) e Onda 6 prévia (§13)** |
-| [`docs/user-manual.md`](docs/user-manual.md) | Manual do usuário por perfil (todos os 24 módulos) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Plano de continuidade: mapa de funcionalidades/menus/páginas, fases 5–20 entregues, **Onda 5 entregue (§12), Onda 6 planejada (§14) e fases 043–057 no diagnóstico** |
+| [`docs/user-manual.md`](docs/user-manual.md) | Manual do usuário por perfil (todos os 26 módulos) |
 | [`docs/api-contract.md`](docs/api-contract.md) | Contrato REST `/api/v1` (~76 grupos de rotas) + eventos de tempo real (fonte única de verdade) |
 | [`docs/runbook.md`](docs/runbook.md) | Operação: subir ambiente, health checks, backup/restauração, incidentes |
 | [`docs/migration-importer.md`](docs/migration-importer.md) | Guia do importador PainelDeskLegis 8.1 (pipeline, homologação, rollback) |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Histórico de entregas por fase |
 | [`docs/test-report.md`](docs/test-report.md) | Testes reais executados, defeitos corrigidos, riscos remanescentes |
 | `docs/adr/ADR-001..021` | Decisões de arquitetura entregues |
-| `docs/adr/ADR-022..025` | Decisões de arquitetura **planejadas** (Onda 5 — ver `docs/ROADMAP.md` §12) |
+| `docs/adr/ADR-022..025` | Decisões de arquitetura da Onda 5 entregue |
 | [`docs/adr/ADR-026-configuracao-por-camara.md`](docs/adr/ADR-026-configuracao-por-camara.md) | Diretriz SaaS para políticas por Câmara, snapshots e isolamento |
 
 ### ADRs
@@ -208,7 +208,7 @@ Ajuda              Central de Ajuda
 ```
 
 Componente transversal: **command palette global (⌘K/Ctrl+K)** na topbar — navegação
-entre os 24 módulos + pesquisa unificada.
+entre os 26 módulos + pesquisa unificada.
 
 > Os módulos **Integrações & API** e **Crescimento**, as extensões do mapa-alvo TO-BE v5
 > (MFA, assinatura de atas, verificação pública de assinaturas, aba Agendamentos, guia do
