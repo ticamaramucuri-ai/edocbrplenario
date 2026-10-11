@@ -22,6 +22,12 @@ cleanup() {
         status=1
       fi
     fi
+    if [ -f "$temporary/tsconfig.json" ]; then
+      if ! cp "$temporary/tsconfig.json" tsconfig.json; then
+        echo 'Falha ao restaurar tsconfig.json.' >&2
+        status=1
+      fi
+    fi
   fi
   docker rm -f "$container" >/dev/null 2>&1 || true
   rm -rf -- "$temporary"
@@ -84,7 +90,7 @@ DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
   bunx prisma generate --schema "$temporary/schema.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun scripts/postgres-restored-smoke.ts
-if [ "${EDOCBR_HTTP_REPLICA_SMOKE:-0}" = 1 ]; then
+if [ "${EDOCBR_HTTP_REPLICA_SMOKE:-0}" = 1 ] || [ "${EDOCBR_PRODUCTION_REPLICA_SMOKE:-0}" = 1 ]; then
   python3 - <<'PY'
 from pathlib import Path
 
@@ -101,13 +107,44 @@ for process in Path('/proc').iterdir():
         raise SystemExit('Pare a instância Next deste projeto antes do ensaio HTTP (cliente Prisma é temporariamente regenerado).')
 PY
   cp next-env.d.ts "$temporary/next-env.d.ts"
+  cp tsconfig.json "$temporary/tsconfig.json"
   sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > "$temporary/schema-app.prisma"
   switched_client=1
   DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
     bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
-  DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
-    POSTGRES_TEST_CLIENT="$temporary/client" LEGIS_DEMO_MODE=true \
-    bun scripts/postgres-http-replica.ts
+  if [ "${EDOCBR_HTTP_REPLICA_SMOKE:-0}" = 1 ]; then
+    DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+      POSTGRES_TEST_CLIENT="$temporary/client" LEGIS_DEMO_MODE=true \
+      bun scripts/postgres-http-replica.ts
+  fi
+  if [ "${EDOCBR_PRODUCTION_REPLICA_SMOKE:-0}" = 1 ]; then
+    build_relative="node_modules/$(basename "$temporary")/prod-build"
+    if ! DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+      EDOCBR_NEXT_DIST_DIR="$build_relative" NEXT_TELEMETRY_DISABLED=1 \
+      bunx next build > "$temporary/next-build.log" 2>&1; then
+      tail -30 "$temporary/next-build.log" >&2
+      exit 1
+    fi
+    DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+      POSTGRES_TEST_CLIENT="$temporary/client" LEGIS_DEMO_MODE=true \
+      EDOCBR_STANDALONE_SERVER="$temporary/prod-build/standalone/server.js" \
+      bun scripts/postgres-production-write.ts
+    docker exec "$container" pg_dump -U postgres -d cutoverproof -Fc > "$temporary/postwrite.dump"
+    recovery_start="$(date +%s%3N)"
+    docker exec "$container" createdb -U postgres afterwrite
+    docker exec -i "$container" pg_restore -e -U postgres -d afterwrite < "$temporary/postwrite.dump" >/dev/null
+    test "$(docker exec "$container" psql -At -U postgres -d afterwrite -c "SELECT count(*) FROM \"Tenant\" WHERE slug LIKE 'pg-write-%'")" = 2
+    test "$(docker exec "$container" psql -At -U postgres -d afterwrite -c "SELECT count(*) FROM \"Vote\" v JOIN \"Voting\" w ON w.id=v.\"votingId\" JOIN \"Session\" s ON s.id=w.\"sessionId\" JOIN \"Tenant\" t ON t.id=s.\"tenantId\" WHERE t.slug LIKE 'pg-write-%'")" = 1
+    DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/afterwrite" \
+      POSTGRES_TEST_CLIENT="$temporary/client" \
+      EDOCBR_STANDALONE_SERVER="$temporary/prod-build/standalone/server.js" \
+      bun scripts/postgres-recovery-check.ts
+    recovery_ms="$(($(date +%s%3N) - recovery_start))"
+    docker exec "$container" createdb -U postgres rollbackproof
+    docker exec -i "$container" pg_restore -e -U postgres -d rollbackproof < "$temporary/cutover.dump" >/dev/null
+    test "$(docker exec "$container" psql -At -U postgres -d rollbackproof -c "SELECT count(*) FROM \"Tenant\" WHERE slug LIKE 'pg-write-%'")" = 0
+    echo "Recuperação local (restaurar + HTTP pronto): ${recovery_ms}ms; duas Câmaras de ensaio e voto preservados. Backup pré-escrita perde a jornada nova, como esperado."
+  fi
 fi
 python3 - "$temporary/source.db" <<'PY'
 import sqlite3

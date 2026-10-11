@@ -44,5 +44,6 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [038 — Réplica do piloto](038-ensaio-replica-piloto.md) | Ensaio local concluído | 70 tabelas e 448 linhas conciliadas | Inventário e leituras funcionais |
 | [039 — Ativos e réplica funcional](039-inventario-ativos-replica-funcional.md) | Ensaio local concluído | Links fictícios corrigidos, auditoria de arquivos e leitura Prisma por Câmara | Rotas HTTP e carga representativa |
 | [040 — HTTP na réplica PostgreSQL](040-ensaio-http-replica-postgres.md) | Ensaio local concluído | Rotas públicas/autenticadas, isolamento e 40 leituras concorrentes | Homologação semelhante à produção e escrita isolada |
+| [041 — Escrita e recuperação PostgreSQL](041-homologacao-escrita-recuperacao-postgres.md) | Ensaio local concluído | Build de produção, jornada HTTP com cookie real, backup pós-escrita e recuperação HTTP | Falhas dos serviços auxiliares e métricas operacionais |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

@@ -22,6 +22,7 @@
     "test:postgres:foundation": "bash scripts/test-postgres-foundation.sh",
     "test:postgres:pilot-replica": "bash scripts/test-postgres-pilot-replica.sh",
     "test:postgres:http-replica": "EDOCBR_HTTP_REPLICA_SMOKE=1 bash scripts/test-postgres-pilot-replica.sh",
+    "test:postgres:production-write": "EDOCBR_PRODUCTION_REPLICA_SMOKE=1 bash scripts/test-postgres-pilot-replica.sh",
     "db:assets:audit": "python3 scripts/audit-external-assets.py",
     "db:demo-attachments:repair": "python3 scripts/repair-demo-attachments.py",
     "db:postgres:status": "python3 scripts/postgres-migrate.py status",
