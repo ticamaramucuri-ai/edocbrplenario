@@ -1,0 +1,13 @@
+# Etapa 040 — HTTP na réplica PostgreSQL restaurada
+
+**Data:** 11/10/2026 · **Estado:** ensaio local concluído; cutover ativo pendente.
+
+`bun run test:postgres:http-replica -- db/custom.db` reaproveita a cadeia de snapshot, auditoria de ativos, migração, cópia integral e restauração da etapa 039. Na réplica restaurada, inicia um processo Next em porta aleatória restrita a `127.0.0.1` e executa somente GETs reais via HTTP. O processo é encerrado ao fim. O script recusa iniciar o ensaio HTTP se uma instância Next deste projeto já estiver ativa, pois o cliente Prisma padrão é temporariamente gerado para PostgreSQL; a saída restaura o cliente SQLite e `next-env.d.ts`, inclusive em caso de falha. O SQLite de origem não é alterado.
+
+As sete verificações cobrem listas públicas das duas Câmaras fictícias, detalhe público, negação de leitura pública cruzada (404), detalhe autenticado do próprio tenant, negação cruzada autenticada (403/404) e ausência de autenticação (401). Após aquecer as rotas, quarenta GETs públicos simultâneos exigem HTTP 200 e o mesmo ID de sessão. O limite local provisório é p95 ≤ 3.000 ms, sem resposta divergente nem erro. O smoke não envia POST/PATCH/DELETE nem aciona transmissões.
+
+**Evidência:** snapshot com 70 tabelas/448 linhas conciliadas; auditoria de ativos sem referência pendente; leitura Prisma da réplica restaurada com 3 Câmaras, 5 sessões, 32 matérias, 5 votações e 29 votos. HTTP: 7 verificações aprovadas, 40 leituras concorrentes, 0 erros, p95 487 ms, máximo 494 ms no equipamento local. O cliente SQLite foi restaurado e voltou a consultar as 3 Câmaras. `bun run lint`, `bun run typecheck` e `git diff --check` passaram.
+
+**Critério provisório para avançar ao cutover:** snapshot e backup restauráveis; auditoria de arquivos sem pendências; migrações com checksum correto; cópia integral conciliada; isolamento público e autenticado aprovado; nenhuma resposta 5xx ou vazamento entre Câmaras; 40 leituras concorrentes sem erro e p95 local abaixo de 3 s. Esses critérios são uma barreira de desenvolvimento, não uma meta de produção. Antes da operação real, testar build de produção com volume e usuários representativos, escrita de sessões/votos e serviços auxiliares na réplica, medir RTO/RPO e validar arquivos de mídia reais, regimento, equipamentos e contas institucionais. O SQLite continua sendo a base ativa.
+
+**Próxima etapa:** montar um ambiente de homologação semelhante à produção, executar fluxos de escrita na cópia PostgreSQL sem afetar o piloto, medir restauração e retorno, e formalizar o checklist de corte com os responsáveis da Câmara. Integrações Nextcloud/Alfresco permanecem para o fim do desenvolvimento.

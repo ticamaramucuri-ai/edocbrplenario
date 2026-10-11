@@ -7,9 +7,22 @@ test -f "$source_db" || { echo 'SQLite de origem não encontrado' >&2; exit 2; }
 command -v docker >/dev/null
 temporary="$(mktemp -d "$PWD/node_modules/.edocbr-pilot-replica.XXXXXX")"
 container="edocbr-pg-pilot-$$"
+switched_client=0
 cleanup() {
   local status=$?
   trap - EXIT INT TERM
+  if [ "$switched_client" = 1 ]; then
+    if ! DATABASE_URL='file:../db/custom.db' bunx prisma generate --schema prisma/schema.prisma >/dev/null; then
+      echo 'Falha ao restaurar o cliente Prisma SQLite.' >&2
+      status=1
+    fi
+    if [ -f "$temporary/next-env.d.ts" ]; then
+      if ! cp "$temporary/next-env.d.ts" next-env.d.ts; then
+        echo 'Falha ao restaurar next-env.d.ts.' >&2
+        status=1
+      fi
+    fi
+  fi
   docker rm -f "$container" >/dev/null 2>&1 || true
   rm -rf -- "$temporary"
   exit "$status"
@@ -71,6 +84,31 @@ DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
   bunx prisma generate --schema "$temporary/schema.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun scripts/postgres-restored-smoke.ts
+if [ "${EDOCBR_HTTP_REPLICA_SMOKE:-0}" = 1 ]; then
+  python3 - <<'PY'
+from pathlib import Path
+
+root = Path.cwd().resolve()
+for process in Path('/proc').iterdir():
+    if not process.name.isdigit():
+        continue
+    try:
+        command = (process / 'cmdline').read_bytes().replace(b'\0', b' ')
+        cwd = (process / 'cwd').resolve()
+    except (OSError, PermissionError):
+        continue
+    if cwd == root and (b'node_modules/next' in command or b'next-server' in command):
+        raise SystemExit('Pare a instância Next deste projeto antes do ensaio HTTP (cliente Prisma é temporariamente regenerado).')
+PY
+  cp next-env.d.ts "$temporary/next-env.d.ts"
+  sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > "$temporary/schema-app.prisma"
+  switched_client=1
+  DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+    bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
+  DATABASE_URL="postgresql://postgres:replica-only@127.0.0.1:$port/cutoverproof" \
+    POSTGRES_TEST_CLIENT="$temporary/client" LEGIS_DEMO_MODE=true \
+    bun scripts/postgres-http-replica.ts
+fi
 python3 - "$temporary/source.db" <<'PY'
 import sqlite3
 import sys
