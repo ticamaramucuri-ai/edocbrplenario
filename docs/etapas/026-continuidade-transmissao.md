@@ -8,4 +8,4 @@ O [roteiro de continuidade](../transmissao/continuidade-operacional.md) descreve
 
 Verificações desta etapa: `bun run test:media:public-link`, `bun run test:media:integration`, `bun run typecheck` e `bun run lint`.
 
-**Próxima fase:** homologação ponta a ponta em ambiente de mídia dedicado, com conta institucional de teste, medição de latência, queda de WAN/encoder, recuperação e conferência do replay. Integrações com Nextcloud e Alfresco permanecem para o final do projeto.
+**Próxima fase:** ensaio físico local com MediaMTX e FFmpeg, seguido de homologação em ambiente de mídia dedicado com conta institucional de teste, medição de latência, queda de WAN/encoder, recuperação e conferência do replay. Integrações com Nextcloud e Alfresco permanecem para o final do projeto.

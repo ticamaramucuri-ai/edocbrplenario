@@ -24,5 +24,12 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [018 — Destinatários por mandato e licença](018-destinatarios-mandato-licenca.md) | Concluída localmente para seleção opcional | Política por Câmara, substituição explícita, prévia e snapshot por revisão | Homologação regimental e regras de quórum/maioria |
 | [019 — Política de quórum e maioria](019-politica-quorum-maioria.md) | Concluída localmente para matéria vinculada | Regra e quórum por tipo, snapshot da base de membros e apuração uniforme | Base deliberativa, impedimentos e homologação regimental |
 | [020 — Base deliberativa por Câmara](020-base-deliberativa.md) | Concluída localmente para política opcional | Mandato, licença, suplente, presença e lista de votantes congelada | Impedimentos por votação e homologação regimental |
+| [021 — Impedimentos na votação](021-impedimentos-votacao.md) | Concluída localmente | Registro e política opcional por Câmara para impedimentos | Transparência da base usada na apuração |
+| [022 — Relatórios da base de votação](022-relatorios-base-votacao.md) | Concluída localmente | Base e impedimentos nos relatórios e dados públicos seguros | Fluxo excepcional de votação |
+| [023 — Fluxo excepcional da votação](023-fluxo-excepcional-votacao.md) | Concluída localmente | Cancelamento e coerência com sessão e pauta | Integridade da anulação |
+| [024 — Integridade da anulação](024-integridade-anulacao.md) | Concluída localmente | Proteção contra anulação de deliberação já sucedida e correção pública | Link e validação da transmissão |
+| [025 — Link público da transmissão](025-link-publico-transmissao.md) | Concluída localmente | Confirmação do operador, publicação e retirada do link por sessão e Câmara | Continuidade e teste físico |
+| [026 — Continuidade da transmissão](026-continuidade-transmissao.md) | Validação integrada local concluída | Testes de perda/retorno de sinal, reconciliação e roteiro operacional | Ensaio físico e homologação social |
+| [027 — Ensaio físico de mídia local](027-homologacao-midia-local.md) | Ensaio local concluído | RTMP→RTMPS, gravação, recuperação do encoder e receptor com evidência | Homologação com conta institucional e ambiente dedicado |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
