@@ -20,6 +20,7 @@
     "test:session:readiness": "bash scripts/test-session-readiness.sh",
     "test:session:capacity": "bash scripts/test-session-capacity.sh",
     "test:postgres:foundation": "bash scripts/test-postgres-foundation.sh",
+    "test:postgres:pilot-replica": "bash scripts/test-postgres-pilot-replica.sh",
     "db:postgres:status": "python3 scripts/postgres-migrate.py status",
     "db:postgres:migrate": "python3 scripts/postgres-migrate.py apply",
     "db:postgres:rollback-indexes": "python3 scripts/postgres-migrate.py rollback-indexes",
