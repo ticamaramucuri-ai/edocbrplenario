@@ -39,6 +39,9 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   defina `DATABASE_URL` PostgreSQL e use `cd mini-services/scheduler && bun run dev:postgres`.
   Execute uma instância por banco até haver claim/lease para jobs; o piloto usa
   `bun run dev`. Consulte a [etapa 035](etapas/035-scheduler-postgres.md).
+- O ensaio conjunto e as migrações SQL iniciais estão descritos na
+  [etapa 036](etapas/036-ensaio-integrado-postgres.md). O baseline 0001 só pode
+  ser aplicado em banco PostgreSQL vazio; o rollback 0002 remove apenas índices.
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

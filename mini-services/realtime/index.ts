@@ -30,7 +30,8 @@ import { publishPostgresOutboxBatch } from './postgres-outbox'
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
-const PORT = 3003
+const PORT = Number(process.env.REALTIME_PORT || 3003)
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('REALTIME_PORT inválida')
 const DB_PATH = process.env.REALTIME_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
 if (process.env.REALTIME_DATABASE_PROVIDER && process.env.REALTIME_DATABASE_PROVIDER !== 'postgresql') {
   throw new Error('REALTIME_DATABASE_PROVIDER deve ser postgresql ou vazio (SQLite)')

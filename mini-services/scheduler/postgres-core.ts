@@ -6,8 +6,8 @@ export const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'te
 type AlertSpec = { kind: string; severity: string; message: string; actionHint: string; meta: Record<string, unknown>; key: string; value: string }
 type Probe = (url: string) => Promise<boolean>
 const SERVICES = [
-  { key: 'realtime', label: 'Tempo real (socket.io, porta 3003)', url: 'http://localhost:3003/' },
-  { key: 'webhooks', label: 'Entregas de webhook (porta 3004)', url: 'http://localhost:3004/' },
+  { key: 'realtime', label: 'Tempo real (socket.io, porta 3003)', url: process.env.REALTIME_HEALTH_URL || 'http://localhost:3003/health' },
+  { key: 'webhooks', label: 'Entregas de webhook (porta 3004)', url: process.env.WEBHOOKS_HEALTH_URL || 'http://localhost:3004/health' },
 ]
 
 export function createPostgresScheduler(db: PrismaClient, probe: Probe) {

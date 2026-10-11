@@ -30,7 +30,8 @@ import { deliverWebhook } from './http-delivery'
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
-const PORT = 3004
+const PORT = Number(process.env.WEBHOOKS_PORT || 3004)
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('WEBHOOKS_PORT inválida')
 const DB_PATH = process.env.WEBHOOKS_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
 if (process.env.WEBHOOKS_DATABASE_PROVIDER && process.env.WEBHOOKS_DATABASE_PROVIDER !== 'postgresql') {
   throw new Error('WEBHOOKS_DATABASE_PROVIDER deve ser postgresql ou vazio (SQLite)')
