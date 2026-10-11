@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prova local isolada: FFmpeg -> RTMP/MediaMTX -> gravação fMP4 + métricas.
+# Prova local isolada: FFmpeg -> RTMP/MediaMTX -> dois RTMPS + gravação fMP4.
 set -euo pipefail
 
 MEDIAMTX_BIN="${MEDIAMTX_BIN:-mediamtx}"
@@ -13,6 +13,7 @@ cleanup() {
   if [[ -n "${publisher_pid:-}" ]]; then kill "$publisher_pid" 2>/dev/null || true; wait "$publisher_pid" 2>/dev/null || true; fi
   if [[ -n "${media_pid:-}" ]]; then kill "$media_pid" 2>/dev/null || true; wait "$media_pid" 2>/dev/null || true; fi
   if [[ -n "${sink_pid:-}" ]]; then kill "$sink_pid" 2>/dev/null || true; wait "$sink_pid" 2>/dev/null || true; fi
+  if [[ -n "${sink_b_pid:-}" ]]; then kill "$sink_b_pid" 2>/dev/null || true; wait "$sink_b_pid" 2>/dev/null || true; fi
   if [[ "${KEEP_MEDIA_SMOKE:-0}" != 1 ]]; then rm -rf "$workdir"; fi
 }
 trap cleanup EXIT
@@ -45,14 +46,42 @@ pathDefaults:
 paths:
   relay: {}
 EOF
+cat > "$workdir/sink-b.yml" <<EOF
+logLevel: warn
+rtsp: false
+rtmp: true
+rtmpEncryption: strict
+rtmpsAddress: 127.0.0.1:19361
+rtmpServerKey: $workdir/sink.key
+rtmpServerCert: $workdir/sink.crt
+hls: false
+webrtc: false
+moq: false
+srt: false
+metrics: true
+metricsAddress: 127.0.0.1:9996
+pathDefaults:
+  record: true
+  recordPath: $workdir/sink-b-recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordPartDuration: 500ms
+  recordSegmentDuration: 2s
+  recordDeleteAfter: 0s
+paths:
+  relay-b: {}
+EOF
 "$MEDIAMTX_BIN" "$workdir/sink.yml" > "$workdir/sink.log" 2>&1 &
 sink_pid=$!
+"$MEDIAMTX_BIN" "$workdir/sink-b.yml" > "$workdir/sink-b.log" 2>&1 &
+sink_b_pid=$!
 for _ in {1..30}; do
-  if curl --silent --fail http://127.0.0.1:9997/metrics > /dev/null; then break; fi
+  if curl --silent --fail http://127.0.0.1:9997/metrics > /dev/null && curl --silent --fail http://127.0.0.1:9996/metrics > /dev/null; then break; fi
   if ! kill -0 "$sink_pid" 2>/dev/null; then cat "$workdir/sink.log" >&2; exit 1; fi
+  if ! kill -0 "$sink_b_pid" 2>/dev/null; then cat "$workdir/sink-b.log" >&2; exit 1; fi
   sleep 0.2
 done
 curl --silent --fail http://127.0.0.1:9997/metrics > /dev/null
+curl --silent --fail http://127.0.0.1:9996/metrics > /dev/null
 
 cat > "$workdir/mediamtx.yml" <<EOF
 logLevel: warn
@@ -102,20 +131,26 @@ with open(path, 'w', encoding='utf-8') as file:
         'tenantId': 'smoke', 'id': 'relay', 'label': 'RTMPS local',
         'platform': 'other', 'dest': 'rtmps://127.0.0.1:19360/relay',
         'destFingerprint': fingerprint,
+    }, {
+        'tenantId': 'smoke', 'id': 'relay-b', 'label': 'RTMPS local B',
+        'platform': 'other', 'dest': 'rtmps://127.0.0.1:19361/relay-b',
+        'destFingerprint': fingerprint,
     }], file)
 os.chmod(path, 0o600)
 PY
 MEDIA_DESTINATIONS_FILE="$workdir/destinations.json" MEDIA_CONTROL_URL=http://127.0.0.1:19997 \
-  bun -e "import { setDestinationEnabled } from './src/lib/server/media-control'; if (!await setDestinationEnabled('smoke','test','relay',true)) throw new Error('encaminhamento não ativado')"
+  bun -e "import { setDestinationEnabled } from './src/lib/server/media-control'; for (const id of ['relay','relay-b']) if (!await setDestinationEnabled('smoke','test',id,true)) throw new Error('encaminhamento '+id+' não ativado')"
 for _ in {1..30}; do
   curl --silent --fail http://127.0.0.1:9998/metrics > "$workdir/metrics.txt"
   curl --silent --fail http://127.0.0.1:9997/metrics > "$workdir/sink-metrics.txt"
+  curl --silent --fail http://127.0.0.1:9996/metrics > "$workdir/sink-b-metrics.txt"
   if grep -q 'paths{name="test",state="ready"} 1' "$workdir/metrics.txt" && \
-     grep -q 'paths{name="relay",state="ready"} 1' "$workdir/sink-metrics.txt"; then break; fi
+     grep -q 'paths{name="relay",state="ready"} 1' "$workdir/sink-metrics.txt" && \
+     grep -q 'paths{name="relay-b",state="ready"} 1' "$workdir/sink-b-metrics.txt"; then break; fi
   if ! kill -0 "$publisher_pid" 2>/dev/null; then cat "$workdir/ffmpeg.log" >&2; exit 1; fi
   sleep 0.2
 done
-python3 - "$workdir/metrics.txt" "$workdir/sink-metrics.txt" <<'PY'
+python3 - "$workdir/metrics.txt" "$workdir/sink-metrics.txt" "$workdir/sink-b-metrics.txt" <<'PY'
 import sys
 metrics = open(sys.argv[1], encoding='utf-8').read()
 if 'paths{name="test",state="ready"} 1' not in metrics:
@@ -123,10 +158,13 @@ if 'paths{name="test",state="ready"} 1' not in metrics:
 sink = open(sys.argv[2], encoding='utf-8').read()
 if 'paths{name="relay",state="ready"} 1' not in sink:
     raise SystemExit('Destino RTMPS não recebeu o stream')
-print('Métricas: origem e destino RTMPS prontos')
+sink_b = open(sys.argv[3], encoding='utf-8').read()
+if 'paths{name="relay-b",state="ready"} 1' not in sink_b:
+    raise SystemExit('Segundo destino RTMPS não recebeu o stream')
+print('Métricas: origem e dois destinos RTMPS prontos')
 PY
 MEDIA_DESTINATIONS_FILE="$workdir/destinations.json" MEDIA_CONTROL_URL=http://127.0.0.1:19997 \
-  bun -e "import { destinationSnapshot } from './src/lib/server/media-control'; const view=await destinationSnapshot('smoke','test'); if (view.destinations[0]?.state !== 'forwarding') throw new Error('encaminhamento não confirmado'); console.log('Control API: destino em forwarding, sem expor chave')"
+  bun -e "import { destinationSnapshot } from './src/lib/server/media-control'; const view=await destinationSnapshot('smoke','test'); if (view.destinations.length !== 2 || view.destinations.some(d=>d.state !== 'forwarding')) throw new Error('dois encaminhamentos não confirmados'); console.log('Control API: dois destinos em forwarding, sem expor chave')"
 wait "$publisher_pid"
 publisher_pid=""
 source_stopped=0
@@ -150,8 +188,10 @@ source_recovered=0
 for _ in {1..50}; do
   curl --silent --fail http://127.0.0.1:9998/metrics > "$workdir/metrics.txt"
   curl --silent --fail http://127.0.0.1:9997/metrics > "$workdir/sink-metrics.txt"
+  curl --silent --fail http://127.0.0.1:9996/metrics > "$workdir/sink-b-metrics.txt"
   if grep -q 'paths{name="test",state="ready"} 1' "$workdir/metrics.txt" && \
-     grep -q 'paths{name="relay",state="ready"} 1' "$workdir/sink-metrics.txt"; then source_recovered=1; break; fi
+     grep -q 'paths{name="relay",state="ready"} 1' "$workdir/sink-metrics.txt" && \
+     grep -q 'paths{name="relay-b",state="ready"} 1' "$workdir/sink-b-metrics.txt"; then source_recovered=1; break; fi
   if ! kill -0 "$publisher_pid" 2>/dev/null; then cat "$workdir/ffmpeg-recovery.log" >&2; exit 1; fi
   sleep 0.2
 done
@@ -165,6 +205,10 @@ kill "$sink_pid"
 wait "$sink_pid" 2>/dev/null || true
 sink_pid=""
 sleep 1
+curl --silent --fail http://127.0.0.1:9996/metrics > "$workdir/sink-b-during-failure.txt"
+grep -q 'paths{name="relay-b",state="ready"} 1' "$workdir/sink-b-during-failure.txt" || { echo 'Queda de A interrompeu o destino B' >&2; exit 1; }
+MEDIA_DESTINATIONS_FILE="$workdir/destinations.json" MEDIA_CONTROL_URL=http://127.0.0.1:19997 \
+  bun -e "import { destinationSnapshot } from './src/lib/server/media-control'; const view=await destinationSnapshot('smoke','test'); if (view.destinations.find(d=>d.id==='relay-b')?.state !== 'forwarding') throw new Error('destino B interrompido'); console.log('Falha independente: B segue encaminhando')"
 sink_recovery_start="$(date +%s%3N)"
 "$MEDIAMTX_BIN" "$workdir/sink.yml" > "$workdir/sink-recovery.log" 2>&1 &
 sink_pid=$!
@@ -195,20 +239,31 @@ ffprobe -v error -show_entries stream=codec_name -of csv=p=0 "$sink_recording" >
 grep -q '^h264$' "$workdir/sink-codecs.txt"
 grep -q '^aac$' "$workdir/sink-codecs.txt"
 echo "Encaminhamento RTMPS validado: $(basename "$sink_recording") (H.264/AAC)"
+sink_b_recording="$(find "$workdir/sink-b-recordings/relay-b" -name '*.mp4' -type f | sort | head -n 1)"
+[[ -n "$sink_b_recording" ]] || { echo 'Segundo destino RTMPS não gravou o stream' >&2; exit 1; }
+ffprobe -v error -show_entries stream=codec_name -of csv=p=0 "$sink_b_recording" > "$workdir/sink-b-codecs.txt"
+grep -q '^h264$' "$workdir/sink-b-codecs.txt"
+grep -q '^aac$' "$workdir/sink-b-codecs.txt"
 origin_count="$(find "$workdir/recordings/test" -name '*.mp4' -type f | wc -l)"
 sink_count="$(find "$workdir/sink-recordings/relay" -name '*.mp4' -type f | wc -l)"
-[[ "$origin_count" -ge 2 && "$sink_count" -ge 2 ]] || { echo 'Segmentos insuficientes após a recuperação' >&2; exit 1; }
+sink_b_count="$(find "$workdir/sink-b-recordings/relay-b" -name '*.mp4' -type f | wc -l)"
+[[ "$origin_count" -ge 2 && "$sink_count" -ge 2 && "$sink_b_count" -ge 2 ]] || { echo 'Segmentos insuficientes após a recuperação' >&2; exit 1; }
 latest_origin="$(find "$workdir/recordings/test" -name '*.mp4' -type f | sort | tail -n 1)"
 latest_sink="$(find "$workdir/sink-recordings/relay" -name '*.mp4' -type f | sort | tail -n 1)"
-for latest in "$latest_origin" "$latest_sink"; do
+latest_sink_b="$(find "$workdir/sink-b-recordings/relay-b" -name '*.mp4' -type f | sort | tail -n 1)"
+for latest in "$latest_origin" "$latest_sink" "$latest_sink_b"; do
   ffprobe -v error -show_entries stream=codec_name -of csv=p=0 "$latest" > "$workdir/latest-codecs.txt"
   grep -q '^h264$' "$workdir/latest-codecs.txt"
   grep -q '^aac$' "$workdir/latest-codecs.txt"
 done
-echo "Gravações após recuperação validadas: origem ${origin_count}, receptor ${sink_count} segmento(s)"
-python3 - "$workdir/evidence.json" "$source_recovery_ms" "$sink_recovery_ms" "$origin_count" "$sink_count" <<'PY'
-import json, sys
-path, source_ms, sink_ms, origin_count, sink_count = sys.argv[1:]
+echo "Gravações após recuperação validadas: origem ${origin_count}, receptor A ${sink_count}, receptor B ${sink_b_count} segmento(s)"
+python3 - "$workdir/evidence.json" "$source_recovery_ms" "$sink_recovery_ms" "$origin_count" "$sink_count" "$sink_b_count" "$workdir" <<'PY'
+import json, os, re, sys
+path, source_ms, sink_ms, origin_count, sink_count, sink_b_count, root = sys.argv[1:]
+def stored_bytes(folder):
+    return sum(os.path.getsize(os.path.join(base, name)) for base, _, names in os.walk(folder) for name in names if name.endswith('.mp4'))
+metrics = open(os.path.join(root, 'metrics.txt'), encoding='utf-8').read()
+outbound_sample = {match.group(1): int(match.group(2)) for match in re.finditer(r'forward_dests_outbound_bytes\{[^\n]*pos="([12])"[^\n]*\} (\d+)', metrics)}
 with open(path, 'w', encoding='utf-8') as file:
     json.dump({
         'mediaVersion': 'v1.21.2',
@@ -217,6 +272,13 @@ with open(path, 'w', encoding='utf-8') as file:
         'rtmpsReceiverRecoveryMs': int(sink_ms),
         'originSegments': int(origin_count),
         'receiverSegments': int(sink_count),
+        'secondReceiverSegments': int(sink_b_count),
+        'secondReceiverSurvivedFirstFailure': True,
+        'configuredDestinations': 2,
+        'originStoredBytes': stored_bytes(os.path.join(root, 'recordings', 'test')),
+        'firstReceiverStoredBytes': stored_bytes(os.path.join(root, 'sink-recordings', 'relay')),
+        'secondReceiverStoredBytes': stored_bytes(os.path.join(root, 'sink-b-recordings', 'relay-b')),
+        'outboundSampleBytesByPosition': outbound_sample,
         'socialPlatformConfirmed': False,
     }, file, indent=2)
     file.write('\n')

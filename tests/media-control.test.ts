@@ -75,6 +75,42 @@ describe('controlador de destinos de mídia', () => {
     expect(forward).toEqual([{ dest: 'rtmps://other.test/live#OUTRO' }])
   })
 
+  test('dois destinos da mesma Câmara têm comandos independentes e idempotentes', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'legis-two-destinations-'))
+    const file = join(directory, 'destinations.json')
+    const first = 'rtmps://example.test/a#SEGREDO-A'
+    const second = 'rtmps://example.test/b#SEGREDO-B'
+    await writeFile(file, JSON.stringify([
+      { tenantId: 'camara-a', id: 'a', label: 'Destino A', platform: 'other', dest: first },
+      { tenantId: 'camara-a', id: 'b', label: 'Destino B', platform: 'other', dest: second },
+      { tenantId: 'camara-b', id: 'a', label: 'Outra Câmara', platform: 'other', dest: 'rtmps://example.test/other#OUTRO' },
+    ]), { mode: 0o600 })
+    process.env.MEDIA_DESTINATIONS_FILE = file
+    process.env.MEDIA_CONTROL_URL = 'http://127.0.0.1:9997'
+    const forward: Array<{ dest: string }> = []
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const pathname = new URL(String(input)).pathname
+      if (pathname.includes('/config/paths/get/')) return Response.json({ forward, record: true })
+      if (pathname.includes('/config/paths/patch/')) {
+        forward.splice(0, forward.length, ...(JSON.parse(String(init?.body)) as { forward: typeof forward }).forward)
+        return Response.json({ status: 'ok' })
+      }
+      if (pathname.includes('/forward-dests/list')) return Response.json({ items: forward.map((_, index) => ({ pos: index + 1, state: 'forwarding', outboundBytes: 1024 })) })
+      throw new Error('Unexpected MediaMTX call')
+    }) as typeof fetch
+    expect(await setDestinationEnabled('camara-a', 'session-abc', 'a', true)).toBe(true)
+    expect(await setDestinationEnabled('camara-a', 'session-abc', 'b', true)).toBe(true)
+    expect(await setDestinationEnabled('camara-a', 'session-abc', 'a', true)).toBe(false)
+    expect(forward.map((entry) => entry.dest)).toEqual([first, second])
+    const both = await destinationSnapshot('camara-a', 'session-abc')
+    expect(both.destinations.map((entry) => entry.state)).toEqual(['forwarding', 'forwarding'])
+    expect(JSON.stringify(both)).not.toContain('SEGREDO-')
+    expect(await setDestinationEnabled('camara-a', 'session-abc', 'a', false)).toBe(true)
+    expect(forward.map((entry) => entry.dest)).toEqual([second])
+    expect((await destinationSnapshot('camara-a', 'session-abc')).destinations.map((entry) => entry.enabled)).toEqual([false, true])
+    expect((await destinationSnapshot('camara-b', 'session-abc')).destinations[0]?.enabled).toBe(false)
+  })
+
   test('bloqueia controlador fora de loopback', async () => {
     await setup()
     process.env.MEDIA_CONTROL_URL = 'http://internal.example.test:9997'

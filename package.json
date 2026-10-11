@@ -17,6 +17,8 @@
     "test:media:archive": "bash scripts/test-recording-archive.sh",
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
     "test:session:journey": "bash scripts/test-session-journey.sh",
+    "test:session:readiness": "bash scripts/test-session-readiness.sh",
+    "test:session:capacity": "bash scripts/test-session-capacity.sh",
     "test:postgres:foundation": "bash scripts/test-postgres-foundation.sh",
     "test:tenant:health-portability": "bash scripts/test-tenant-health-portability.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 const LABELS = {
   draft: 'Ainda não preparada',
@@ -40,6 +40,11 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
   const archive = useQuery({
     queryKey: ['recording-archive', sessionId],
     queryFn: () => api.getRecordingArchive(sessionId),
+  })
+  const readiness = useQuery({
+    queryKey: ['session-readiness', sessionId],
+    queryFn: () => api.getSessionReadiness(sessionId),
+    refetchInterval: 5000,
   })
 
   async function archiveCommand(action: 'build' | 'publish' | 'withdraw') {
@@ -122,7 +127,25 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="lg:col-span-2">
-        <CardHeader><CardTitle className="text-base">Conferência da transmissão</CardTitle></CardHeader>
+        <CardHeader><h2 className="text-base font-semibold leading-none">Prontidão da sessão</h2></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {readiness.isLoading && <p role="status">Conferindo pauta, quórum e mídia…</p>}
+          {readiness.isError && <p role="alert">Não foi possível conferir a prontidão. Recarregue antes de operar.</p>}
+          {readiness.data && <>
+            <p role="status" className="font-medium">Sessão: {readiness.data.sessionReady ? 'sem bloqueio identificado' : 'há bloqueios'} · Transporte local: {readiness.data.broadcastReady ? 'pronto' : 'requer atenção'}</p>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {readiness.data.checks.map((check) => <li key={check.id} className="rounded border p-2">
+                <p className="font-medium">{check.area === 'legislative' ? 'Sessão' : 'Mídia'} · {check.state === 'ok' ? 'OK' : check.state === 'blocked' ? 'Bloqueio' : 'Atenção'}</p>
+                <p>{check.message}</p>
+                {check.action && <p className="text-muted-foreground">Próximo passo: {check.action}</p>}
+              </li>)}
+            </ul>
+            <p className="text-xs text-muted-foreground">Conferido às {new Date(readiness.data.checkedAt).toLocaleTimeString('pt-BR')}. Transporte local pronto ainda exige conferência de vídeo e áudio na plataforma pública.</p>
+          </>}
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-2">
+        <CardHeader><h2 className="text-base font-semibold leading-none">Conferência da transmissão</h2></CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p>Fonte local: <strong>{source.ready ? 'pronta' : 'aguardando sinal'}</strong></p>
           <p>Destinos RTMPS confirmados pelo controlador: <strong>{forwarding.length}</strong></p>
@@ -132,7 +155,7 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Radio className="size-4" /> Acompanhamento local</CardTitle></CardHeader>
+        <CardHeader><h2 className="flex items-center gap-2 text-base font-semibold leading-none"><Radio className="size-4" /> Acompanhamento local</h2></CardHeader>
         <CardContent className="space-y-4 text-sm">
           <p className="font-medium" role="status">{LABELS[transmission.effectiveStatus]}</p>
           <p className="text-muted-foreground">O acompanhamento confirma o sinal recebido pelo servidor local. Os destinos RTMPS são controlados abaixo.</p>
@@ -145,7 +168,7 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base">{source.ready ? <Signal className="size-4 text-emerald-600" /> : <SignalZero className="size-4 text-amber-600" />} Fonte MediaMTX</CardTitle></CardHeader>
+        <CardHeader><h2 className="flex items-center gap-2 text-base font-semibold leading-none">{source.ready ? <Signal className="size-4 text-emerald-600" /> : <SignalZero className="size-4 text-amber-600" />} Fonte MediaMTX</h2></CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p>Sinal: <strong>{source.ready ? 'pronto' : 'ausente'}</strong></p>
           <p>Caminho de publicação: <code className="break-all rounded bg-muted px-1">{source.path}</code></p>
@@ -156,7 +179,7 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         </CardContent>
       </Card>
       <Card className="lg:col-span-2">
-        <CardHeader><CardTitle className="text-base">Destinos de transmissão</CardTitle></CardHeader>
+        <CardHeader><h2 className="text-base font-semibold leading-none">Destinos de transmissão</h2></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">O estado “encaminhando” confirma a saída RTMPS do MediaMTX. A live pública deve ser conferida também na plataforma.</p>
           {transmission.publicLink && <div className="rounded border border-emerald-600/40 bg-emerald-50 p-3 dark:bg-emerald-950/20">
@@ -185,7 +208,7 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         </CardContent>
       </Card>
       <Card className="lg:col-span-2">
-        <CardHeader><CardTitle className="text-base">Gravação local</CardTitle></CardHeader>
+        <CardHeader><h2 className="text-base font-semibold leading-none">Gravação local</h2></CardHeader>
         <CardContent className="space-y-2 text-sm">
           {recording.isLoading && <p>Consultando segmentos…</p>}
           {recording.isError && <p className="text-destructive">Catálogo de gravações indisponível. Confira o MediaMTX e o disco local.</p>}
@@ -198,7 +221,7 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         </CardContent>
       </Card>
       <Card className="lg:col-span-2">
-        <CardHeader><CardTitle className="text-base">Replay local verificável</CardTitle></CardHeader>
+        <CardHeader><h2 className="text-base font-semibold leading-none">Replay local verificável</h2></CardHeader>
         <CardContent className="space-y-3 text-sm">
           {archive.isLoading && <p>Consultando manifesto…</p>}
           {archive.isError && <p className="text-destructive">Não foi possível consultar o replay local.</p>}

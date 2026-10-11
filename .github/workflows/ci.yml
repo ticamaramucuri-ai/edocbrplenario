@@ -20,6 +20,8 @@ jobs:
       - run: bun run test:security
       - run: bun run test:session:preparation
       - run: bun run test:session:journey
+      - run: bun run test:session:readiness
+      - run: bun run test:session:capacity
       - run: bun run test:tenant:health-portability
       - run: bun run test:voting:policy
       - run: bun run test:deliberative:roster

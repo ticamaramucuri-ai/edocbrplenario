@@ -34,5 +34,7 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [028 — Replay local verificável](028-replay-local-verificavel.md) | Concluída localmente | Manifesto SHA-256, MP4, publicação controlada, player e isolamento por Câmara | Jornada completa e aceite institucional do vídeo |
 | [029 — Jornada completa em ensaio](029-jornada-completa-ensaio.md) | Concluída localmente para cenário fictício | Pauta, convocação, fala, votos, correção, ata, perda de mídia e duas Câmaras no mesmo teste | PostgreSQL e homologação regimental |
 | [030 — Base operacional PostgreSQL](030-base-operacional-saas.md) | Em andamento | DDL PostgreSQL e backup/restauração em contêiner efêmero | Adaptar cliente Prisma e mini-serviços SQLite antes de migrar dados |
+| [031 — Operação, acessibilidade e capacidade](031-operacao-acessibilidade-capacidade.md) | Em andamento | Checklist no painel, isolamento, teclado e ensaio 21 votos/40 leituras | Leitor de tela e equipamento real |
+| [032 — Dois destinos RTMPS locais](032-multiplos-destinos-locais.md) | Prova técnica local concluída | Dois receptores, falha independente, recuperação e gravação H.264/AAC | Banda dedicada e homologação social |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

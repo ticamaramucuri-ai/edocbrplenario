@@ -133,6 +133,16 @@ reusada com ação diferente → 409 `MEDIA_DUPLICATE_COMMAND`. Cada alteração
 transação. O estado não altera a sessão legislativa nem aparece no telão público.
 O GET também retorna `transmission.publicLink` após publicação explícita.
 
+### GET `/api/v1/sessions/:id/readiness`
+Exige `media.read` e escopo da Câmara. Diagnóstico somente leitura, `no-store`, com
+`sessionReady`, `broadcastReady` e verificações `{id, area, state, message, action}`
+para pauta, convocação, presidência, quórum, fonte, gravação e destinos. `attention`
+indica conferência ainda não aplicável (por exemplo, quórum antes do credenciamento)
+ou destino não configurado. `sessionReady` resume ausência de bloqueios
+legislativos no estado atual; `broadcastReady` exige fonte, gravação e ao menos um
+destino local em `forwarding`. Isso não confirma publicação na rede social. Falhas
+da API de mídia aparecem como bloqueios no diagnóstico, sem interromper a sessão.
+
 ### GET/POST `/api/v1/sessions/:id/transmission/destinations`
 GET exige `media.read` e retorna somente `id`, `label`, `platform`, `enabled`,
 `state` (`disabled|idle|forwarding|error|unknown`), bytes de saída,

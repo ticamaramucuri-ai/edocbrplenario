@@ -75,6 +75,21 @@ export type MediaRecordingView = {
   latestSegmentAt: string | null
 }
 
+/** Checagem operacional por sessão. `broadcastReady` trata apenas do transporte local. */
+export type SessionReadinessView = {
+  checkedAt: string
+  sessionId: string
+  sessionReady: boolean
+  broadcastReady: boolean
+  checks: Array<{
+    id: 'agenda' | 'notice' | 'president' | 'quorum' | 'source' | 'recording' | 'destinations'
+    area: 'legislative' | 'media'
+    state: 'ok' | 'attention' | 'blocked'
+    message: string
+    action: string | null
+  }>
+}
+
 export type RecordingArchiveView = {
   recording: null | {
     id: string

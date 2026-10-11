@@ -81,6 +81,7 @@ import type {
   TransmissionView,
   MediaDestinationsView,
   MediaRecordingView,
+  SessionReadinessView,
   RecordingArchiveView,
   PlatformOverviewView,
   TenantConsoleView,
@@ -123,12 +124,13 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit & { actorId?: string }): Promise<T> {
+async function request<T>(path: string, init?: RequestInit & { actorId?: string; silent?: boolean }): Promise<T> {
+  const { actorId: requestedActorId, silent, ...fetchInit } = init ?? {}
   const headers = new Headers(init?.headers)
   headers.set('Content-Type', 'application/json')
-  const actorId = init?.actorId ?? (typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null)
+  const actorId = requestedActorId ?? (typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null)
   if (actorId) headers.set('x-actor-id', actorId)
-  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+  const res = await fetch(`${BASE}${path}`, { ...fetchInit, headers })
   const text = await res.text()
   const body = text ? JSON.parse(text) : null
   if (!res.ok) {
@@ -144,7 +146,7 @@ async function request<T>(path: string, init?: RequestInit & { actorId?: string 
     // 401 sem ator selecionado (gate de entrada aberto) é ruído esperado:
     // consultas de fundo ainda não têm credencial — não dispara toast.
     const gateMode = problem.status === 401 && !actorId
-    if (typeof window !== 'undefined' && problem.status >= 400 && !gateMode) {
+    if (typeof window !== 'undefined' && problem.status >= 400 && !gateMode && !silent) {
       window.dispatchEvent(new CustomEvent('legis:api-error', { detail: err }))
     }
     throw err
@@ -182,10 +184,11 @@ export const api = {
   }) => request<{ session: SessionSummary }>(`/sessions/${id}`, {
     method: 'PATCH', body: JSON.stringify(data),
   }),
-  getTransmission: (id: string) => request<TransmissionView>(`/sessions/${id}/transmission`),
-  getMediaDestinations: (id: string) => request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`),
-  getMediaRecording: (id: string) => request<MediaRecordingView>(`/sessions/${id}/transmission/recording`),
-  getRecordingArchive: (id: string, verify = false) => request<RecordingArchiveView>(`/sessions/${id}/transmission/archive${verify ? '?verify=1' : ''}`),
+  getTransmission: (id: string) => request<TransmissionView>(`/sessions/${id}/transmission`, { silent: true }),
+  getMediaDestinations: (id: string) => request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`, { silent: true }),
+  getMediaRecording: (id: string) => request<MediaRecordingView>(`/sessions/${id}/transmission/recording`, { silent: true }),
+  getSessionReadiness: (id: string) => request<SessionReadinessView>(`/sessions/${id}/readiness`, { silent: true }),
+  getRecordingArchive: (id: string, verify = false) => request<RecordingArchiveView>(`/sessions/${id}/transmission/archive${verify ? '?verify=1' : ''}`, { silent: !verify }),
   commandRecordingArchive: (id: string, data: { action: 'build' | 'publish' | 'withdraw'; version: number; idempotencyKey: string; gapJustification?: string }) =>
     request<RecordingArchiveView>(`/sessions/${id}/transmission/archive`, { method: 'POST', body: JSON.stringify(data) }),
   setTransmissionPublicLink: (id: string, data: { action: 'publish' | 'withdraw'; version: number; idempotencyKey: string; destinationId?: string; platformConfirmed?: boolean }) =>
