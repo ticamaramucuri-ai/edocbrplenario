@@ -4,7 +4,20 @@ set -euo pipefail
 command -v docker >/dev/null || { echo 'Docker necessário para o ensaio PostgreSQL' >&2; exit 2; }
 container="edocbr-pg-foundation-$$"
 temporary="$(mktemp -d "$PWD/node_modules/.edocbr-postgres-foundation.XXXXXX")"
-cleanup() { docker rm -f "$container" >/dev/null 2>&1 || true; rm -rf "$temporary"; }
+switched_client=0
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [ "$switched_client" = 1 ]; then
+    if ! DATABASE_URL='file:../db/custom.db' bunx prisma generate --schema prisma/schema.prisma >/dev/null; then
+      echo 'Falha ao restaurar o cliente Prisma SQLite local.' >&2
+      status=1
+    fi
+  fi
+  docker rm -f "$container" >/dev/null 2>&1 || true
+  rm -rf "$temporary"
+  exit "$status"
+}
 trap cleanup EXIT
 sed -e 's/provider = "sqlite"/provider = "postgresql"/' \
   -e "/provider = \"prisma-client-js\"/a\\  output = \"$temporary/client\"" \
@@ -31,4 +44,9 @@ port="$(docker port "$container" 5432/tcp | sed 's/.*://')"
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun test tests/tenant-health-postgres.test.ts
+sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > "$temporary/schema-app.prisma"
+switched_client=1
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
+  bun test tests/session-journey.test.ts
 echo "PostgreSQL: DDL aplicado, backup/restauração comprovados; $tables tabelas, 1 tenant restaurado."

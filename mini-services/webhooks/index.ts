@@ -25,11 +25,12 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { createHmac } from 'crypto'
 import { Database, type Statement, type SQLQueryBindings } from 'bun:sqlite'
+import { resolve } from 'path'
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
 const PORT = 3004
-const DB_PATH = '/home/z/my-project/db/custom.db'
+const DB_PATH = process.env.WEBHOOKS_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
 const POLL_INTERVAL_MS = 1000
 const BATCH_LIMIT = 10
 const HTTP_TIMEOUT_MS = 10_000
