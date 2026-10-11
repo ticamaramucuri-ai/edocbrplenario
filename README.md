@@ -104,6 +104,7 @@ defina `REALTIME_AUTH_SECRET` (mínimo 32 bytes) **com o mesmo valor** para o ap
 mini-serviço realtime. A seleção de perfis fictícios só aparece com
 `LEGIS_DEMO_MODE=true` fora de produção. Sem essa opção, entre com e-mail/senha.
 O progresso verificável do desenvolvimento está em [`docs/etapas/`](docs/etapas/README.md).
+As próximas entregas possíveis sem conta de rede social estão em [`docs/FASES-SEM-CONTA-SOCIAL.md`](docs/FASES-SEM-CONTA-SOCIAL.md).
 O roteiro funcional completo, da criação da sessão à votação, transmissão e ata, está em
 [`docs/PLANO-FUNCIONAL-EDOCBR-PLENARIO.md`](docs/PLANO-FUNCIONAL-EDOCBR-PLENARIO.md).
 O cadastro institucional de Mucuri e a identidade edocBR estão em
