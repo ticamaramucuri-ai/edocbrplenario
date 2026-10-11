@@ -98,21 +98,23 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     // ── open ────────────────────────────────────────────────────────────
     if (body.action === 'open') {
       const { quorum } = await currentAttendance(tx, session.id, session.tenantId)
-      if (!quorum.ok) {
+      const required = voting.requiredQuorum ?? quorum.required
+      if (quorum.present < required) {
         throw new DomainError(
           'QUORUM_INSUFFICIENT',
           409,
           'Quórum insuficiente',
-          `Quórum insuficiente para abrir a votação: ${quorum.present} presente(s) de ${quorum.total} membros (mínimo regimental: ${quorum.required}).`
+          `Quórum insuficiente para abrir a votação: ${quorum.present} presente(s) de ${quorum.total} membros (mínimo regimental: ${required}).`
         )
       }
       const updated = await tx.voting.update({
         where: { id: voting.id },
         data: {
           status: 'open',
-          openedAt: now,
-          presentAtOpen: quorum.present,
-          quorumAtOpen: quorum.required,
+          openedAt: voting.openedAt ?? now,
+          presentAtOpen: voting.presentAtOpen ?? quorum.present,
+          quorumAtOpen: voting.quorumAtOpen ?? required,
+          memberBaseAtOpen: voting.memberBaseAtOpen ?? quorum.total,
           version: voting.version + 1,
         },
       })
@@ -155,6 +157,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     // ── close ───────────────────────────────────────────────────────────
     if (body.action === 'close') {
       const { quorum, statuses } = await currentAttendance(tx, session.id, session.tenantId)
+      const required = voting.quorumAtOpen ?? voting.requiredQuorum ?? quorum.required
       const [votes, optionRows] = await Promise.all([
         tx.vote.findMany({
           where: { votingId: voting.id },
@@ -232,6 +235,14 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         }
       }
 
+      const symbolicTotal = customCounts
+        ? Object.values(customCounts).reduce((sum, count) => sum + count, 0)
+        : countsSimbolico ? countsSimbolico.sim + countsSimbolico.nao + countsSimbolico.abstencoes : 0
+      if (voting.mode === 'simbolico' && symbolicTotal > quorum.present) {
+        throw new DomainError('VALIDATION_ERROR', 422, 'Contagem inválida',
+          `A soma informada (${symbolicTotal}) excede os ${quorum.present} parlamentares presentes no fechamento.`)
+      }
+
       const computed = computeVotingResultAdvanced({
         rule: voting.rule as 'maioria_simples',
         options: customOptions,
@@ -239,8 +250,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         countsSimbolico,
         customCounts,
         presentCount: quorum.present,
-        totalMembers: quorum.total,
-        requiredQuorum: quorum.required,
+        totalMembers: voting.memberBaseAtOpen ?? quorum.total,
+        requiredQuorum: required,
       })
 
       // Detalhe nominal por ordem de bancada (presentes; sem voto → nao_registrado)
@@ -272,7 +283,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           status: 'closed',
           closedAt: now,
           presentAtClose: quorum.present,
-          quorumAtClose: quorum.required,
+          quorumAtClose: required,
           resultStatus: computed.resultStatus,
           resultCounts: JSON.stringify(computed.counts),
           resultDetail,

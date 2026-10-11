@@ -22,5 +22,6 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [016 — Calendário de prazos da sessão](016-calendario-prazos-sessao.md) | Concluída localmente para acompanhamento | Vencimentos por fase e Câmara, fuso institucional e alerta visual na Mesa | Alertas persistidos e validação do regimento piloto |
 | [017 — Alertas persistidos de prazo](017-alertas-persistidos-prazo.md) | Concluída localmente para notificações internas | Avisos prévios e de atraso, deduplicação, agendador e ajuste da base demo | Homologação dos destinatários e regras regimentais |
 | [018 — Destinatários por mandato e licença](018-destinatarios-mandato-licenca.md) | Concluída localmente para seleção opcional | Política por Câmara, substituição explícita, prévia e snapshot por revisão | Homologação regimental e regras de quórum/maioria |
+| [019 — Política de quórum e maioria](019-politica-quorum-maioria.md) | Concluída localmente para matéria vinculada | Regra e quórum por tipo, snapshot da base de membros e apuração uniforme | Base deliberativa, impedimentos e homologação regimental |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

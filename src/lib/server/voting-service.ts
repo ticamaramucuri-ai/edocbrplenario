@@ -254,7 +254,7 @@ export type ComputedVotingResult = {
  *   contagem desc + ordem da opção, e a regra regimental sobre a mais votada:
  *   · maioria_simples: mais votada dentre quem votou (empate entre as duas
  *     maiores → `empate`);
- *   · maioria_absoluta: mais votada ≥ maioria dos presentes;
+ *   · maioria_absoluta: mais votada > metade da base de membros na abertura;
  *   · unanimidade: todos os votos na mesma opção (≥ 1 voto).
  * `sem_quorum` segue ANTES de qualquer regra, como hoje.
  */
@@ -323,9 +323,9 @@ export function computeVotingResultAdvanced(input: {
 
   switch (input.rule) {
     case 'maioria_absoluta':
-      // mais votada ≥ maioria dos presentes (> metade dos presentes)
+      // Mesmo denominador da votação padrão; base congelada na abertura.
       return {
-        resultStatus: topCount > Math.floor(presentCount / 2) ? 'aprovado' : 'rejeitado',
+        resultStatus: topCount > Math.floor(input.totalMembers / 2) ? 'aprovado' : 'rejeitado',
         counts: resultCounts,
       }
     case 'unanimidade':

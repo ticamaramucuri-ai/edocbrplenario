@@ -192,7 +192,26 @@ export function tenantSettings(
       && Number(parsed.noticeAlertLeadHours) >= 1 && Number(parsed.noticeAlertLeadHours) <= 168
       ? Number(parsed.noticeAlertLeadHours) : 24,
     noticeRecipientPolicy: parsed.noticeRecipientPolicy === 'mandate_and_leave' ? 'mandate_and_leave' : 'active',
+    votingPoliciesByMatterType: parseVotingPolicies(parsed.votingPoliciesByMatterType),
   }
+}
+
+const MATTER_TYPES = ['projeto_de_lei', 'decreto_legislativo', 'requerimento', 'indicacao', 'mocao', 'emenda'] as const
+const VOTING_RULES = ['maioria_simples', 'maioria_absoluta', 'unanimidade'] as const
+
+function parseVotingPolicies(value: unknown): TenantSettings['votingPoliciesByMatterType'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const result: TenantSettings['votingPoliciesByMatterType'] = {}
+  for (const type of MATTER_TYPES) {
+    const row = (value as Record<string, unknown>)[type]
+    if (!row || typeof row !== 'object' || Array.isArray(row)) continue
+    const policy = row as Record<string, unknown>
+    if (VOTING_RULES.includes(policy.rule as typeof VOTING_RULES[number])
+      && Number.isInteger(policy.quorumMinimum) && Number(policy.quorumMinimum) >= 1 && Number(policy.quorumMinimum) <= 100) {
+      result[type] = { rule: policy.rule as typeof VOTING_RULES[number], quorumMinimum: Number(policy.quorumMinimum) }
+    }
+  }
+  return result
 }
 
 /** Valida prazo de convocação/retificação e eventual exceção autorizada pela Câmara. */

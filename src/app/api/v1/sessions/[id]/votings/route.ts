@@ -100,7 +100,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
   const tenant = await db.tenant.findUnique({ where: { id: session.tenantId } })
   if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Não encontrado', 'Tenant não encontrado.')
-  const settings = tenantSettings(tenant)
+  const activeMembers = await db.parliamentarian.count({ where: { tenantId: session.tenantId, active: true } })
+  const settings = tenantSettings(tenant, activeMembers)
 
   let agendaItem: Awaited<ReturnType<typeof db.agendaItem.findUnique>> = null
   if (body.agendaItemId) {
@@ -116,6 +117,17 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     }
   }
 
+  const matter = agendaItem?.matterId ? await db.legislativeMatter.findFirst({
+    where: { id: agendaItem.matterId, tenantId: session.tenantId }, select: { type: true },
+  }) : null
+  const policy = matter ? settings.votingPoliciesByMatterType[matter.type as keyof typeof settings.votingPoliciesByMatterType] : undefined
+  if (policy && body.rule && body.rule !== policy.rule) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Regra regimental',
+      'A regra de aprovação desta matéria foi configurada pela Câmara e não pode ser alterada nesta votação.')
+  }
+  const rule = policy?.rule ?? body.rule ?? 'maioria_simples'
+  const requiredQuorum = policy?.quorumMinimum ?? settings.quorumMinimum
+
   const voting = await withTransaction(async (tx) => {
     const created = await tx.voting.create({
       data: {
@@ -125,7 +137,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         question: body.question ?? agendaItem!.title,
         mode: body.mode,
         status: 'ready',
-        rule: body.rule ?? 'maioria_simples',
+        rule,
+        requiredQuorum,
         hidePartial: body.hidePartial ?? settings.hidePartialByDefault,
         version: 1,
       },
@@ -164,6 +177,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         status: 'ready',
         mode: created.mode,
         rule: created.rule,
+        requiredQuorum: created.requiredQuorum,
         options: customOptions.map((o) => o.key),
       },
       correlationId,

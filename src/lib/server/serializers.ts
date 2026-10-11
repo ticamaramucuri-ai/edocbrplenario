@@ -215,6 +215,7 @@ export function toAgendaItemView(item: AgendaItemRow & { matter?: MatterRow | nu
     section: item.section as AgendaItemView['section'],
     title: item.title,
     matterId: item.matterId ?? null,
+    matterType: (item.matter?.type as AgendaItemView['matterType']) ?? null,
     matterLabel: matterLabel(item.matter),
     kind: item.kind as AgendaItemView['kind'],
     status: item.status as AgendaItemView['status'],
@@ -365,6 +366,8 @@ export function toVotingView(
       .sort((a, b) => a.order - b.order)
       .map(toVotingOptionView),
     presentAtOpen: voting.presentAtOpen ?? null,
+    requiredQuorum: voting.requiredQuorum ?? null,
+    memberBaseAtOpen: voting.memberBaseAtOpen ?? null,
     presentAtClose: voting.presentAtClose ?? null,
     resultStatus: (voting.resultStatus as VotingView['resultStatus']) ?? null,
     resultCounts: parseResultCounts(voting.resultCounts),

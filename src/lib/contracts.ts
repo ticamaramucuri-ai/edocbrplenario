@@ -101,6 +101,7 @@ export type MatterStatus =
 export type MatterType = 'projeto_de_lei' | 'decreto_legislativo' | 'requerimento' | 'indicacao' | 'mocao' | 'emenda'
 export type SessionType = 'ordinaria' | 'extraordinaria' | 'solene' | 'especial'
 export type NoticeRecipientPolicy = 'active' | 'mandate_and_leave'
+export type MatterVotingPolicy = { rule: VotingRule; quorumMinimum: number }
 
 export type TenantSettings = {
   quorumMinimum: number
@@ -119,6 +120,7 @@ export type TenantSettings = {
   urgentNoticeExceptionTypes: SessionType[]
   noticeAlertLeadHours: number
   noticeRecipientPolicy: NoticeRecipientPolicy
+  votingPoliciesByMatterType: Partial<Record<MatterType, MatterVotingPolicy>>
 }
 
 export type TenantView = {
@@ -176,6 +178,7 @@ export type AgendaItemView = {
   section: 'expediente' | 'ordem_do_dia' | 'comunicacoes'
   title: string
   matterId: string | null
+  matterType: MatterType | null
   matterLabel: string | null
   kind: 'individual' | 'lote'
   status: AgendaItemStatus
@@ -235,6 +238,8 @@ export type VotingView = {
   hidePartial: boolean
   options?: VotingOptionView[] // Onda 4/Fase 18: opções customizadas (vazio = padrão)
   presentAtOpen: number | null
+  requiredQuorum: number | null
+  memberBaseAtOpen: number | null
   presentAtClose: number | null
   resultStatus: 'aprovado' | 'rejeitado' | 'empate' | 'sem_quorum' | 'anulado' | null
   resultCounts: ResultCounts | null

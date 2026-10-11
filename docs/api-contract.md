@@ -99,6 +99,9 @@ Exige `session.transition`; devolve a revisão vigente, hash, total, número de 
 ### GET `/api/v1/sessions/:id/notice-recipient-preview`
 Exige `session.transition`; devolve `{ policy, total, recipients: [{ id, name }] }` para a próxima publicação/retificação. `active` inclui parlamentares ativos. `mandate_and_leave` exige mandato na data civil da sessão no fuso da Câmara, exclui titular afastado e inclui suplente ativo explicitamente indicado. A política é configurada em `PATCH /api/v1/tenants/:id` pelo campo `settings.noticeRecipientPolicy`. A prévia pode mudar; só a lista gravada na revisão é definitiva. Sem elegíveis nesse modo, publicar ou retificar retorna 409.
 
+### Política de votação por tipo de matéria
+`PATCH /api/v1/tenants/:id` aceita `settings.votingPoliciesByMatterType`, objeto com chaves de tipo de matéria e valores `{ rule, quorumMinimum }` (`quorumMinimum` entre 1 e 100). Em `POST /api/v1/sessions/:id/votings`, uma votação vinculada a matéria herda a regra configurada; enviar regra divergente retorna 422. A resposta inclui `requiredQuorum` e, após a abertura, `memberBaseAtOpen`. `POST /api/v1/votings/:id/transition` verifica o quórum gravado na votação, registra a base de membros na abertura e reutiliza ambos no fechamento. Votações sem política específica seguem o quórum geral e a regra enviada pela Mesa.
+
 ### GET `/api/v1/sessions/notice-calendar`
 Exige `session.transition`; retorna `{ timezone, generatedAt, rows }` para até 50 sessões futuras em `draft` ou `scheduled` da Câmara do ator. Cada linha contém `sessionId`, número/ano/tipo, fase (`initial` ou `amendment`), horário da sessão, vencimento, mínimo de horas, estado (`on_time`, `due_soon`, `passed`) e possibilidade de exceção configurada para o tipo. `Cache-Control: no-store`.
 

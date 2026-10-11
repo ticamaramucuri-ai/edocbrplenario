@@ -11,7 +11,7 @@ import { BadgeCheck, Info, Landmark, Palette, Save, Settings as SettingsIcon, Sh
 
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
-import { ROLE_LABEL, SESSION_TYPE_LABEL, type SessionType, type TenantSettings } from '@/lib/contracts'
+import { MATTER_TYPE_LABEL, ROLE_LABEL, SESSION_TYPE_LABEL, VOTING_RULE_LABEL, type MatterType, type SessionType, type TenantSettings, type VotingRule } from '@/lib/contracts'
 import { EmptyState, PageHeader } from '@/components/app/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -85,6 +85,7 @@ export default function SettingsModule() {
       urgentNoticeExceptionTypes: [],
       noticeAlertLeadHours: 24,
       noticeRecipientPolicy: 'active',
+      votingPoliciesByMatterType: {},
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -147,6 +148,10 @@ export default function SettingsModule() {
       errs.minimumAmendmentHours = 'Informe um número entre 0 e 720 horas.'
     if (!Number.isInteger(settings.noticeAlertLeadHours) || settings.noticeAlertLeadHours < 1 || settings.noticeAlertLeadHours > 168)
       errs.noticeAlertLeadHours = 'Informe um número entre 1 e 168 horas.'
+    for (const [type, policy] of Object.entries(settings.votingPoliciesByMatterType)) {
+      if (policy && (!Number.isInteger(policy.quorumMinimum) || policy.quorumMinimum < 1 || policy.quorumMinimum > 100))
+        errs[`voting-${type}`] = 'Informe quórum entre 1 e 100.'
+    }
     setErrors(errs)
     if (Object.keys(errs).length > 0 || !tenant) return
     save.mutate()
@@ -395,6 +400,34 @@ export default function SettingsModule() {
                   <option value="mandate_and_leave">Mandato vigente, afastamentos e suplentes</option>
                 </select>
                 <p className="text-xs text-muted-foreground">A segunda opção exige mandatos e afastamentos corretos na Estrutura Institucional. A lista é congelada em cada publicação ou retificação da pauta.</p>
+              </div>
+              <div className="grid gap-3 border-t pt-4">
+                <div>
+                  <p className="text-sm font-medium">Quórum e maioria por tipo de matéria</p>
+                  <p className="text-xs text-muted-foreground">Opcional. Sem regra específica, a votação usa o quórum geral e a regra escolhida pela Mesa. Com regra específica, ambos são obrigatórios e congelados na votação.</p>
+                </div>
+                {(Object.keys(MATTER_TYPE_LABEL) as MatterType[]).map((type) => {
+                  const policy = settings.votingPoliciesByMatterType[type]
+                  return <div key={type} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem] sm:items-center">
+                    <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!policy} onCheckedChange={(checked) => setSettings((current) => {
+                      const next = { ...current.votingPoliciesByMatterType }
+                      if (checked) next[type] = { rule: 'maioria_simples', quorumMinimum: current.quorumMinimum }
+                      else delete next[type]
+                      return { ...current, votingPoliciesByMatterType: next }
+                    })} />{MATTER_TYPE_LABEL[type]}</label>
+                    <select aria-label={`Regra de ${MATTER_TYPE_LABEL[type]}`} disabled={!policy} className="h-9 rounded-md border bg-background px-2 text-sm"
+                      value={policy?.rule ?? 'maioria_simples'} onChange={(e) => setSettings((current) => ({ ...current,
+                        votingPoliciesByMatterType: { ...current.votingPoliciesByMatterType,
+                          [type]: { rule: e.target.value as VotingRule, quorumMinimum: current.votingPoliciesByMatterType[type]?.quorumMinimum ?? current.quorumMinimum } } }))}>
+                      {(Object.keys(VOTING_RULE_LABEL) as VotingRule[]).map((rule) => <option key={rule} value={rule}>{VOTING_RULE_LABEL[rule]}</option>)}
+                    </select>
+                    <Input aria-label={`Quórum de ${MATTER_TYPE_LABEL[type]}`} type="number" min={1} max={100} disabled={!policy}
+                      value={policy?.quorumMinimum ?? settings.quorumMinimum} onChange={(e) => setSettings((current) => ({ ...current,
+                        votingPoliciesByMatterType: { ...current.votingPoliciesByMatterType,
+                          [type]: { rule: current.votingPoliciesByMatterType[type]?.rule ?? 'maioria_simples', quorumMinimum: Number(e.target.value) } } }))} />
+                    {errors[`voting-${type}`] && <p className="text-xs text-destructive sm:col-span-3">{errors[`voting-${type}`]}</p>}
+                  </div>
+                })}
               </div>
             </CardContent>
           </Card>

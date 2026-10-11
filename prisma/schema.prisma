@@ -522,10 +522,12 @@ model Voting {
   mode           String    @default("nominal") // nominal|simbolico|secreto
   status         String    @default("draft") // draft|ready|open|paused|closed|annulled
   rule           String    @default("maioria_simples") // maioria_simples|maioria_absoluta|unanimidade
+  requiredQuorum Int?      // política congelada na criação; legado usa quórum geral
   openedAt       DateTime?
   closedAt       DateTime?
   presentAtOpen  Int?
   quorumAtOpen   Int?
+  memberBaseAtOpen Int?    // denominador da maioria absoluta congelado na abertura
   presentAtClose Int?
   quorumAtClose  Int?
   hidePartial    Boolean   @default(false)

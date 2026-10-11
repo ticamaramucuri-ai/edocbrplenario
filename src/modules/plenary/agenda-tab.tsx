@@ -362,6 +362,8 @@ function VotingSetupDialog({
   onCreated: () => void
 }) {
   const hideByDefault = useApp((s) => s.bootstrap?.tenant.settings.hidePartialByDefault ?? false)
+  const configuredVotingPolicies = useApp((s) => s.bootstrap?.tenant.settings.votingPoliciesByMatterType ?? {})
+  const votingPolicy = item?.matterType ? configuredVotingPolicies[item.matterType] : undefined
   const [question, setQuestion] = useState('')
   const [mode, setMode] = useState<VotingMode>('nominal')
   const [rule, setRule] = useState<VotingRule>('maioria_simples')
@@ -378,7 +380,7 @@ function VotingSetupDialog({
     if (item) {
       setQuestion(item.title)
       setMode('nominal')
-      setRule('maioria_simples')
+      setRule(votingPolicy?.rule ?? 'maioria_simples')
       setHidePartial(hideByDefault)
       setUseCustomOptions(false)
       setCustomOptions([
@@ -386,7 +388,7 @@ function VotingSetupDialog({
         { key: '', label: '' },
       ])
     }
-  }, [item, hideByDefault])
+  }, [item, hideByDefault, votingPolicy?.rule])
 
   const filledOptions = customOptions.filter((o) => o.label.trim().length > 0 || o.key.trim().length > 0)
   const optionsErrors: string[] = []
@@ -486,7 +488,7 @@ function VotingSetupDialog({
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="voting-rule">Regra de aprovação</Label>
-              <Select value={rule} onValueChange={(v) => setRule(v as VotingRule)}>
+              <Select value={rule} disabled={!!votingPolicy} onValueChange={(v) => setRule(v as VotingRule)}>
                 <SelectTrigger id="voting-rule" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -498,6 +500,7 @@ function VotingSetupDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {votingPolicy && <p className="text-xs text-muted-foreground">Regra da Câmara para este tipo de matéria; quórum mínimo de {votingPolicy.quorumMinimum} presente(s).</p>}
             </div>
             <div className="flex items-end">
               <label htmlFor="hide-partial" className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border p-3">

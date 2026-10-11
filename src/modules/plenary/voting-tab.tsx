@@ -265,7 +265,7 @@ function VotingPanel({
         {voting.status === 'ready' && (
           <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
             Votação pronta. Ao abrir, o sistema registra o quórum do momento — a abertura exige
-            quórum mínimo ({data.quorum.required} presentes).
+            quórum mínimo ({voting.requiredQuorum ?? data.quorum.required} presentes).
           </p>
         )}
         {voting.status === 'paused' && (
