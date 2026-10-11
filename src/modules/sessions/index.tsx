@@ -73,6 +73,14 @@ import { EditSessionDialog } from '@/modules/sessions/edit-session-dialog'
 
 const ALL_STATUSES = Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]
 
+function institutionalTime(iso: string, timezone: string) {
+  try {
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: timezone }).format(new Date(iso))
+  } catch {
+    return fmtDateTime(iso)
+  }
+}
+
 type TransitionDef = {
   action: string
   label: string
@@ -123,6 +131,8 @@ export default function SessionsModule() {
   const canCreate = can('session.create')
 
   const { data, isLoading } = useQuery({ queryKey: ['sessions'], queryFn: () => api.listSessions() })
+  const { data: noticeCalendar } = useQuery({ queryKey: ['notice-calendar'], queryFn: () => api.noticeCalendar(),
+    enabled: canTransition, refetchInterval: 60_000 })
 
   const [statusFilter, setStatusFilter] = useState('todas')
   const [numberSearch, setNumberSearch] = useState('')
@@ -132,6 +142,7 @@ export default function SessionsModule() {
   const [editTarget, setEditTarget] = useState<SessionSummary | null>(null)
   const [closeTarget, setCloseTarget] = useState<SessionSummary | null>(null)
   const [publishTarget, setPublishTarget] = useState<SessionSummary | null>(null)
+  const [noticeExceptionReason, setNoticeExceptionReason] = useState('')
   const [cancelTarget, setCancelTarget] = useState<SessionSummary | null>(null)
   const [cancelJustification, setCancelJustification] = useState('')
 
@@ -150,20 +161,24 @@ export default function SessionsModule() {
       session,
       action,
       justification,
+      exceptionReason,
     }: {
       session: SessionSummary
       action: string
       justification?: string
-    }) => api.transitionSession(session.id, action, session.version, justification),
+      exceptionReason?: string
+    }) => api.transitionSession(session.id, action, session.version, justification, exceptionReason),
     onSuccess: (_d, vars) => {
       toast.success(SUCCESS_MESSAGE[vars.action] ?? 'Sessão atualizada', {
         description: `${SESSION_TYPE_LABEL[vars.session.type]} nº ${vars.session.number}/${vars.session.year}`,
       })
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      queryClient.invalidateQueries({ queryKey: ['notice-calendar'] })
       queryClient.invalidateQueries({ queryKey: ['session', vars.session.id] })
       queryClient.invalidateQueries({ queryKey: ['bootstrap'] })
       setCloseTarget(null)
       setPublishTarget(null)
+      setNoticeExceptionReason('')
       setCancelTarget(null)
       setCancelJustification('')
     },
@@ -175,6 +190,7 @@ export default function SessionsModule() {
 
   const runTransition = (session: SessionSummary, def: TransitionDef) => {
     if (def.confirm === 'schedule') {
+      setNoticeExceptionReason('')
       setPublishTarget(session)
       return
     }
@@ -214,6 +230,24 @@ export default function SessionsModule() {
           ) : undefined
         }
       />
+
+      {canTransition && noticeCalendar && <section className="rounded-lg border bg-card p-4" aria-label="Prazos de convocação">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Prazos de convocação e retificação</h2>
+          <span className="text-xs text-muted-foreground">Horário da Câmara: {noticeCalendar.timezone}</span>
+        </div>
+        {noticeCalendar.rows.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Nenhuma sessão futura em preparação.</p> :
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {noticeCalendar.rows.slice(0, 6).map((row) => <li key={row.sessionId} className="rounded-md border p-3 text-sm">
+              <p className="font-medium">{SESSION_TYPE_LABEL[row.type]} nº {row.number}/{row.year}</p>
+              <p className="text-muted-foreground">{row.phase === 'initial' ? 'Publicar convocação' : 'Retificar pauta'} até {institutionalTime(row.deadlineAt, noticeCalendar.timezone)}</p>
+              <p className={row.state === 'passed' ? 'font-medium text-destructive' : row.state === 'due_soon' ? 'font-medium text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}>
+                {row.state === 'passed' ? 'Prazo vencido' : row.state === 'due_soon' ? 'Vence em até 24 horas' : 'Dentro do prazo'}
+                {row.state === 'passed' ? row.exceptionAllowed ? ' · exceção justificável' : ' · exceção indisponível' : ''}
+              </p>
+            </li>)}
+          </ul>}
+      </section>}
 
       {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3" role="search" aria-label="Filtros de sessões">
@@ -419,11 +453,18 @@ export default function SessionsModule() {
               {publishTarget && `${SESSION_TYPE_LABEL[publishTarget.type]} nº ${publishTarget.number}/${publishTarget.year}, marcada para ${fmtDateTime(publishTarget.scheduledAt)}, terá seus ${publishTarget.agendaCount} itens publicados. Confira a pauta antes de confirmar.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="publish-exception-reason">Justificativa para exceção de prazo (somente se necessária)</Label>
+            <Textarea id="publish-exception-reason" value={noticeExceptionReason}
+              onChange={(event) => setNoticeExceptionReason(event.target.value)} rows={2}
+              placeholder="Preencha apenas se o prazo mínimo não for atendido e este tipo de sessão admitir urgência." />
+            <p className="text-xs text-muted-foreground">A exceção será publicada na convocação. O servidor verifica a política desta Câmara.</p>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Continuar revisando</AlertDialogCancel>
             <AlertDialogAction
-              disabled={transition.isPending}
-              onClick={() => publishTarget && transition.mutate({ session: publishTarget, action: 'schedule' })}
+              disabled={transition.isPending || (noticeExceptionReason.trim().length > 0 && noticeExceptionReason.trim().length < 3)}
+              onClick={() => publishTarget && transition.mutate({ session: publishTarget, action: 'schedule', exceptionReason: noticeExceptionReason.trim() || undefined })}
             >
               <CalendarCheck2 className="size-4" /> Publicar pauta
             </AlertDialogAction>

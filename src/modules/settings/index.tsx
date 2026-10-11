@@ -81,6 +81,8 @@ export default function SettingsModule() {
       requireSecretaryForPublication: false,
       minimumAgendaMatters: 0,
       minimumNoticeHours: 0,
+      minimumAmendmentHours: 0,
+      urgentNoticeExceptionTypes: [],
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -100,6 +102,7 @@ export default function SettingsModule() {
         description: 'A identidade white-label e as regras regimentais foram atualizadas.',
       })
       queryClient.invalidateQueries({ queryKey: ['bootstrap'] })
+      queryClient.invalidateQueries({ queryKey: ['notice-calendar'] })
     },
   })
 
@@ -137,6 +140,8 @@ export default function SettingsModule() {
       errs.minimumAgendaMatters = 'Informe um número entre 0 e 100.'
     if (!Number.isInteger(settings.minimumNoticeHours) || settings.minimumNoticeHours < 0 || settings.minimumNoticeHours > 720)
       errs.minimumNoticeHours = 'Informe um número entre 0 e 720 horas.'
+    if (!Number.isInteger(settings.minimumAmendmentHours) || settings.minimumAmendmentHours < 0 || settings.minimumAmendmentHours > 720)
+      errs.minimumAmendmentHours = 'Informe um número entre 0 e 720 horas.'
     setErrors(errs)
     if (Object.keys(errs).length > 0 || !tenant) return
     save.mutate()
@@ -342,6 +347,30 @@ export default function SettingsModule() {
                   aria-invalid={!!errors.minimumNoticeHours} />
                 <p className="text-xs text-muted-foreground">Verificada quando a pauta é publicada. Use 0 para não exigir prazo adicional.</p>
                 {errors.minimumNoticeHours && <p className="text-xs text-destructive">{errors.minimumNoticeHours}</p>}
+              </div>
+              <div className="grid gap-2 sm:max-w-64">
+                <Label htmlFor="tenant-amendment-hours">Antecedência mínima para retificar (horas)</Label>
+                <Input id="tenant-amendment-hours" type="number" min={0} max={720}
+                  value={settings.minimumAmendmentHours}
+                  onChange={(e) => setSetting('minimumAmendmentHours', Number(e.target.value))}
+                  aria-invalid={!!errors.minimumAmendmentHours} />
+                <p className="text-xs text-muted-foreground">Aplica-se a toda emenda publicada antes do credenciamento. Use 0 para permitir até o horário da sessão.</p>
+                {errors.minimumAmendmentHours && <p className="text-xs text-destructive">{errors.minimumAmendmentHours}</p>}
+              </div>
+              <div className="grid gap-2">
+                <Label>Tipos que admitem exceção de prazo por urgência</Label>
+                <p className="text-xs text-muted-foreground">Quando o prazo não for cumprido, o operador deverá informar uma justificativa específica, publicada na convocação. Sem seleção, nenhuma exceção é permitida.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(Object.keys(SESSION_TYPE_LABEL) as SessionType[]).map((sessionType) => (
+                    <label key={sessionType} className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={settings.urgentNoticeExceptionTypes.includes(sessionType)}
+                        onCheckedChange={(checked) => setSetting('urgentNoticeExceptionTypes', checked
+                          ? [...settings.urgentNoticeExceptionTypes, sessionType]
+                          : settings.urgentNoticeExceptionTypes.filter((type) => type !== sessionType))} />
+                      {SESSION_TYPE_LABEL[sessionType]}
+                    </label>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -8,7 +8,7 @@ import { apiHandler, clientIp, DomainError, notFound } from '@/lib/server/errors
 import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { loadSession } from '@/lib/server/loaders'
-import { tenantSettings } from '@/lib/server/domain'
+import { enforceNoticeDeadline, tenantSettings } from '@/lib/server/domain'
 import { matterLabel } from '@/lib/server/serializers'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
@@ -18,9 +18,9 @@ import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients
 export const dynamic = 'force-dynamic'
 
 const schema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('add'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), matterId: z.string().min(1), justification: z.string().trim().min(3).max(2000) }),
-  z.object({ action: z.literal('move'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), itemId: z.string().min(1), position: z.number().int().min(0), justification: z.string().trim().min(3).max(2000) }),
-  z.object({ action: z.literal('retire'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), itemId: z.string().min(1), justification: z.string().trim().min(3).max(2000) }),
+  z.object({ action: z.literal('add'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), matterId: z.string().min(1), justification: z.string().trim().min(3).max(2000), exceptionReason: z.string().trim().min(3).max(2000).optional() }),
+  z.object({ action: z.literal('move'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), itemId: z.string().min(1), position: z.number().int().min(0), justification: z.string().trim().min(3).max(2000), exceptionReason: z.string().trim().min(3).max(2000).optional() }),
+  z.object({ action: z.literal('retire'), mode: z.enum(['preview', 'apply']), version: z.number().int().positive(), itemId: z.string().min(1), justification: z.string().trim().min(3).max(2000), exceptionReason: z.string().trim().min(3).max(2000).optional() }),
 ])
 
 type Command = z.infer<typeof schema>
@@ -104,11 +104,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (!revision || !tenant) throw new DomainError('SESSION_PRECONDITION', 409, 'Publicação ausente', 'Não há revisão inicial registrada para esta pauta.')
     const change = plan(items, command, matter)
     const policy = tenantSettings(tenant)
+    const deadline = enforceNoticeDeadline({ settings: policy, sessionType: current.type,
+      scheduledAt: current.scheduledAt, now: new Date(), phase: 'amendment', exceptionReason: command.exceptionReason })
     const activeMatters = change.after.filter((item) => item.section === 'ordem_do_dia' && item.matterId && !['retirado', 'adiado'].includes(item.status)).length
     if (activeMatters < policy.minimumAgendaMatters) {
       throw new DomainError('SESSION_PRECONDITION', 409, 'Pauta incompleta', `Esta Câmara exige ao menos ${policy.minimumAgendaMatters} matéria(s) na Ordem do Dia.`)
     }
-    return { ...change, revision: revision.revision + 1, policy, tenant }
+    return { ...change, revision: revision.revision + 1, policy, deadline, tenant }
   }
 
   if (command.mode === 'preview') {
@@ -131,9 +133,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A sessão mudou. Recarregue a pauta.')
     const updated = await tx.session.findUniqueOrThrow({ where: { id } })
     const issuedAt = new Date()
-    const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication, minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours }
+    const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication,
+      minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours,
+      minimumAmendmentHours: change.policy.minimumAmendmentHours, urgentNoticeExceptionTypes: change.policy.urgentNoticeExceptionTypes,
+      exceptionReason: change.deadline.exceptionReason }
     const notice = createSessionNotice({ tenant: change.tenant, session: updated, revision: change.revision,
-      issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification })
+      issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification,
+      exceptionReason: change.deadline.exceptionReason })
     await tx.sessionAgendaRevision.create({ data: {
       tenantId: session.tenantId, sessionId: id, revision: change.revision,
       agendaJson: JSON.stringify(change.after),
@@ -145,7 +151,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: id,
       revision: change.revision, noticeSha256: notice.noticeSha256, issuedAt })
     await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'agenda.amended', aggregateType: 'session', aggregateId: id,
-      summary: `${change.summary} Revisão ${change.revision}.`, before: { revision: change.revision - 1 }, after: { revision: change.revision, action: command.action, noticeSha256: notice.noticeSha256 },
+      summary: `${change.summary} Revisão ${change.revision}.`, before: { revision: change.revision - 1 }, after: { revision: change.revision, action: command.action, noticeSha256: notice.noticeSha256, exceptionReason: change.deadline.exceptionReason },
       justification: command.justification, correlationId, ip: clientIp(req) })
     await emitOutbox(tx, { tenantId: session.tenantId, eventType: 'agenda.updated', aggregateId: id, sessionId: id,
       aggregateVersion: command.version + 1, correlationId,

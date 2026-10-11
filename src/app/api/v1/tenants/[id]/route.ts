@@ -28,6 +28,8 @@ const settingsSchema = z
     requireSecretaryForPublication: z.boolean().optional(),
     minimumAgendaMatters: z.number().int().min(0).max(100).optional(),
     minimumNoticeHours: z.number().int().min(0).max(720).optional(),
+    minimumAmendmentHours: z.number().int().min(0).max(720).optional(),
+    urgentNoticeExceptionTypes: z.array(z.enum(['ordinaria', 'extraordinaria', 'solene', 'especial'])).max(4).refine((v) => new Set(v).size === v.length).optional(),
   })
   .strict()
 

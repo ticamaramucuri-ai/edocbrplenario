@@ -9,6 +9,7 @@ export function createSessionNotice(input: {
   agenda: unknown
   policy: unknown
   justification?: string | null
+  exceptionReason?: string | null
 }) {
   const content = {
     schemaVersion: 1,
@@ -28,6 +29,7 @@ export function createSessionNotice(input: {
     agenda: input.agenda,
     policy: input.policy,
     justification: input.justification ?? null,
+    exceptionReason: input.exceptionReason ?? null,
   }
   const noticeJson = JSON.stringify(content)
   const noticeSha256 = createHash('sha256').update(noticeJson).digest('hex')

@@ -15,7 +15,7 @@ import { loadSession } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { notify } from '@/lib/server/notify'
-import { SESSION_TRANSITIONS, currentAttendance, tenantSettings, type SessionAction } from '@/lib/server/domain'
+import { SESSION_TRANSITIONS, currentAttendance, enforceNoticeDeadline, tenantSettings, type SessionAction } from '@/lib/server/domain'
 import { buildSessionSummaries, sessionLabel } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 import { createSessionNotice } from '@/lib/server/session-notice'
@@ -28,6 +28,7 @@ const bodySchema = z
     action: z.enum(['schedule', 'open_checkin', 'open_session', 'suspend', 'resume', 'close', 'cancel']),
     version: z.number({ message: 'version é obrigatório (controle otimista).' }).int().min(1),
     justification: z.string().min(3).max(2000).optional(),
+    noticeExceptionReason: z.string().trim().min(3).max(2000).optional(),
   })
   .superRefine((body, ctx) => {
     if (body.action === 'cancel' && !body.justification) {
@@ -36,6 +37,9 @@ const bodySchema = z
         path: ['justification'],
         message: 'Justificativa é obrigatória para cancelar a sessão.',
       })
+    }
+    if (body.action !== 'schedule' && body.noticeExceptionReason) {
+      ctx.addIssue({ code: 'custom', path: ['noticeExceptionReason'], message: 'Exceção de prazo só se aplica à publicação da pauta.' })
     }
   })
 
@@ -77,6 +81,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   }
 
   const result = await withTransaction(async (tx) => {
+    const now = new Date()
     // Pré-condições (dentro da tx para consistência)
     if (transition.requires.includes('agenda')) {
       const count = await tx.agendaItem.count({ where: { sessionId: session.id } })
@@ -103,9 +108,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const tenant = await tx.tenant.findUnique({ where: { id: session.tenantId } })
       if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Câmara não encontrada', 'Câmara não encontrada.')
       const policy = tenantSettings(tenant)
-      if (session.scheduledAt.getTime() - Date.now() < policy.minimumNoticeHours * 60 * 60 * 1000) {
-        throw new DomainError('SESSION_PRECONDITION', 409, 'Prazo de convocação', `Esta Câmara exige ${policy.minimumNoticeHours} hora(s) de antecedência para publicar a convocação.`)
-      }
+      const deadline = enforceNoticeDeadline({ settings: policy, sessionType: session.type,
+        scheduledAt: session.scheduledAt, now, phase: 'initial', exceptionReason: body.noticeExceptionReason })
       if (!policy.enabledSessionTypes.includes(session.type as typeof policy.enabledSessionTypes[number])) {
         throw new DomainError('SESSION_TYPE_DISABLED', 409, 'Tipo indisponível', 'O tipo da sessão foi desabilitado nesta Câmara antes da publicação.')
       }
@@ -136,12 +140,14 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           requireSecretaryForPublication: policy.requireSecretaryForPublication,
           minimumAgendaMatters: policy.minimumAgendaMatters,
           minimumNoticeHours: policy.minimumNoticeHours,
+          minimumAmendmentHours: policy.minimumAmendmentHours,
+          urgentNoticeExceptionTypes: policy.urgentNoticeExceptionTypes,
+          exceptionReason: deadline.exceptionReason,
         }),
         tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name, city: tenant.city, uf: tenant.uf, timezone: tenant.timezone },
       }
     }
 
-    const now = new Date()
     const data: Prisma.SessionUpdateManyMutationInput = {
       status: transition.to,
       version: { increment: 1 },
@@ -159,6 +165,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const notice = createSessionNotice({
         tenant: publication.tenant, session: updated, revision: 1, issuedAt: now,
         agenda: JSON.parse(publication.agendaJson), policy: JSON.parse(publication.policyJson),
+        exceptionReason: body.noticeExceptionReason,
       })
       noticeHash = notice.noticeSha256
       await tx.sessionAgendaRevision.create({ data: {
@@ -184,7 +191,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       aggregateId: session.id,
       summary: `${SUMMARY[body.action]} (status: ${from} → ${transition.to})`,
       before: { status: from },
-      after: { status: transition.to, ...(publication ? { agendaRevision: 1, noticeSha256: noticeHash } : {}) },
+      after: { status: transition.to, ...(publication ? { agendaRevision: 1, noticeSha256: noticeHash, noticeExceptionReason: body.noticeExceptionReason ?? null } : {}) },
       justification: body.action === 'cancel' ? body.justification : null,
       correlationId,
       ip: clientIp(req),

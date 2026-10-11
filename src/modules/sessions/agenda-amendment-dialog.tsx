@@ -24,6 +24,7 @@ export function AgendaAmendmentDialog({ sessionId, version, agenda, onClose }: {
   const [itemId, setItemId] = useState('')
   const [position, setPosition] = useState('0')
   const [justification, setJustification] = useState('')
+  const [exceptionReason, setExceptionReason] = useState('')
   const [preview, setPreview] = useState<Preview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const matters = useQuery({ queryKey: ['matters', 'amendment'], queryFn: () => api.listMatters({ status: 'em_tramitacao' }), enabled: action === 'add' })
@@ -32,6 +33,7 @@ export function AgendaAmendmentDialog({ sessionId, version, agenda, onClose }: {
 
   const command = (mode: 'preview' | 'apply') => ({
     action, mode, version, justification: justification.trim(),
+    ...(exceptionReason.trim() && { exceptionReason: exceptionReason.trim() }),
     ...(action === 'add' && { matterId }),
     ...(action !== 'add' && { itemId }),
     ...(action === 'move' && { position: Number(position) }),
@@ -56,6 +58,7 @@ export function AgendaAmendmentDialog({ sessionId, version, agenda, onClose }: {
   })
   const submit = (mode: 'preview' | 'apply') => {
     if (justification.trim().length < 3) return setError('Informe a justificativa (mínimo de 3 caracteres).')
+    if (exceptionReason.trim().length > 0 && exceptionReason.trim().length < 3) return setError('A justificativa da exceção deve ter no mínimo 3 caracteres.')
     if (action === 'add' && !matterId) return setError('Selecione uma matéria.')
     if (action !== 'add' && !itemId) return setError('Selecione um item da Ordem do Dia.')
     if (action === 'move' && (!Number.isInteger(Number(position)) || Number(position) < 0)) return setError('Informe uma posição válida.')
@@ -77,6 +80,7 @@ export function AgendaAmendmentDialog({ sessionId, version, agenda, onClose }: {
       </SelectContent></Select></div>}
       {action === 'move' && <div className="grid gap-2"><Label htmlFor="amend-position">Nova posição na Ordem do Dia (a partir de 1)</Label><Input id="amend-position" type="number" min="1" max={orderItems.length} value={String(Number(position) + 1)} onChange={(event) => { setPosition(String(Number(event.target.value) - 1)); resetPreview() }} /></div>}
       <div className="grid gap-2"><Label htmlFor="amend-reason">Justificativa *</Label><Textarea id="amend-reason" value={justification} onChange={(event) => { setJustification(event.target.value); resetPreview() }} rows={2} /></div>
+      <div className="grid gap-2"><Label htmlFor="amend-exception-reason">Exceção de prazo por urgência (se necessária)</Label><Textarea id="amend-exception-reason" value={exceptionReason} onChange={(event) => { setExceptionReason(event.target.value); resetPreview() }} rows={2} placeholder="Informe apenas se a retificação ocorrer fora do prazo mínimo e a Câmara admitir exceção para este tipo." /><p className="text-xs text-muted-foreground">A justificativa da exceção ficará pública na convocação.</p></div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {preview && <div className="rounded-md border bg-muted/40 p-3 text-sm"><p className="font-semibold">Prévia da revisão {preview.revision}</p><p>{preview.summary}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">

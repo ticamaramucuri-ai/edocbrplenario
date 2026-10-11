@@ -182,7 +182,38 @@ export function tenantSettings(
     minimumNoticeHours: Number.isInteger(parsed.minimumNoticeHours)
       && Number(parsed.minimumNoticeHours) >= 0 && Number(parsed.minimumNoticeHours) <= 720
       ? Number(parsed.minimumNoticeHours) : 0,
+    minimumAmendmentHours: Number.isInteger(parsed.minimumAmendmentHours)
+      && Number(parsed.minimumAmendmentHours) >= 0 && Number(parsed.minimumAmendmentHours) <= 720
+      ? Number(parsed.minimumAmendmentHours) : 0,
+    urgentNoticeExceptionTypes: Array.isArray(parsed.urgentNoticeExceptionTypes)
+      && parsed.urgentNoticeExceptionTypes.every((v) => ['ordinaria', 'extraordinaria', 'solene', 'especial'].includes(String(v)))
+      ? [...new Set(parsed.urgentNoticeExceptionTypes)] as TenantSettings['urgentNoticeExceptionTypes'] : [],
   }
+}
+
+/** Valida prazo de convocação/retificação e eventual exceção autorizada pela Câmara. */
+export function enforceNoticeDeadline(input: {
+  settings: TenantSettings
+  sessionType: string
+  scheduledAt: Date
+  now: Date
+  phase: 'initial' | 'amendment'
+  exceptionReason?: string
+}) {
+  const minimumHours = input.phase === 'initial' ? input.settings.minimumNoticeHours : input.settings.minimumAmendmentHours
+  if (input.scheduledAt.getTime() <= input.now.getTime()) {
+    throw new DomainError('SESSION_PRECONDITION', 409, 'Sessão já iniciada', 'A data marcada da sessão deve estar no futuro para publicar ou retificar a convocação.')
+  }
+  const insufficient = input.scheduledAt.getTime() - input.now.getTime() < minimumHours * 60 * 60 * 1000
+  const reason = input.exceptionReason?.trim()
+  if (reason && !insufficient) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Exceção desnecessária', 'A exceção só pode ser usada quando o prazo mínimo não é atendido.')
+  }
+  if (insufficient && (!reason || !input.settings.urgentNoticeExceptionTypes.includes(input.sessionType as TenantSettings['urgentNoticeExceptionTypes'][number]))) {
+    throw new DomainError('SESSION_PRECONDITION', 409, 'Prazo de convocação',
+      `Esta Câmara exige ${minimumHours} hora(s) de antecedência para ${input.phase === 'initial' ? 'publicar' : 'retificar'} a convocação. Exceção indisponível ou sem justificativa para este tipo de sessão.`)
+  }
+  return { minimumHours, exceptionReason: reason ?? null }
 }
 
 // ─── Presença derivada (append-only → estado atual) ─────────────────────────

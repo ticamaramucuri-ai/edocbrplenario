@@ -74,7 +74,7 @@ Permissão `session.create`. Somente `draft`. Body: `{ version, type?, scheduled
 → `{ session: SessionSummary }`. Incrementa a versão e audita antes/depois. Rejeita versão desatualizada, tipo desabilitado, presidente inativo/de outra Câmara e data em ano diferente da numeração anual. Campos nulos removem secretário e observações.
 
 ### POST `/api/v1/sessions/:id/transition`
-Body: `{ action, version, justification? }`
+Body: `{ action, version, justification?, noticeExceptionReason? }`; `noticeExceptionReason` só é aceito em `schedule` quando o prazo mínimo da Câmara não é atendido e o tipo de sessão admite exceção.
 Actions: `schedule` (draft→scheduled, publica pauta), `open_checkin` (scheduled→check_in),
 `open_session` (check_in→open; exige presidente; exige quórum mínimo? — NÃO bloquear,
 apenas registrar alerta), `suspend` (open|resumed→suspended), `resume` (suspended→resumed),
@@ -82,7 +82,7 @@ apenas registrar alerta), `suspend` (open|resumed→suspended), `resume` (suspen
 → `{ session: SessionSummary, quorum: QuorumInfo }`. Emite `session.state_changed` +
 `session.quorum` (outbox). Auditoria `session.<action>`.
 `schedule` valida a política vigente do tenant (tipo habilitado, secretário quando exigido, mínimo de matérias e presidente ativo). Registra a revisão 1 da pauta e uma cópia da política usada, sem alterar revisões anteriores.
-Também verifica `minimumNoticeHours` da Câmara e emite, na mesma transação, conteúdo de convocação e SHA-256. Mesmo com mínimo 0, a data da sessão deve estar no futuro.
+Também verifica `minimumNoticeHours` da Câmara e emite, na mesma transação, conteúdo de convocação e SHA-256. Mesmo com mínimo 0, a data da sessão deve estar no futuro. A exceção exige motivo público e tipo habilitado em `urgentNoticeExceptionTypes`.
 
 ### GET `/api/v1/sessions/:id/agenda-revisions`
 → `{ revisions: [{ id, number, createdAt, actorId, agenda, policy, change, justification, notice, noticeSha256 }] }`, somente no escopo da Câmara do ator. `change`/`justification` são nulos na publicação inicial. `notice`/`noticeSha256` podem ser nulos em revisões legadas; o sistema não fabrica histórico.
@@ -96,8 +96,11 @@ Sem autenticação, mas escopado pela Câmara pública e por sessão não rascun
 ### GET `/api/v1/sessions/:id/notice-recipients`
 Exige `session.transition`; devolve a revisão vigente, hash, total, número de ciências e lista de nomes/horários dos destinatários daquela Câmara. Revisões legadas sem convocação retornam revisão nula.
 
+### GET `/api/v1/sessions/notice-calendar`
+Exige `session.transition`; retorna `{ timezone, generatedAt, rows }` para até 50 sessões futuras em `draft` ou `scheduled` da Câmara do ator. Cada linha contém `sessionId`, número/ano/tipo, fase (`initial` ou `amendment`), horário da sessão, vencimento, mínimo de horas, estado (`on_time`, `due_soon`, `passed`) e possibilidade de exceção configurada para o tipo. `Cache-Control: no-store`.
+
 ### POST `/api/v1/sessions/:id/agenda-amendments`
-Permissão `session.transition`. Body: `{ action: 'add'|'move'|'retire', mode: 'preview'|'apply', version, justification, matterId? | itemId?, position? }`. `position` é índice zero da Ordem do Dia. Disponível somente em `scheduled`, com pauta publicada e revisão inicial. `preview` → `{ preview: { before, after, summary, revision, policy } }` sem mutação. `apply` → `{ amendment: ... }` (201); grava revisão, auditoria e outbox atomicamente. Exige mínimo de matérias conforme política da Câmara. Versão antiga → 409; matéria de outra Câmara → 404; outra Câmara não acessa a sessão → 403.
+Permissão `session.transition`. Body: `{ action: 'add'|'move'|'retire', mode: 'preview'|'apply', version, justification, exceptionReason?, matterId? | itemId?, position? }`. `position` é índice zero da Ordem do Dia. Disponível somente em `scheduled`, com pauta publicada e revisão inicial. `preview` → `{ preview: { before, after, summary, revision, policy } }` sem mutação. `apply` → `{ amendment: ... }` (201); grava revisão, auditoria e outbox atomicamente. Exige mínimo de matérias e `minimumAmendmentHours` conforme política da Câmara; exceção exige tipo habilitado em `urgentNoticeExceptionTypes` e justificativa pública. Mesmo com mínimo 0, a sessão deve estar no futuro. Versão antiga → 409; matéria de outra Câmara → 404; outra Câmara não acessa a sessão → 403.
 
 ### GET/POST `/api/v1/sessions/:id/transmission`
 Etapa 003: acompanhamento da **fonte local**, sem controle do encoder ou confirmação de

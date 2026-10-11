@@ -114,6 +114,8 @@ export type TenantSettings = {
   requireSecretaryForPublication: boolean
   minimumAgendaMatters: number
   minimumNoticeHours: number
+  minimumAmendmentHours: number
+  urgentNoticeExceptionTypes: SessionType[]
 }
 
 export type TenantView = {

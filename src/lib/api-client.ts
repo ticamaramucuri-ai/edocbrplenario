@@ -201,12 +201,18 @@ export const api = {
     id: string,
     action: string,
     version: number,
-    justification?: string
+    justification?: string,
+    noticeExceptionReason?: string
   ) =>
     request<{ session: SessionSummary; quorum: QuorumInfo }>(`/sessions/${id}/transition`, {
       method: 'POST',
-      body: JSON.stringify({ action, version, justification }),
+      body: JSON.stringify({ action, version, justification, noticeExceptionReason }),
     }),
+  noticeCalendar: () => request<{ timezone: string; generatedAt: string; rows: Array<{
+    sessionId: string; number: number; year: number; type: SessionType; phase: 'initial' | 'amendment';
+    scheduledAt: string; deadlineAt: string; minimumHours: number;
+    state: 'passed' | 'due_soon' | 'on_time'; exceptionAllowed: boolean
+  }> }>('/sessions/notice-calendar'),
   attendance: (sessionId: string, parliamentarianId: string, action: string, note?: string) =>
     request<{ attendance: AttendanceRow; quorum: QuorumInfo }>(`/sessions/${sessionId}/attendance`, {
       method: 'POST',
@@ -225,6 +231,7 @@ export const api = {
     matterId?: string
     itemId?: string
     position?: number
+    exceptionReason?: string
   }) => request<{ preview?: { before: Array<{ id: string; title: string; status: string }>; after: Array<{ id: string; title: string; status: string }>; revision: number; summary: string }; amendment?: { revision: number } }>(`/sessions/${sessionId}/agenda-amendments`, {
     method: 'POST', body: JSON.stringify(data),
   }),
