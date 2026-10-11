@@ -12,6 +12,7 @@ plataforma e da Câmara.
 | Next.js (app + API `/api/v1`) | 3000 | SPA, API REST, SSR | `bun run dev` |
 | Realtime (socket.io) | 3003 | Publica eventos do outbox p/ salas `tenant:{id}` e `public:{id}` | `cd mini-services/realtime && bun run dev` |
 | Webhooks | 3004 | Entrega HMAC de `WebhookDelivery` com retry/dead-letter | `cd mini-services/webhooks && bun run dev` |
+| Scheduler | 3005 | Jobs e alertas periódicos | `cd mini-services/scheduler && bun run dev` |
 | Gateway (Caddy) | 81/443 | Única porta externa; WebSocket/HTTP com `?XTransformPort={porta}` | gerenciado pelo sandbox |
 
 Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
@@ -34,6 +35,10 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   e `DATABASE_URL` PostgreSQL com cliente Prisma correspondente. Execute um
   trabalhador por banco até implementar claim/lease. O piloto continua usando
   `WEBHOOKS_DB_PATH` e SQLite; veja a [etapa 034](etapas/034-webhooks-postgres.md).
+- Para ensaio PostgreSQL do scheduler, gere o cliente Prisma correspondente,
+  defina `DATABASE_URL` PostgreSQL e use `cd mini-services/scheduler && bun run dev:postgres`.
+  Execute uma instância por banco até haver claim/lease para jobs; o piloto usa
+  `bun run dev`. Consulte a [etapa 035](etapas/035-scheduler-postgres.md).
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

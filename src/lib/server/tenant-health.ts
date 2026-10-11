@@ -5,8 +5,8 @@
  * (critério de aceite: "mesmo banco → mesmo score"):
  *   1. Rotas /platform/tenants/:id/health e /platform/tenants/health (Prisma);
  *   2. prisma/seed.ts (snapshots determinísticos);
- *   3. mini-services/scheduler (bun:sqlite) — importa a função pura
- *      `healthScoreFromMetrics` e as constantes SQL legadas abaixo.
+ *   3. mini-services/scheduler — SQLite importa a fórmula e o SQL legado;
+ *      PostgreSQL reutiliza `gatherTenantHealthMetrics` via Prisma.
  *
  * Fórmula determinística 0–100 (métricas dos últimos 30 dias):
  *   sessões   → min(35, sessões × 12)      (≥3 sessões → 35 pts)
@@ -16,7 +16,7 @@
  *   buckets   → saudavel ≥ 70 · atencao ≥ 40 · risco < 40
  *
  * A coleta da aplicação usa filtros Prisma com Date, válidos tanto para SQLite
- * quanto para PostgreSQL. O scheduler mantém SQL SQLite até a migração dele.
+ * quanto para PostgreSQL. O scheduler SQLite mantém o SQL legado do piloto.
  */
 import type { PrismaClient } from '@prisma/client'
 
