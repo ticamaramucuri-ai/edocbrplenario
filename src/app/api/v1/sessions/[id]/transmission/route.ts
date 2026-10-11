@@ -32,6 +32,9 @@ function view(row: Transmission | null, sessionId: string, source: SourceProbe) 
       version: row?.version ?? 1,
       startedAt: row?.startedAt?.toISOString() ?? null,
       endedAt: row?.endedAt?.toISOString() ?? null,
+      publicLink: row?.publicUrl && row.publicDestinationId && row.publicPublishedAt
+        ? { url: row.publicUrl, destinationId: row.publicDestinationId, publishedAt: row.publicPublishedAt.toISOString() }
+        : null,
     },
     source,
   }

@@ -61,6 +61,11 @@ export type ApiErrorCode =
   | 'MEDIA_PATH_BUSY'
   | 'MEDIA_DESTINATION_NOT_FOUND'
   | 'MEDIA_DESTINATIONS_ACTIVE'
+  | 'MEDIA_PUBLIC_CONFIRMATION_REQUIRED'
+  | 'MEDIA_PUBLIC_URL_MISSING'
+  | 'MEDIA_PUBLIC_NOT_READY'
+  | 'MEDIA_TRANSMISSION_MISSING'
+  | 'MEDIA_PUBLIC_LINK_MISSING'
   | 'INTERNAL_ERROR'
 
 const TYPE_SLUG: Record<ApiErrorCode, string> = {
@@ -113,6 +118,11 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   MEDIA_PATH_BUSY: 'media-path-busy',
   MEDIA_DESTINATION_NOT_FOUND: 'media-destination-not-found',
   MEDIA_DESTINATIONS_ACTIVE: 'media-destinations-active',
+  MEDIA_PUBLIC_CONFIRMATION_REQUIRED: 'media-public-confirmation-required',
+  MEDIA_PUBLIC_URL_MISSING: 'media-public-url-missing',
+  MEDIA_PUBLIC_NOT_READY: 'media-public-not-ready',
+  MEDIA_TRANSMISSION_MISSING: 'media-transmission-missing',
+  MEDIA_PUBLIC_LINK_MISSING: 'media-public-link-missing',
   INTERNAL_ERROR: 'internal-error',
 }
 

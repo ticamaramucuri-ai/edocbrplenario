@@ -36,6 +36,7 @@ export type TransmissionView = {
     version: number
     startedAt: string | null
     endedAt: string | null
+    publicLink: { url: string; destinationId: string; publishedAt: string } | null
   }
   source: {
     configured: boolean
@@ -57,6 +58,7 @@ export type MediaDestinationsView = {
     id: string
     label: string
     platform: 'youtube' | 'facebook' | 'instagram' | 'other'
+    hasPublicUrl: boolean
     enabled: boolean | null
     state: 'disabled' | 'idle' | 'forwarding' | 'error' | 'unknown'
     outboundBytes: number | null
@@ -361,6 +363,7 @@ export type PublicLiveView = {
     totalMembers: number
     requiredQuorum: number
   } | null
+  transmissionLink: { url: string; publishedAt: string } | null
   presentMembers: Array<{ name: string; party: string }>
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   currentVoting: {
@@ -949,6 +952,7 @@ export type PublicSessionSummary = {
 
 export type PublicSessionDetail = {
   session: PublicSessionSummary
+  transmissionLink: { url: string; publishedAt: string } | null
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   agendaRevision: { number: number; publishedAt: string; justification: string | null; noticeSha256: string | null } | null
   attendance: {

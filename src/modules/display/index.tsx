@@ -47,6 +47,7 @@ function clearedView(view: PublicLiveViewExt | null): PublicLiveViewExt | null {
   return {
     tenant: view.tenant,
     session: null,
+    transmissionLink: null,
     presentMembers: [],
     agenda: [],
     currentVoting: null,

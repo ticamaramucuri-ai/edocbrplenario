@@ -10,6 +10,7 @@ const destinationSchema = z.object({
   platform: z.enum(['youtube', 'facebook', 'instagram', 'other']),
   dest: z.string().startsWith('rtmps://'),
   destFingerprint: z.string().regex(/^[A-Fa-f0-9]{64}$/).optional(),
+  publicUrl: z.string().url().max(2048).optional(),
 })
 type Destination = z.infer<typeof destinationSchema>
 type PathConfig = { forward?: Array<{ dest: string }>; record?: boolean }
@@ -42,12 +43,27 @@ export async function loadMediaDestinations(tenantId: string): Promise<Destinati
     const all = z.array(destinationSchema).max(32).parse(JSON.parse(await readFile(file, 'utf8')))
     const keys = all.map((item) => `${item.tenantId}:${item.id}`)
     if (new Set(keys).size !== keys.length || all.some((item) => {
-      try { return item.platform !== 'other' && !new URL(item.dest).hash } catch { return true }
+      try {
+        if (item.platform !== 'other' && !new URL(item.dest).hash) return true
+        if (item.publicUrl && !validPublicWatchUrl(item.publicUrl)) return true
+        return false
+      } catch { return true }
     })) throw new Error('invalid destination')
     return all.filter((item) => item.tenantId === tenantId)
   } catch {
     throw unavailable('Arquivo de destinos ausente, inválido ou sem permissões restritas (0600/0400).')
   }
+}
+
+export function validPublicWatchUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    const host = url.hostname.toLowerCase()
+    return url.protocol === 'https:' && !url.username && !url.password && !url.hash
+      && !url.port && host.includes('.') && !host.endsWith('.localhost')
+      && host !== 'localhost' && !/^\d+\.\d+\.\d+\.\d+$/.test(host)
+      && !host.startsWith('[') && !host.endsWith('.local') && !host.endsWith('.internal')
+  } catch { return false }
 }
 
 function controlUrl(path: string): URL {

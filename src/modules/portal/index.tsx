@@ -249,6 +249,10 @@ function LiveTab({
       </div>
       {data.session ? (
         <>
+          {data.transmissionLink && <section aria-label="Transmissão da sessão" className="rounded-lg border border-zinc-200 p-4">
+            <h3 className="font-bold">Transmissão da sessão</h3>
+            <a href={data.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-medium underline" style={{ color: data.tenant.primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão na plataforma</a>
+          </section>}
           {/* Card Sessão */}
           <section aria-label="Sessão atual" className="rounded-lg border border-zinc-200 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -884,6 +888,7 @@ function SessionDetailSheet({
                 <strong>Pauta:</strong> {session.session.agendaPublished ? 'publicada' : 'não publicada'}
               </span>
             </div>
+            {session.transmissionLink && <a href={session.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium underline" style={{ color: primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão desta sessão</a>}
 
             {/* Pauta publicada */}
             <section>

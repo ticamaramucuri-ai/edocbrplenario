@@ -63,6 +63,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
         logoUrl: tenant.logoUrl,
       },
       session: null,
+      transmissionLink: null,
       presentMembers: [],
       agenda: [],
       currentVoting: null,
@@ -73,7 +74,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
   }
 
   const isLive = Boolean(live)
-  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking] =
+  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking, transmission] =
     await Promise.all([
       selected.agendaPublished
         ? db.agendaItem.findMany({ where: { sessionId: selected.id }, orderBy: { order: 'asc' } })
@@ -101,6 +102,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
             include: { parliamentarian: true },
           })
         : Promise.resolve(null),
+      db.transmission.findUnique({ where: { sessionId: selected.id }, select: { publicUrl: true, publicPublishedAt: true } }),
     ])
 
   const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
@@ -143,6 +145,9 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       accentColor: tenant.accentColor,
       logoUrl: tenant.logoUrl,
     },
+    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
+      ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
+      : null,
     session: {
       id: selected.id,
       label: sessionLabel(selected),

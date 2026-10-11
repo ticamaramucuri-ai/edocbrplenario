@@ -69,14 +69,41 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
     }
   }
 
+  async function setPublicLink(action: 'publish' | 'withdraw', destinationId?: string) {
+    if (!data || busy) return
+    if (action === 'publish' && !window.confirm('Você conferiu vídeo e áudio da transmissão na página pública da plataforma?')) return
+    setBusy(true)
+    try {
+      await api.setTransmissionPublicLink(sessionId, {
+        action, destinationId, platformConfirmed: action === 'publish',
+        version: data.transmission.version, idempotencyKey: crypto.randomUUID(),
+      })
+      await queryClient.invalidateQueries({ queryKey: ['transmission', sessionId] })
+      toast.success(action === 'publish' ? 'Link público publicado no portal.' : 'Link público retirado do portal.')
+    } catch {
+      // A API apresenta o erro operacional.
+    } finally { setBusy(false) }
+  }
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Verificando a fonte de mídia…</p>
   if (isError || !data) {
     return <Button variant="outline" onClick={() => void refetch()}><RefreshCw /> Recarregar transmissão</Button>
   }
 
   const { transmission, source } = data
+  const forwarding = destinations.data?.destinations.filter((item) => item.desiredEnabled && item.syncStatus === 'applied' && item.enabled && item.state === 'forwarding') ?? []
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <Card className="lg:col-span-2">
+        <CardHeader><CardTitle className="text-base">Conferência da transmissão</CardTitle></CardHeader>
+        <CardContent className="space-y-1 text-sm">
+          <p>Fonte local: <strong>{source.ready ? 'pronta' : 'aguardando sinal'}</strong></p>
+          <p>Destinos RTMPS confirmados pelo controlador: <strong>{forwarding.length}</strong></p>
+          <p>Link público: <strong>{transmission.publicLink ? 'publicado após confirmação do operador' : 'não publicado'}</strong></p>
+          <p>Gravação: <strong>{recording.data?.configured ? `${recording.data.segmentCount} segmento(s) catalogado(s)` : 'não confirmada'}</strong></p>
+          <p className="text-muted-foreground">Saída RTMPS e segmentos locais não comprovam que o vídeo e o áudio estão disponíveis para o público. Confira a página da rede social em outro dispositivo antes de publicar o link.</p>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Radio className="size-4" /> Acompanhamento local</CardTitle></CardHeader>
         <CardContent className="space-y-4 text-sm">
@@ -105,6 +132,11 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         <CardHeader><CardTitle className="text-base">Destinos de transmissão</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">O estado “encaminhando” confirma a saída RTMPS do MediaMTX. A live pública deve ser conferida também na plataforma.</p>
+          {transmission.publicLink && <div className="rounded border border-emerald-600/40 bg-emerald-50 p-3 dark:bg-emerald-950/20">
+            <p className="font-medium">Link publicado no portal</p>
+            <a href={transmission.publicLink.url} target="_blank" rel="noopener noreferrer" className="break-all underline">{transmission.publicLink.url}</a>
+            {can('media.manage') && <div className="mt-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => void setPublicLink('withdraw')}>Retirar link</Button></div>}
+          </div>}
           {destinations.data && !destinations.data.controllerAvailable && <p className="text-destructive">Controlador indisponível ({destinations.data.controllerErrorCode}). As solicitações permanecem registradas e serão repetidas pelo worker.</p>}
           {destinations.isLoading && <p>Consultando destinos…</p>}
           {destinations.isError && <p className="text-destructive">Não foi possível consultar o controlador de mídia. Confira a configuração do servidor e recarregue.</p>}
@@ -115,8 +147,12 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
                 <p className="font-medium">{item.label} <span className="text-muted-foreground">({item.platform})</span></p>
                 <p role="status" className="text-muted-foreground">{item.state === 'disabled' ? 'Desativado' : item.state === 'forwarding' ? 'Encaminhando' : item.state === 'error' ? 'Erro no encaminhamento' : item.state === 'unknown' ? 'Estado externo desconhecido' : 'Aguardando sinal/conexão'}{item.outboundBytes !== null ? ` · ${new Intl.NumberFormat('pt-BR').format(item.outboundBytes)} bytes enviados` : ''}</p>
                 <p className="text-xs text-muted-foreground">Solicitado: {item.desiredEnabled ? 'ativo' : 'inativo'} · Reconciliação: {item.syncStatus === 'unmanaged' ? 'sem comando' : item.syncStatus === 'pending' ? 'pendente' : item.syncStatus === 'applied' ? 'aplicada' : 'erro'}{item.lastErrorCode ? ` (${item.lastErrorCode})` : ''}</p>
+                {!item.hasPublicUrl && <p className="text-xs text-muted-foreground">URL pública deste evento ainda não configurada.</p>}
               </div>
-              {can('media.manage') && <Button variant={item.desiredEnabled || item.enabled === true ? 'outline' : 'default'} disabled={busy || (!(item.desiredEnabled || item.enabled === true) && (transmission.status !== 'monitoring' || !source.ready))} onClick={() => void setDestination(item.id, !(item.desiredEnabled || item.enabled === true))}>{item.desiredEnabled || item.enabled === true ? 'Desativar' : 'Ativar'}</Button>}
+              {can('media.manage') && <div className="flex flex-wrap gap-2">
+                <Button variant={item.desiredEnabled || item.enabled === true ? 'outline' : 'default'} disabled={busy || (!(item.desiredEnabled || item.enabled === true) && (transmission.status !== 'monitoring' || !source.ready))} onClick={() => void setDestination(item.id, !(item.desiredEnabled || item.enabled === true))}>{item.desiredEnabled || item.enabled === true ? 'Desativar' : 'Ativar'}</Button>
+                {item.hasPublicUrl && <Button variant="outline" disabled={busy || transmission.status !== 'monitoring' || !source.ready || !item.desiredEnabled || item.syncStatus !== 'applied' || item.state !== 'forwarding'} onClick={() => void setPublicLink('publish', item.id)}>Publicar link</Button>}
+              </div>}
             </div>
           ))}
         </CardContent>

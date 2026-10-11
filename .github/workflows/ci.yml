@@ -27,6 +27,7 @@ jobs:
       - run: bun run test:voting:annulment-integrity
       - run: bun run test:media:domain
       - run: bun run test:media:integration
+      - run: bun run test:media:public-link
       - run: bun run build
 
   media-smoke:

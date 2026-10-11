@@ -26,7 +26,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     throw notFound('Sessão não encontrada neste tenant.')
   }
 
-  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision] = await Promise.all([
+  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision, transmission] = await Promise.all([
     session.agendaPublished
       ? db.agendaItem.findMany({ where: { sessionId: session.id }, orderBy: { order: 'asc' } })
       : Promise.resolve([]),
@@ -46,6 +46,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       select: { id: true, party: true },
     }),
     db.sessionAgendaRevision.findFirst({ where: { tenantId: tenant.id, sessionId: session.id }, orderBy: { revision: 'desc' } }),
+    db.transmission.findUnique({ where: { sessionId: session.id }, select: { publicUrl: true, publicPublishedAt: true } }),
   ])
 
   const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
@@ -61,6 +62,9 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       status: session.status as string,
       agendaPublished: session.agendaPublished,
     },
+    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
+      ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
+      : null,
     agenda: agenda.map(toPublicAgendaItem),
     agendaRevision: agendaRevision ? { number: agendaRevision.revision, publishedAt: agendaRevision.createdAt.toISOString(), justification: agendaRevision.justification, noticeSha256: agendaRevision.noticeSha256 } : null,
     // Presença consolidada final: apenas quando a sessão foi encerrada.

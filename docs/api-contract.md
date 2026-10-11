@@ -131,13 +131,15 @@ Repetição da mesma chave/ação retorna `replayed: true` sem repetir escrita; 
 reusada com ação diferente → 409 `MEDIA_DUPLICATE_COMMAND`. Cada alteração grava
 `TransmissionCommand`, `AuditEvent` e `transmission.state_changed` interno na mesma
 transação. O estado não altera a sessão legislativa nem aparece no telão público.
+O GET também retorna `transmission.publicLink` após publicação explícita.
 
 ### GET/POST `/api/v1/sessions/:id/transmission/destinations`
 GET exige `media.read` e retorna somente `id`, `label`, `platform`, `enabled`,
 `state` (`disabled|idle|forwarding|error|unknown`), bytes de saída,
 `desiredEnabled`, `syncStatus` (`unmanaged|pending|applied|error`) e código
-de erro operacional para os destinos do
-tenant. O estado vem da Control API do MediaMTX e indica transporte RTMPS,
+de erro operacional para os destinos do tenant. `hasPublicUrl` informa se
+existe URL pública configurada sem revelar seu valor. O estado vem da
+Control API do MediaMTX e indica transporte RTMPS,
 sem comprovar a live pública na rede social. Stream keys e URLs não aparecem
 na resposta nem na auditoria. POST exige `media.manage`, body
 `{ destinationId: string, enabled: boolean }`. Ativação exige acompanhamento
@@ -152,6 +154,21 @@ ativo → 409 `MEDIA_DESTINATIONS_ACTIVE`. Destino inexistente retorna
 `MEDIA_DESTINATION_NOT_FOUND`; falhas externas ficam em `lastErrorCode`.
 Um lease por caminho serializa alterações de destinos distintos entre workers;
 contenção prolongada aparece como `MEDIA_PATH_BUSY` e recebe retry.
+
+### POST `/api/v1/sessions/:id/transmission/public-link`
+Permissão `media.manage`. Body `{ action: 'publish'|'withdraw', version,
+idempotencyKey, destinationId?, platformConfirmed? }`. `publish` exige
+`destinationId`, `platformConfirmed: true`, URL HTTPS pública configurada para
+o destino da Câmara, fonte pronta, acompanhamento `monitoring`, intenção
+aplicada e MediaMTX em `forwarding`. A confirmação da plataforma é humana;
+o sistema não a infere do transporte RTMPS. `withdraw` remove o link do portal.
+Ambas as ações usam versão e idempotência, com auditoria e outbox transacionais.
+Erros: `MEDIA_PUBLIC_CONFIRMATION_REQUIRED`, `MEDIA_PUBLIC_URL_MISSING`,
+`MEDIA_PUBLIC_NOT_READY`, `MEDIA_PUBLIC_LINK_MISSING`, `CONFLICT_VERSION`.
+O GET público `/api/v1/public/live` inclui `transmissionLink` somente após
+publicação explícita, sem expor URL de ingestão ou stream key. O detalhe
+`/api/v1/public/sessions/:id` mantém o link para consulta histórica enquanto
+ele permanecer publicado.
 
 ### GET `/api/v1/sessions/:id/transmission/recording`
 Exige `media.read` e retorna `{ configured, segmentCount,

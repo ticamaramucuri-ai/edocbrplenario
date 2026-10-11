@@ -42,6 +42,7 @@ async function view(tenantId: string, sessionId: string) {
         id: item.id,
         label: item.label,
         platform: item.platform,
+        hasPublicUrl: Boolean(item.publicUrl),
         enabled: actual?.enabled ?? null,
         state: actual?.state ?? 'unknown',
         outboundBytes: actual?.outboundBytes ?? null,

@@ -20,7 +20,9 @@ social antes de declarar a live pública.
 4. Crie fora do repositório um JSON privado, com permissão `0600` ou `0400`,
    apontado por `MEDIA_DESTINATIONS_FILE`. Cada item deve ter `tenantId` real,
    `id`, `label`, `platform` (`youtube`, `facebook`, `instagram`, `other`) e
-   `dest` no formato `rtmps://servidor/caminho#chave`. Exemplo estrutural sem
+   `dest` no formato `rtmps://servidor/caminho#chave`. Para publicar um botão
+   no portal, cadastre também `publicUrl`: a URL HTTPS pública do evento, sem
+   chave de transmissão. Exemplo estrutural sem
    credencial real:
 
 ```json
@@ -30,7 +32,8 @@ social antes de declarar a live pública.
     "id": "youtube-oficial",
     "label": "Canal oficial",
     "platform": "youtube",
-    "dest": "rtmps://SERVIDOR_DE_INGESTAO/CAMINHO#CHAVE_DE_TESTE"
+    "dest": "rtmps://SERVIDOR_DE_INGESTAO/CAMINHO#CHAVE_DE_TESTE",
+    "publicUrl": "https://www.youtube.com/watch?v=ID_DO_EVENTO"
   }
 ]
 ```
@@ -63,6 +66,13 @@ e encaminhe falhas da unidade ao monitoramento operacional da Câmara; o
 timer por si só não envia alertas externos.
 `forwarding` e aumento de bytes indicam saída do MediaMTX, mas não provam que
 a plataforma publicou a live. Confira vídeo e áudio em um dispositivo externo.
+Depois dessa conferência, use **Publicar link** no painel da sessão. O sistema
+exige sinal local pronto, intenção aplicada e encaminhamento observado. O
+operador confirma a conferência externa; esse ato fica registrado na auditoria.
+O link é copiado para o registro da sessão e aparece no portal público.
+**Retirar link** remove a indicação do portal; ao encerrar, confira se o
+endereço ainda serve como replay e retire-o caso não sirva. Alterar
+`publicUrl` no arquivo privado não altera automaticamente links já publicados.
 Ao encerrar, desative todos os destinos antes de encerrar o acompanhamento
 local. Se a fonte cair, o estado mostra perda de sinal; a configuração de
 encaminhamento permanece até ação do operador.

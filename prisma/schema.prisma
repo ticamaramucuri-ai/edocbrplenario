@@ -406,6 +406,9 @@ model Transmission {
   version         Int       @default(1)
   startedAt       DateTime?
   endedAt         DateTime?
+  publicUrl       String?
+  publicDestinationId String?
+  publicPublishedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

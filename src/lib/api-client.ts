@@ -184,6 +184,8 @@ export const api = {
   getTransmission: (id: string) => request<TransmissionView>(`/sessions/${id}/transmission`),
   getMediaDestinations: (id: string) => request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`),
   getMediaRecording: (id: string) => request<MediaRecordingView>(`/sessions/${id}/transmission/recording`),
+  setTransmissionPublicLink: (id: string, data: { action: 'publish' | 'withdraw'; version: number; idempotencyKey: string; destinationId?: string; platformConfirmed?: boolean }) =>
+    request<TransmissionView>(`/sessions/${id}/transmission/public-link`, { method: 'POST', body: JSON.stringify(data) }),
   setMediaDestination: (id: string, destinationId: string, enabled: boolean) =>
     request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`, {
       method: 'POST',
