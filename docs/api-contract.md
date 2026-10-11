@@ -452,7 +452,8 @@ detalhe nominal).
 
 Poller de 1s sobre `WebhookDelivery` pending: assinatura HMAC-SHA256 do body com o secret do
 endpoint — headers `x-legis-signature: sha256=<hex>`, `x-legis-timestamp: <epoch>`,
-`x-legis-event: <eventType>`; POST com timeout 10s. 2xx → `success` (deliveredAt); falha →
+`x-legis-event: <eventType>` e `x-legis-delivery-id: <WebhookDelivery.id>` (estável entre
+tentativas para deduplicação no receptor); POST com timeout 10s. 2xx → `success` (deliveredAt); falha →
 attempts+1 e backoff [5s, 30s, 120s, 600s]; após 5 tentativas → `dead` (dead-letter,
 notifica tenant_admin). Health check `GET /health` → 200. Verificação do receptor:
 

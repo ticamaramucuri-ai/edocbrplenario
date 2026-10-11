@@ -30,6 +30,10 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   e `DATABASE_URL` PostgreSQL, após gerar o cliente Prisma para esse provedor.
   Execute apenas um publicador por banco; a migração integral da aplicação ainda
   está em andamento na [etapa 030](etapas/030-base-operacional-saas.md).
+- Para ensaio PostgreSQL dos webhooks, defina `WEBHOOKS_DATABASE_PROVIDER=postgresql`
+  e `DATABASE_URL` PostgreSQL com cliente Prisma correspondente. Execute um
+  trabalhador por banco até implementar claim/lease. O piloto continua usando
+  `WEBHOOKS_DB_PATH` e SQLite; veja a [etapa 034](etapas/034-webhooks-postgres.md).
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

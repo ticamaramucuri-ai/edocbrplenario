@@ -46,6 +46,9 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun test tests/tenant-health-postgres.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   POSTGRES_TEST_CLIENT="$temporary/client" bun test tests/realtime-outbox-postgres.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  POSTGRES_TEST_CLIENT="$temporary/client" bun test tests/webhook-delivery-postgres.test.ts
+bun test tests/webhook-http-delivery.test.ts
 sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > "$temporary/schema-app.prisma"
 switched_client=1
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
