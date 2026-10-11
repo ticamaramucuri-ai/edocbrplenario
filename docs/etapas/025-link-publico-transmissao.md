@@ -12,4 +12,4 @@ No ambiente local de desenvolvimento, foi criada a cópia `db/custom.db.backup.m
 
 **Limite:** a API do MediaMTX comprova apenas transporte. A publicação real nas redes, áudio, latência e disponibilidade do replay precisam de homologação com contas institucionais e observação externa. O sistema não tem credenciais de plataformas neste ambiente.
 
-**Próxima etapa:** ensaio de transmissão ponta a ponta com conta de teste institucional: queda/reconexão da fonte, recuperação do worker, gravação, checagem externa em dispositivo separado e medição de latência. Depois, consolidar operação multi-Câmara e seguir para as integrações com Nextcloud e Alfresco somente no final do projeto.
+**Próxima etapa:** ampliar os testes de continuidade da transmissão e preparar o roteiro operacional de queda/reconexão, recuperação do worker e gravação. A homologação com conta de teste institucional ainda precisará de checagem externa e medição de latência. Integrações com Nextcloud e Alfresco continuam para o final do projeto.

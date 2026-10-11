@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { db } from '@/lib/db'
 import { POST as publicLinkPost } from '@/app/api/v1/sessions/[id]/transmission/public-link/route'
+import { GET as transmissionGet } from '@/app/api/v1/sessions/[id]/transmission/route'
+import { GET as destinationsGet } from '@/app/api/v1/sessions/[id]/transmission/destinations/route'
+import { GET as recordingGet } from '@/app/api/v1/sessions/[id]/transmission/recording/route'
 import { GET as publicLiveGet } from '@/app/api/v1/public/live/route'
 import { GET as publicSessionGet } from '@/app/api/v1/public/sessions/[id]/route'
 import { validPublicWatchUrl, loadMediaDestinations } from '@/lib/server/media-control'
@@ -55,8 +58,9 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const path = new URL(String(input)).pathname
     if (path === '/metrics') return new Response(`paths{name="session-${session.id}",state="ready"} ${ready ? 1 : 0}\n`)
-    if (path.includes('/config/paths/get/')) return Response.json({ forward: [{ dest: secret }] })
+    if (path.includes('/config/paths/get/')) return Response.json({ forward: [{ dest: secret }], record: true })
     if (path.includes('/forward-dests/list')) return Response.json({ items: [{ pos: 1, state: forwarding ? 'forwarding' : 'idle', outboundBytes: 500 }] })
+    if (path.includes('/recordings/get/')) return Response.json({ name: `session-${session.id}`, segments: [{ start: '2026-10-11T12:00:00Z' }] })
     throw new Error(`Unexpected ${path}`)
   }) as typeof fetch
   const transmission = await db.transmission.create({ data: { tenantId: tenant.id, sessionId: session.id, status: 'monitoring' } })
@@ -68,6 +72,10 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
     }), { params: Promise.resolve({ id: session.id }) },
   )
   const live = () => publicLiveGet(new NextRequest(`http://localhost/api/v1/public/live?tenant=${tenant.slug}`), { params: Promise.resolve({}) })
+  const mediaGet = (handler: typeof transmissionGet | typeof destinationsGet | typeof recordingGet, actorId = operator.id) => handler(
+    new NextRequest(`http://localhost/api/v1/sessions/${session.id}/transmission`, { headers: { 'x-actor-id': actorId } }),
+    { params: Promise.resolve({ id: session.id }) },
+  )
 
   expect((await command(otherOperator.id, 'publish', 1, crypto.randomUUID())).status).toBe(403)
   expect((await command(operator.id, 'publish', 1, crypto.randomUUID(), false)).status).toBe(409)
@@ -88,6 +96,19 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   expect((await (await live()).json()).transmissionLink.url).toBe(publicUrl)
   const historical = await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`), { params: Promise.resolve({ id: session.id }) })
   expect((await historical.json()).transmissionLink.url).toBe(publicUrl)
+  // Queda da fonte altera o estado observado; a intenção e o link publicados
+  // permanecem para recuperação, sem afirmar que a plataforma continua ao vivo.
+  ready = false
+  const lost = await mediaGet(transmissionGet)
+  expect((await lost.json()).transmission.effectiveStatus).toBe('signal_lost')
+  const destinationsDuringLoss = await mediaGet(destinationsGet)
+  expect((await destinationsDuringLoss.json()).destinations[0]).toMatchObject({ desiredEnabled: true, syncStatus: 'applied', state: 'forwarding' })
+  expect((await (await live()).json()).transmissionLink.url).toBe(publicUrl)
+  ready = true
+  expect((await (await mediaGet(transmissionGet)).json()).transmission.effectiveStatus).toBe('monitoring')
+  const catalog = await mediaGet(recordingGet)
+  expect((await catalog.json())).toMatchObject({ configured: true, segmentCount: 1 })
+  expect(JSON.stringify(await (await mediaGet(destinationsGet)).json())).not.toContain('STREAM-KEY-SECRET')
   const audit = await db.auditEvent.findFirstOrThrow({ where: { aggregateId: transmission.id, action: 'transmission.public_link.publish' } })
   expect(JSON.stringify(audit)).not.toContain('STREAM-KEY-SECRET')
   const withdrawn = await command(operator.id, 'withdraw', 2, crypto.randomUUID())
