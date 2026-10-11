@@ -45,5 +45,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [039 — Ativos e réplica funcional](039-inventario-ativos-replica-funcional.md) | Ensaio local concluído | Links fictícios corrigidos, auditoria de arquivos e leitura Prisma por Câmara | Rotas HTTP e carga representativa |
 | [040 — HTTP na réplica PostgreSQL](040-ensaio-http-replica-postgres.md) | Ensaio local concluído | Rotas públicas/autenticadas, isolamento e 40 leituras concorrentes | Homologação semelhante à produção e escrita isolada |
 | [041 — Escrita e recuperação PostgreSQL](041-homologacao-escrita-recuperacao-postgres.md) | Ensaio local concluído | Build de produção, jornada HTTP com cookie real, backup pós-escrita e recuperação HTTP | Falhas dos serviços auxiliares e métricas operacionais |
+| [042 — Imagens de parlamentares no telão](042-imagens-parlamentares-telao.md) | Implementação local concluída | Upload de foto e emblema por Câmara, cadastro e exibição no telão | Arquivos persistentes e identidade partidária centralizada |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
+
+O [diagnóstico e plano de conclusão](../DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) reúne as lacunas atuais e propõe a ordem das próximas fases (043–057). Essas fases propostas não entram nesta tabela até terem implementação e evidência próprias.

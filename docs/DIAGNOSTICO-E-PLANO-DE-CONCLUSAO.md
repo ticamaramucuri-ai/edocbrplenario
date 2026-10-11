@@ -1,0 +1,86 @@
+# Diagnóstico e plano de conclusão — edocBR Plenário
+
+**Data-base:** 11/10/2026 · **Revisão:** 1 · **Escopo:** código, esquema, testes, CI e documentos deste repositório até a etapa 042. Este plano orienta o desenvolvimento; não declara o sistema homologado para atos oficiais.
+
+## 1. Decisão executiva
+
+O edocBR Plenário já executa, com dados fictícios, a jornada essencial de uma sessão: preparação, pauta, convocação, presença, condução, votação, resultado, ata, portal, telão e transmissão/gravação local. A aplicação também tem isolamento de Câmaras no código, autenticação, auditoria, console SaaS e ferramentas de operação. **O próximo trabalho é fechar os limites do piloto e demonstrar confiabilidade institucional**, não recriar esses módulos.
+
+A instalação local continua em SQLite. PostgreSQL e seus serviços foram ensaiados em cópias descartáveis, inclusive com escrita e recuperação HTTP, mas não houve corte da base ativa. A mídia chegou a dois destinos RTMPS locais; nenhuma rede social institucional foi homologada. A Câmara Municipal de Mucuri/BA tem identidade e cadastro institucional, mas **zero usuários, parlamentares e sessões oficiais** na base analisada. Nextcloud e Alfresco têm arquitetura proposta, sem conectores implementados. Essas integrações permanecem nas últimas fases.
+
+O código não equivale a aceite jurídico, legislativo, audiovisual ou operacional. O **voto secreto não atende ainda a uma garantia criptográfica de sigilo**, pois `Vote.value` mantém a escolha associada ao parlamentar. A modalidade não deve ser oferecida para votação oficial até redesenho e revisão independente. Regras especiais do regimento, como desempate da Presidência, também dependem de definição da Câmara.
+
+## 2. Base verificada
+
+| Área | Entrega existente | Evidência principal | Estado para uso institucional |
+|---|---|---|---|
+| Plataforma SaaS | 26 diretórios de módulos, 178 arquivos de rota `/api/v1`, 70 modelos Prisma; cadastro de Câmaras, planos, usuários, RBAC, MFA, API keys, auditoria e suporte | `src/modules/`, `src/app/api/v1/`, `prisma/schema.prisma`, ADRs 001–026 | Funcional no piloto; falta implantação distribuída, operação e aceite por Câmara |
+| Configuração institucional | Legislaturas, mandatos/licenças, partidos, Mesa, comissões e políticas configuráveis por tenant | `src/modules/structure/`, `src/modules/settings/`, [etapas 018–021](etapas/020-base-deliberativa.md) | Regras genéricas e opções locais; regimento de Mucuri não homologado |
+| Sessão e pauta | Rascunho, numeração anual, revisões, emendas, publicação, convocação, ciência e alertas de prazo | [etapas 010–018](etapas/010-preparacao-sessao.md), `src/modules/sessions/` | Jornada ensaiada; destinatários, prazos e atos oficiais exigem conferência institucional |
+| Plenário e votação | Presença, quórum, falas, votos próprios, modos nominal/simbólico, impedimentos, idempotência, reconta, anulação e recibos | [etapas 019–024](etapas/024-integridade-anulacao.md), [ensaio 029](etapas/029-jornada-completa-ensaio.md) | Nominal/simbólica ainda precisam de cenários regimentais e dupla conferência onde cabível; secreto bloqueado para uso oficial |
+| Telão e portal | Perfis de presença, pauta, votação, discurso; dados públicos e replay; foto do parlamentar e emblema no cadastro/telão | `src/modules/display/`, `src/modules/portal/`, [etapa 042](etapas/042-imagens-parlamentares-telao.md) | Funcional localmente; acessibilidade, equipamentos, imagens e conteúdo oficial pendentes |
+| Documentos e transparência | Relatórios, minuta de ata, assinaturas eletrônicas verificáveis por código, publicações, dados abertos e participação | `src/modules/reports/`, `src/modules/publications/`, ADRs 015, 020, 023 | Fluxo interno existente; formato final de ata, assinaturas e publicação exige aprovação da Câmara |
+| Transmissão | Controle da fonte, múltiplos destinos, reconciliação, health, gravação, manifesto SHA-256, replay e link público confirmado | [etapas 025–028](etapas/028-replay-local-verificavel.md), [ensaio 032](etapas/032-multiplos-destinos-locais.md) | Prova RTMP/RTMPS local; faltam canal social real, hardware, banda longa, áudio/vídeo externo e recuperação física |
+| Dados e operação | CI, testes de domínio e jornada, migrações PostgreSQL, cópia conciliada, teste HTTP com cookie e restauração | `.github/workflows/ci.yml`, [etapas 030–041](etapas/041-homologacao-escrita-recuperacao-postgres.md), [runbook de corte](runbook-postgres-cutover.md) | Ensaios positivos em ambiente descartável; produção distribuída, RTO/RPO e arquivos persistentes pendentes |
+| Integrações edocBR | Matriz de autoridade e contrato proposto de eventos/referências | [arquitetura de integração](integracoes/arquitetura-edocbr.md) | Planejamento; busca no código de aplicação não encontrou adaptadores Nextcloud/WebDAV nem Alfresco/CMIS |
+
+**Como ler os números:** são inventário de superfície, não medida de qualidade ou cobertura. Há 35 arquivos `*.test.ts`, mas a CI seleciona suítes específicas; o teste recente de imagens ainda não está no fluxo principal. As evidências das etapas são locais e têm os limites descritos em cada registro.
+
+## 3. Lacunas que impedem declarar o produto completo
+
+| Prioridade | Lacuna observada | Consequência | Fechamento verificável |
+|---|---|---|---|
+| Bloqueante | Falta o contrato regimental homologado de Mucuri e a composição oficial da legislatura | Resultado calculado pela regra errada pode ser apresentado como ato oficial | Matriz de casos assinada pela Câmara; configuração versionada vinculada à sessão; ensaio de todos os casos |
+| Bloqueante | Voto secreto relaciona parlamentar e escolha no banco | Sigilo oficial não demonstrado | Desabilitar para uso oficial até modelo criptográfico e revisão independente |
+| Bloqueante | Banco ativo SQLite; PostgreSQL só em ensaio descartável | Sem implantação multi-instância e recuperação institucional comprovada | Homologação completa com dados/arquivos, workers, corte controlado, backup/restore e metas RTO/RPO |
+| Alta | Realtime, webhooks e scheduler operam com um trabalhador por banco no caminho PostgreSQL | Réplicas simultâneas podem repetir ou disputar trabalho | Claim/lease, deduplicação, falhas induzidas e retomada sem perda de fatos |
+| Alta | Arquivos de parlamentares, gravações e replay dependem de diretórios locais; backup do banco não contém bytes | Restauração incompleta e múltiplas instâncias sem acervo compartilhado | Armazenamento persistente com inventário, integridade, retenção e restore testado junto com o banco |
+| Alta | Emblema do partido fica em cada parlamentar | Membros do mesmo partido podem mostrar emblemas divergentes | Identidade do partido por Câmara, migração e atualização refletida em todos os parlamentares/telões |
+| Alta | Rate limit público e de API keys é local ao processo; e-mail institucional não é enviado por SMTP | Limites mudam entre réplicas; convite, confirmação e recuperação exigem operação manual | Mecanismo distribuído, correio transacional e ensaio de falhas/reenvio |
+| Alta | Votação simbólica e regras especiais da Presidência não têm política institucional completa | Divergência em apuração/validação | Dupla confirmação ou método aprovado; desempate/impedimentos por tipo com testes regimentais |
+| Alta | Redes sociais sem conta/chave institucional e sem verificação na página pública | RTMPS local não prova que cidadão recebeu imagem e áudio | Sessão privada de teste por destino, observador externo, métricas, falha/retorno e replay |
+| Alta | Acessibilidade e carga foram verificadas parcialmente; não há aceite com leitor de tela/equipamentos reais | Operação pode falhar no plenário apesar dos testes de API | Jornada crítica com usuários, teclado, leitor de tela, telões e carga HTTP/WebSocket representativa |
+| Média | Documentação de visão geral diverge das etapas: README ainda descreve 24 módulos/Onda 5 planejada; ROADMAP contém estados históricos; o índice das etapas só foi atualizado até 042 nesta revisão | Equipe pode planejar sobre estado obsoleto | Atualizar versão e mapa único de status sem apagar histórico |
+| Final | Não existem adaptadores reais Nextcloud/Alfresco | Fluxo edocBR ainda manual | Implementar leitura, saída aprovada, reconciliação e reversão só após o plenário piloto aceito |
+
+Há ainda decisões dependentes do responsável institucional: retenção de documentos/vídeos, aceite da identidade visual, canais oficiais, papéis de assinatura, política de publicação e forma de continuidade durante perda de internet. A aplicação atual não promete votação offline. A [Onda 6 do ROADMAP](ROADMAP.md#14-onda-6--fases-2528-infraestrutura-executável-identidade-e-cripto-multi-idiomaaa-e-ecossistema) contém boas ideias, mas mistura requisitos para o primeiro piloto com extensões opcionais; a ordem abaixo separa esses caminhos.
+
+## 4. Ordem crescente de desenvolvimento
+
+As fases 043–057 são **propostas**, não entregas realizadas. Cada uma termina com código, teste, documentação numerada em `docs/etapas/`, runbook atualizado e evidência de aceite. Uma fase não avança para dados oficiais porque passou apenas em ambiente fictício. Preparação institucional de Mucuri pode ocorrer em paralelo, sem cadastrar fatos presumidos.
+
+| Ordem | Fase e objetivo | Entrega mínima para passar à seguinte | Dependência/decisão |
+|---|---|---|---|
+| **043** | **Consolidar a linha de base** | Corrigir o conteúdo defasado de README/ROADMAP, colocar teste de imagens na CI, inventariar rotas/fluxos contra requisitos, registrar dívida com responsável e prova reproduzível; executar gates atuais sem modificar dados oficiais | Nenhuma conta externa |
+| **044** | **Identidade partidária e arquivos** | Emblema único por partido/tenant, associação consistente no cadastro e telão; uploads com ciclo de vida, limpeza de órfãos, armazenamento persistente e restore de foto, documento e replay | Política de armazenamento e retenção por Câmara |
+| **045** | **Fundação operacional SaaS** | PostgreSQL em homologação com migrações 0001–0003, app e três serviços juntos, claim/lease de workers, rate limit distribuído, correio transacional, logs/alertas, backup de banco+arquivos e recuperação medida | Infraestrutura de homologação; metas de RTO/RPO antes do corte ativo |
+| **046** | **Configuração oficial por Câmara** | Assistente para legislatura, mandatos/suplência, partidos/Mesa, tipos de sessão, perfis, prazos e regras regimentais versionadas; impedir sessão oficial sem itens obrigatórios | Regimento, composição e responsáveis aprovados por Mucuri |
+| **047** | **Preparação formal de sessão** | Local/secretaria/anexos, pauta e documentos versionados, revisão, convocação por canal com prova de envio/ciência, checklist e trilha de retificação | Canais e destinatários homologados pela Câmara |
+| **048** | **Condução e presença** | Identidade do parlamentar e dispositivo, quórum por ato, substituições/impedimentos, fila de fala, comandos idempotentes e recomposição do telão após falha; ensaio de acessibilidade crítica | Cenários institucionais da fase 046 |
+| **049** | **Votação nominal e simbólica oficial** | Apuração baseada na regra congelada, reconta, recibos, anulação/retificação; confirmação independente da contagem simbólica, concorrência e isolamento provados sob HTTP/WebSocket | Matriz regimental assinada; sem isso permanece ensaio |
+| **050** | **Sigilo e continuidade excepcional** | Se a Câmara precisar de voto secreto, redesenhar elegibilidade e escolha sem correlação acessível, provar auditoria/reconta e fazer revisão independente. Para operar durante perda de WAN, autoridade local exclusiva, reconciliação e ensaio de energia/rede | Pode ficar fora do primeiro piloto oficial, desde que as funções permaneçam desabilitadas e essa restrição seja explícita |
+| **051** | **Encerramento, ata e transparência** | Ata revisada, assinaturas aceitas pela Câmara, publicação autorizada, versão/hash, dados abertos, portal e vídeo vinculados à mesma sessão; correção por novo ato | Decisão institucional sobre assinatura, publicação e retenção |
+| **052** | **Transmissão social em produção assistida** | OBS/encoder/câmeras/áudio com checklist, primeiro canal institucional, observação da página pública, falha/retorno, gravação íntegra e replay; depois segundo canal | Equipamento, banda e conta/chave institucional por plataforma |
+| **053** | **Piloto controlado de Mucuri** | Cadastro oficial conferido, treinamento, sessão simulada longa e sessões assistidas; atas, apuração, mídia, backup, acessibilidade e incidentes com aceite legislativo, técnico e audiovisual | Responsáveis da Câmara e operação disponíveis; nenhuma integração externa necessária |
+| **054** | **Nextcloud: leitura primeiro** | Inventário de pastas/permissões; vínculo por `(tenant, sistema, externalId, versão/etag)`; prévia de alterações e importação de referências sem alterar arquivos; conflitos visíveis | Conta de serviço, ambiente de teste e fonte de verdade aprovada |
+| **055** | **Alfresco: leitura primeiro** | Mapear nó/processo/metadados/ACL da instalação real; associar matéria/ata/protocolo por ID e versão; comparar divergências sem escrever no GED | Conta de serviço e modelo documental de homologação |
+| **056** | **Saída e reconciliação edocBR** | Enviar apenas ata/deliberação/vídeo aprovados por outbox; confirmação externa com ID/versão/hash; retry, dedupe, reconciliação e reversão assistida entre Plenário, Nextcloud e Alfresco | Fases 054–055 e autorização de escrita institucional |
+| **057** | **Liberação integral e operação contínua** | Aceite final do fluxo integrado, monitoração, restauração periódica, controles comerciais/contratuais do SaaS, suporte e critérios de evolução por tenant | Evidências e responsáveis das fases anteriores |
+
+**Primeiro incremento recomendado:** fase 043, seguida de 044. São pequenas o suficiente para revisão concreta e retiram inconsistências antes de expandir regras. A fase 045 deve usar homologação isolada; não trocar a base ativa durante os incrementos de interface. A configuração de Mucuri e a preparação de canais sociais podem ser levantadas em paralelo, sem bloquear o desenvolvimento local.
+
+## 5. Integração final com Nextcloud e Alfresco
+
+O Plenário deve continuar autoridade para sessão, presença, fala, votação e resultado. Para a primeira integração, tratar **Nextcloud como espaço de trabalho documental** e **Alfresco como GED/processo institucional**, sujeitos à validação do ambiente real. Começar com leitura reduz risco de mover documentos ou alterar ato já publicado. Cada referência externa deve carregar tenant, sistema, ID opaco, versão/etag, hash quando houver arquivo, data de conferência e situação de reconciliação.
+
+Depois das leituras, as escritas autorizadas saem por evento persistido na mesma transação do ato local. O worker só confirma entrega quando o sistema de destino devolver recibo verificável; repetição usa chave idempotente. A indisponibilidade de Nextcloud ou Alfresco deixa pendência visível e **não altera votação encerrada**. Segredos de serviço ficam fora do banco de fatos, dos logs e dos eventos. O [contrato proposto](integracoes/arquitetura-edocbr.md) precisa virar teste com dados e permissões de homologação antes de qualquer ligação à produção.
+
+## 6. Critério de “sistema completo”
+
+Para o **primeiro piloto oficial sem voto secreto nem votação offline**, considerar completo apenas quando: regras da Câmara e responsáveis estiverem formalmente aprovados; a jornada 046–052 passar de ponta a ponta com usuários/equipamentos reais; apuração e ata coincidirem com a conferência humana; nenhum dado de outra Câmara aparecer; uma falha de worker/rede não perder ato; backup conjunto de banco e arquivos for restaurado; gravação e página social forem verificadas externamente; acessibilidade e treinamento forem aceitos; e operação souber suspender com segurança quando um requisito falhar.
+
+Para o **produto integrado**, acrescentar 054–056 com reconciliação comprovada e aceite das fontes de verdade. OIDC/SAML, assinatura qualificada, idiomas extras, marketplace, CKAN, Tauri e GraphQL da Onda 6 são trilhas de expansão condicionadas a contrato e demanda; não devem ocultar os bloqueios de sessão, voto, mídia e recuperação. A modalidade secreta e a continuidade offline só podem ser anunciadas após os critérios específicos da fase 050.
+
+## 7. Fontes e método
+
+Foram lidos código das rotas/módulos e esquema Prisma, scripts de migração, CI, ADRs e registros até [042](etapas/042-imagens-parlamentares-telao.md). O estado de PostgreSQL se apoia nas [provas 036–041](etapas/041-homologacao-escrita-recuperacao-postgres.md); a jornada funcional na [etapa 029](etapas/029-jornada-completa-ensaio.md); mídia nas [etapas 027–032](etapas/032-multiplos-destinos-locais.md). Esta revisão é de repositório e evidência registrada, não auditoria independente de segurança nem homologação presencial. Documentos antigos preservam contexto histórico; onde divergem, prevalecem código atual e prova da etapa mais recente.

@@ -107,6 +107,8 @@ O progresso verificável do desenvolvimento está em [`docs/etapas/`](docs/etapa
 As próximas entregas possíveis sem conta de rede social estão em [`docs/FASES-SEM-CONTA-SOCIAL.md`](docs/FASES-SEM-CONTA-SOCIAL.md).
 O roteiro funcional completo, da criação da sessão à votação, transmissão e ata, está em
 [`docs/PLANO-FUNCIONAL-EDOCBR-PLENARIO.md`](docs/PLANO-FUNCIONAL-EDOCBR-PLENARIO.md).
+O diagnóstico atualizado do que existe, dos bloqueios e da ordem proposta das fases 043–057
+está em [`docs/DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md`](docs/DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md).
 O cadastro institucional de Mucuri e a identidade edocBR estão em
 [`docs/etapas/009-identidade-edocbr-mucuri.md`](docs/etapas/009-identidade-edocbr-mucuri.md).
 A criação de sessões em rascunho e a numeração anual segura estão em
