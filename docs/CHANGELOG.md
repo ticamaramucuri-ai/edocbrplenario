@@ -9,6 +9,7 @@ documentação e verificação reproduzível.
 - Leases de workers PostgreSQL para outbox, webhooks e scheduler; testes de concorrência e retomada.
 - Rate limit público/API key compartilhado no PostgreSQL com advisory lock e hash da identidade.
 - Migrações 0005–0006 e cópia conciliada de 71 tabelas em ambiente descartável.
+- Pacote verificável de banco e arquivos, com ensaios de restore SQLite/PostgreSQL e detecção de adulteração.
 
 ## Etapas 043–044
 

@@ -70,6 +70,26 @@ docker exec "$container" createdb -U postgres restored
 docker exec -i "$container" pg_restore -e -U postgres -d restored < "$temporary/backup.dump" >/dev/null
 restored="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM \"Tenant\" WHERE slug='restore-proof'")"
 test "$restored" = 1
+mkdir -p "$temporary/assets/images/tenant-test" "$temporary/assets/public" "$temporary/assets/recordings" "$temporary/assets/replay"
+printf 'foto-ensaio' > "$temporary/assets/images/tenant-test/foto.webp"
+printf 'anexo-ensaio' > "$temporary/assets/public/anexo.txt"
+printf 'gravacao-ensaio' > "$temporary/assets/recordings/trecho.mp4"
+printf 'replay-ensaio' > "$temporary/assets/replay/replay.mp4"
+cat > "$temporary/pg-dump-matched" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+docker exec "$container" pg_dump -U postgres -d restored -Fc > "\$3"
+EOF
+chmod +x "$temporary/pg-dump-matched"
+POSTGRES_DUMP_BIN="$temporary/pg-dump-matched" POSTGRES_BACKUP_URL="postgresql://postgres:test-only@127.0.0.1:$port/restored" \
+  python3 scripts/backup-bundle.py create --database postgresql --output "$temporary/bundle-pg" \
+    --images-root "$temporary/assets/images" --public-root "$temporary/assets/public" \
+    --recordings-root "$temporary/assets/recordings" --replay-root "$temporary/assets/replay"
+python3 scripts/backup-bundle.py restore-files --bundle "$temporary/bundle-pg" --target "$temporary/restore-pg"
+cmp "$temporary/assets/replay/replay.mp4" "$temporary/restore-pg/replay/replay.mp4"
+docker exec "$container" createdb -U postgres bundledrestore
+docker exec -i "$container" pg_restore -e -U postgres -d bundledrestore < "$temporary/restore-pg/database.dump" >/dev/null
+test "$(docker exec "$container" psql -At -U postgres -d bundledrestore -c "SELECT count(*) FROM \"Tenant\" WHERE slug='restore-proof'")" = 1
 indexes_before="$(docker exec "$container" psql -At -U postgres -d restored -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('OutboxEvent_pending_createdAt_id_idx','WebhookDelivery_pending_due_idx')")"
 test "$indexes_before" = 2
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/restored" python3 scripts/postgres-migrate.py rollback-indexes
