@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun install --cwd mini-services/realtime --frozen-lockfile
+      - run: bun run db:generate
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test:security
+      - run: bun run test:media:domain
+      - run: bun run test:media:integration
+      - run: bun run build
+
+  media-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Download verified MediaMTX v1.21.2
+        run: |
+          curl -fLsS -o mediamtx_v1.21.2_linux_amd64.tar.gz https://github.com/bluenviron/mediamtx/releases/download/v1.21.2/mediamtx_v1.21.2_linux_amd64.tar.gz
+          curl -fLsS -o checksums.sha256 https://github.com/bluenviron/mediamtx/releases/download/v1.21.2/checksums.sha256
+          grep 'mediamtx_v1.21.2_linux_amd64.tar.gz' checksums.sha256 | sha256sum -c
+          tar xzf mediamtx_v1.21.2_linux_amd64.tar.gz mediamtx
+      - run: MEDIAMTX_BIN="$PWD/mediamtx" bash scripts/media-smoke.sh

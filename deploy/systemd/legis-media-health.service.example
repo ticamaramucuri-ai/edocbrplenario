@@ -1,0 +1,16 @@
+# Instale junto do worker; conecte unidades em falha ao monitoramento da Casa.
+[Unit]
+Description=Legis - verificação da reconciliação de mídia
+After=legis-media-reconcile.service
+
+[Service]
+Type=oneshot
+User=legis
+Group=legis
+WorkingDirectory=/opt/legis/current
+EnvironmentFile=/etc/legis/media-reconcile.env
+ExecStart=/usr/local/bin/bun scripts/media-health.ts
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

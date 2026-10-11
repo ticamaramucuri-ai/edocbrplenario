@@ -1,0 +1,164 @@
+/**
+ * POST /api/v1/sessions/:id/attendance — presença append-only.
+ * Actions: check_in, check_out (saída temporária), return, mark_licenca,
+ * mark_afastado, mark_ausente, mark_presente (atalho = check_in direto).
+ * Emite `attendance.changed` + `session.quorum`; auditoria `attendance.changed`.
+ */
+import type { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { db } from '@/lib/db'
+import { withTransaction } from '@/lib/server/tx'
+import { apiHandler, clientIp, DomainError } from '@/lib/server/errors'
+import { resolveActor } from '@/lib/server/actor'
+import { requirePermission } from '@/lib/server/rbac'
+import { loadSession, loadParliamentarian } from '@/lib/server/loaders'
+import { writeAudit } from '@/lib/server/audit'
+import { emitOutbox } from '@/lib/server/outbox'
+import { currentAttendance } from '@/lib/server/domain'
+import { SESSION_STATUS_LABEL, ATTENDANCE_STATUS_LABEL } from '@/lib/contracts'
+import type { AttendanceStatus } from '@/lib/contracts'
+
+export const dynamic = 'force-dynamic'
+
+const ACTIONS: Record<string, { kind: string; status: AttendanceStatus; liveOnly: boolean }> = {
+  check_in: { kind: 'check_in', status: 'presente', liveOnly: true },
+  check_out: { kind: 'check_out', status: 'saida_temporaria', liveOnly: true },
+  return: { kind: 'return', status: 'presente', liveOnly: true },
+  mark_licenca: { kind: 'mark', status: 'licenciado', liveOnly: false },
+  mark_afastado: { kind: 'mark', status: 'afastado', liveOnly: false },
+  mark_ausente: { kind: 'mark', status: 'ausente', liveOnly: false },
+  mark_presente: { kind: 'check_in', status: 'presente', liveOnly: false },
+}
+
+const bodySchema = z.object({
+  parliamentarianId: z.string().min(1, 'Informe o parlamentar.'),
+  action: z.enum(['check_in', 'check_out', 'return', 'mark_licenca', 'mark_afastado', 'mark_ausente', 'mark_presente']),
+  note: z.string().max(500).optional(),
+  source: z.enum(['operador', 'pwa', 'qr', 'biometria']).optional(),
+})
+
+const LIVE_STATUSES = ['check_in', 'open', 'suspended', 'resumed']
+const MARK_STATUSES = ['scheduled', 'check_in']
+
+export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
+  const actor = await resolveActor(req)
+  requirePermission(actor, 'attendance.write')
+  const { id } = await ctx.params
+  const body = bodySchema.parse(await req.json())
+
+  const session = await loadSession(actor, id)
+  const parliamentarian = await loadParliamentarian(actor, body.parliamentarianId)
+  const spec = ACTIONS[body.action]
+
+  const statusLabel = SESSION_STATUS_LABEL[session.status as keyof typeof SESSION_STATUS_LABEL] ?? session.status
+  if (spec.liveOnly && !LIVE_STATUSES.includes(session.status)) {
+    throw new DomainError(
+      'SESSION_INVALID_TRANSITION',
+      409,
+      'Transição inválida',
+      `Presença (${body.action}) exige sessão em credenciamento/aberta/suspensa/retomada — status atual: ${statusLabel}.`
+    )
+  }
+  if (!spec.liveOnly && !MARK_STATUSES.includes(session.status)) {
+    throw new DomainError(
+      'SESSION_INVALID_TRANSITION',
+      409,
+      'Transição inválida',
+      `Marcação manual (${body.action}) só é permitida em sessão agendada ou em credenciamento — status atual: ${statusLabel}.`
+    )
+  }
+
+  const result = await withTransaction(async (tx) => {
+    const last = await tx.attendanceEvent.findFirst({
+      where: { sessionId: session.id, parliamentarianId: parliamentarian.id },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })
+
+    const event = await tx.attendanceEvent.create({
+      data: {
+        sessionId: session.id,
+        parliamentarianId: parliamentarian.id,
+        kind: spec.kind,
+        status: spec.status,
+        source: body.source ?? 'operador',
+        actorId: actor.id,
+        note: body.note ?? null,
+      },
+    })
+
+    const { quorum } = await currentAttendance(tx, session.id, session.tenantId)
+
+    await writeAudit(tx, {
+      tenantId: session.tenantId,
+      actor,
+      action: 'attendance.changed',
+      aggregateType: 'attendance',
+      aggregateId: session.id,
+      summary: `Presença de ${parliamentarian.name}: ${ATTENDANCE_STATUS_LABEL[spec.status]} (quórum ${quorum.present}/${quorum.required}).`,
+      before: last ? { status: last.status } : null,
+      after: { status: spec.status, source: event.source },
+      justification: body.note ?? null,
+      correlationId,
+      ip: clientIp(req),
+    })
+
+    const attendancePayload = {
+      sessionId: session.id,
+      parliamentarianId: parliamentarian.id,
+      name: parliamentarian.name,
+      party: parliamentarian.party,
+      status: spec.status,
+      present: spec.status === 'presente',
+      presentCount: quorum.present,
+    }
+    await emitOutbox(tx, {
+      tenantId: session.tenantId,
+      eventType: 'attendance.changed',
+      aggregateId: parliamentarian.id,
+      sessionId: session.id,
+      aggregateVersion: session.version,
+      correlationId,
+      internalPayload: attendancePayload,
+      publicPayload: attendancePayload, // nome/público ok no payload público
+    })
+    await emitOutbox(tx, {
+      tenantId: session.tenantId,
+      eventType: 'session.quorum',
+      aggregateId: session.id,
+      sessionId: session.id,
+      aggregateVersion: session.version,
+      correlationId,
+      internalPayload: {
+        sessionId: session.id,
+        present: quorum.present,
+        total: quorum.total,
+        required: quorum.required,
+        ok: quorum.ok,
+      },
+      publicPayload: {
+        sessionId: session.id,
+        present: quorum.present,
+        total: quorum.total,
+        required: quorum.required,
+        ok: quorum.ok,
+      },
+    })
+
+    return { event, quorum }
+  })
+
+  return Response.json({
+    attendance: {
+      parliamentarianId: parliamentarian.id,
+      name: parliamentarian.name,
+      party: parliamentarian.party,
+      bloc: parliamentarian.bloc ?? null,
+      boardRole: parliamentarian.boardRole,
+      photoUrl: parliamentarian.photoUrl ?? null,
+      status: spec.status,
+      present: spec.status === 'presente',
+      lastEventAt: new Date().toISOString(),
+    },
+    quorum: result.quorum,
+  })
+})

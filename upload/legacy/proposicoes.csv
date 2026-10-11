@@ -1,0 +1,21 @@
+id,tipo,numero,ano,ementa,autores,situacao_legado
+PR001,PROJETO_LEI,101,2021,Institui o Programa Municipal de Primeira Infância e dá outras providências.,Roberto Nogueira|Benedito Salgado,APROVADA
+PR002,REQUERIMENTO,210,2021,Requer ao Executivo informações sobre a execução do orçamento da educação no exercício de 2021.,Cida Ramalho,APROVADA
+PR003,PROJETO_LEI,108,2021,Altera o Código de Posturas para disciplinar o uso de calçadas pelo comércio.,Dorival Pinto,REJEITADA
+PR004,INDICACAO,55,2021,"Indica ao Executivo a recuperação da pavimentação da Rua das Hibiscos, no Centro.",Eva Barbosa,APROVADA
+PR005,MOCAO,12,2021,Moção de Congratulações aos 50 anos do Corpo de Bombeiros da cidade.,Francisco das Chagas|Gláucia Prado,APROVADA
+PR006,PROJETO_LEI,115,2022,Cria o Conselho Municipal de Cultura e estabelece sua composição e competências.,Heitor Vasconcelos,APROVADA
+PR007,DECRETO_LEGISLATIVO,3,2022,Concede o Título de Cidadão Vilanovense ao empresário e benemérito Sr. Altair Duarte.,Roberto Nogueira,APROVADA
+PR008,REQUERIMENTO,245,2022,Requer realização de sessão solene em homenagem ao Dia do Agricultor.,Ivone Peixoto,ARQUIVADA
+PR009,PROJETO_LEI,121,2022,Dispõe sobre a criação do Fundo Municipal de Assistência Social.,Jorge Takahashi|Lucrécia Fontes,EM_TRAMITACAO
+PR010,INDICACAO,70,2022,Indica a instalação de semáforo no cruzamento das Avenidas Central e das Nações.,Nelson Bandeira,PAUTA
+PR011,PROJETO_LEI,130,2023,Estabelece o Calendário Oficial de Eventos do Município e dá outras providências.,Olívia Marchetti,APROVADA
+PR012,REQUERIMENTO,260,2023,Requer ao Executivo cópia dos contratos de publicidade e propaganda firmados no biênio.,Sandra Ribeiro,APROVADA
+PR013,MOCAO,19,2023,Moção de Peso pelo falecimento da professora e fundadora da primeira escola municipal.,Carla Mendes,APROVADA
+PR014,PROJETO_LEI,134,2023,Autoriza o Poder Executivo a firmar convênio com o Estado para ampliação do hospital municipal.,Benedito Salgado,REJEITADA
+PR015,INDICACAO,82,2023,Indica a criação de ciclovia na Marginal do Rio Claro.,Cida Ramalho|Eva Barbosa,EM_TRAMITACAO
+PR016,REQUERIMENTO,271,2024,Requer informações sobre o número de servidores comissionários por secretaria.,Dorival Pinto,APROVADA
+PR017,PROJETO_LEI,140,2024,Institui a Semana Municipal de Incentivo à Leitura nas escolas da rede municipal.,Gláucia Prado,APROVADA
+PR018,DECRETO_LEGISLATIVO,5,2024,Cria a Comissão Especial de Acompanhamento das Obras do Novo Terminal Rodoviário.,Heitor Vasconcelos|Nelson Bandeira,EM_TRAMITACAO
+PR019,INDICACAO,90,2024,Indica ao Executivo a ampliação da iluminação LED no Distrito Industrial.,Jorge Takahashi,PAUTA
+PR020,PROJETO_LEI,147,2024,Atualiza os valores das multas previstas na legislação municipal de trânsito.,Francisco das Chagas,ARQUIVADA

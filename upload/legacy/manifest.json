@@ -1,0 +1,40 @@
+{
+  "system": "PainelDeskLegis",
+  "version": "8.1",
+  "engine": "HSQLDB",
+  "generatedAt": "2026-08-30T17:41:41.813Z",
+  "synthetic": true,
+  "note": "Export FICTÍCIO gerado por scripts/generate-legacy-export.ts para demonstração do importador de migração (Fase 8). Nenhum dado real.",
+  "tables": [
+    {
+      "name": "parlamentares",
+      "file": "parlamentares.csv",
+      "rows": 15
+    },
+    {
+      "name": "proposicoes",
+      "file": "proposicoes.csv",
+      "rows": 20
+    },
+    {
+      "name": "sessoes",
+      "file": "sessoes.csv",
+      "rows": 6
+    },
+    {
+      "name": "presencas",
+      "file": "presencas.csv",
+      "rows": 73
+    },
+    {
+      "name": "votacoes",
+      "file": "votacoes.csv",
+      "rows": 8
+    },
+    {
+      "name": "votos",
+      "file": "votos.csv",
+      "rows": 60
+    }
+  ]
+}

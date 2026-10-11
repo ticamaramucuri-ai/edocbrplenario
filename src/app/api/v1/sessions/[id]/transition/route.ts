@@ -1,0 +1,247 @@
+/**
+ * POST /api/v1/sessions/:id/transition — máquina de estados da sessão
+ * (ADR-002 §1): version otimista, pré-condições, timestamps, auditoria
+ * `session.<action>` e outbox `session.state_changed` + `session.quorum`.
+ */
+import type { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { db } from '@/lib/db'
+import { withTransaction } from '@/lib/server/tx'
+import { apiHandler, clientIp, DomainError } from '@/lib/server/errors'
+import { resolveActor } from '@/lib/server/actor'
+import { requirePermission } from '@/lib/server/rbac'
+import { loadSession } from '@/lib/server/loaders'
+import { writeAudit } from '@/lib/server/audit'
+import { emitOutbox } from '@/lib/server/outbox'
+import { notify } from '@/lib/server/notify'
+import { SESSION_TRANSITIONS, currentAttendance, tenantSettings, type SessionAction } from '@/lib/server/domain'
+import { buildSessionSummaries, sessionLabel } from '@/lib/server/serializers'
+import { SESSION_STATUS_LABEL } from '@/lib/contracts'
+
+export const dynamic = 'force-dynamic'
+
+const bodySchema = z
+  .object({
+    action: z.enum(['schedule', 'open_checkin', 'open_session', 'suspend', 'resume', 'close', 'cancel']),
+    version: z.number({ message: 'version é obrigatório (controle otimista).' }).int().min(1),
+    justification: z.string().min(3).max(2000).optional(),
+  })
+  .superRefine((body, ctx) => {
+    if (body.action === 'cancel' && !body.justification) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['justification'],
+        message: 'Justificativa é obrigatória para cancelar a sessão.',
+      })
+    }
+  })
+
+const SUMMARY: Record<SessionAction, string> = {
+  schedule: 'Pauta publicada e sessão agendada.',
+  open_checkin: 'Credenciamento aberto para verificação de presença.',
+  open_session: 'Sessão aberta.',
+  suspend: 'Sessão suspensa temporariamente.',
+  resume: 'Sessão retomada.',
+  close: 'Sessão encerrada.',
+  cancel: 'Sessão cancelada.',
+}
+
+export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
+  const actor = await resolveActor(req)
+  requirePermission(actor, 'session.transition')
+  const { id } = await ctx.params
+  const body = bodySchema.parse(await req.json())
+
+  const session = await loadSession(actor, id)
+  if (body.version !== session.version) {
+    throw new DomainError(
+      'CONFLICT_VERSION',
+      409,
+      'Conflito de versão',
+      `Versão informada (${body.version}) difere da atual (${session.version}). Recarregue a sessão.`
+    )
+  }
+
+  const transition = SESSION_TRANSITIONS[body.action]
+  const from = session.status
+  if (!transition.from.includes(from as (typeof transition.from)[number])) {
+    throw new DomainError(
+      'SESSION_INVALID_TRANSITION',
+      409,
+      'Transição inválida',
+      `Ação "${body.action}" não é permitida a partir do status "${SESSION_STATUS_LABEL[from as keyof typeof SESSION_STATUS_LABEL] ?? from}" (permitido: ${transition.from.join(', ')}).`
+    )
+  }
+
+  const result = await withTransaction(async (tx) => {
+    // Pré-condições (dentro da tx para consistência)
+    if (transition.requires.includes('agenda')) {
+      const count = await tx.agendaItem.count({ where: { sessionId: session.id } })
+      if (count === 0) {
+        throw new DomainError(
+          'SESSION_PRECONDITION',
+          409,
+          'Pré-condição não atendida',
+          'A sessão precisa de ao menos 1 item na pauta para ser agendada.'
+        )
+      }
+    }
+    if (transition.requires.includes('president') && !session.presidentId) {
+      throw new DomainError(
+        'SESSION_PRECONDITION',
+        409,
+        'Pré-condição não atendida',
+        'Sessão sem presidente definido — informe o presidente antes de abrir os trabalhos.'
+      )
+    }
+
+    let publication: { agendaJson: string; policyJson: string } | null = null
+    if (body.action === 'schedule') {
+      const tenant = await tx.tenant.findUnique({ where: { id: session.tenantId } })
+      if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Câmara não encontrada', 'Câmara não encontrada.')
+      const policy = tenantSettings(tenant)
+      if (!policy.enabledSessionTypes.includes(session.type as typeof policy.enabledSessionTypes[number])) {
+        throw new DomainError('SESSION_TYPE_DISABLED', 409, 'Tipo indisponível', 'O tipo da sessão foi desabilitado nesta Câmara antes da publicação.')
+      }
+      if (policy.requireSecretaryForPublication && !session.secretaryName?.trim()) {
+        throw new DomainError('SESSION_PRECONDITION', 409, 'Secretaria obrigatória', 'Esta Câmara exige secretário(a) identificado(a) para publicar a pauta.')
+      }
+      const president = session.presidentId && await tx.parliamentarian.findFirst({
+        where: { id: session.presidentId, tenantId: session.tenantId, active: true },
+      })
+      if (!president) {
+        throw new DomainError('SESSION_PRECONDITION', 409, 'Presidência inválida', 'Indique um presidente ativo desta Câmara antes de publicar.')
+      }
+      const agenda = await tx.agendaItem.findMany({
+        where: { sessionId: session.id }, orderBy: [{ order: 'asc' }, { id: 'asc' }],
+      })
+      const matters = agenda.filter((item) => item.section === 'ordem_do_dia'
+        && item.matterId && !['retirado', 'adiado'].includes(item.status)).length
+      if (matters < policy.minimumAgendaMatters) {
+        throw new DomainError('SESSION_PRECONDITION', 409, 'Pauta incompleta', `Esta Câmara exige ao menos ${policy.minimumAgendaMatters} matéria(s) na ordem do dia; há ${matters}.`)
+      }
+      publication = {
+        agendaJson: JSON.stringify(agenda.map((item) => ({
+          id: item.id, order: item.order, section: item.section, matterId: item.matterId,
+          title: item.title, kind: item.kind, batchItems: item.batchItems,
+        }))),
+        policyJson: JSON.stringify({
+          enabledSessionTypes: policy.enabledSessionTypes,
+          requireSecretaryForPublication: policy.requireSecretaryForPublication,
+          minimumAgendaMatters: policy.minimumAgendaMatters,
+        }),
+      }
+    }
+
+    const now = new Date()
+    const data: Record<string, unknown> = {
+      status: transition.to,
+      version: session.version + 1,
+    }
+    if (body.action === 'schedule') data.agendaPublished = true
+    if (body.action === 'open_session') data.openedAt = now
+    if (body.action === 'close') data.closedAt = now
+    if (body.action === 'cancel' && body.justification) data.notes = session.notes ?? body.justification
+
+    const updated = await tx.session.update({ where: { id: session.id }, data })
+    if (publication) {
+      await tx.sessionAgendaRevision.create({ data: {
+        tenantId: session.tenantId,
+        sessionId: session.id,
+        revision: 1,
+        agendaJson: publication.agendaJson,
+        policyJson: publication.policyJson,
+        actorId: actor.id,
+      } })
+    }
+
+    await writeAudit(tx, {
+      tenantId: session.tenantId,
+      actor,
+      action: `session.${body.action}`,
+      aggregateType: 'session',
+      aggregateId: session.id,
+      summary: `${SUMMARY[body.action]} (status: ${from} → ${transition.to})`,
+      before: { status: from },
+      after: { status: transition.to, ...(publication ? { agendaRevision: 1 } : {}) },
+      justification: body.action === 'cancel' ? body.justification : null,
+      correlationId,
+      ip: clientIp(req),
+    })
+
+    const { quorum } = await currentAttendance(tx, session.id, session.tenantId)
+    const payload = {
+      sessionId: session.id,
+      from,
+      to: transition.to,
+      label: SESSION_STATUS_LABEL[transition.to],
+    }
+    await emitOutbox(tx, {
+      tenantId: session.tenantId,
+      eventType: 'session.state_changed',
+      aggregateId: session.id,
+      sessionId: session.id,
+      aggregateVersion: updated.version,
+      correlationId,
+      internalPayload: payload,
+      publicPayload: payload,
+    })
+    await emitOutbox(tx, {
+      tenantId: session.tenantId,
+      eventType: 'session.quorum',
+      aggregateId: session.id,
+      sessionId: session.id,
+      aggregateVersion: updated.version,
+      correlationId,
+      internalPayload: {
+        sessionId: session.id,
+        present: quorum.present,
+        total: quorum.total,
+        required: quorum.required,
+        ok: quorum.ok,
+      },
+      publicPayload: {
+        sessionId: session.id,
+        present: quorum.present,
+        total: quorum.total,
+        required: quorum.required,
+        ok: quorum.ok,
+      },
+    })
+
+    // Fase 6 — notificações internas (transições-chave da sessão)
+    if (body.action === 'schedule') {
+      await notify(tx, {
+        tenantId: session.tenantId,
+        title: `${sessionLabel(updated)} agendada`,
+        body: `Pauta publicada. A sessão está marcada para ${updated.scheduledAt.toLocaleString('pt-BR')}.`,
+        kind: 'session',
+        module: 'sessions',
+        targetRole: 'session_operator',
+      })
+    } else if (body.action === 'open_session') {
+      await notify(tx, {
+        tenantId: session.tenantId,
+        title: `${sessionLabel(updated)} aberta`,
+        body: `Sessão aberta com ${quorum.present} parlamentar(es) presente(s).`,
+        kind: 'session',
+        module: 'plenary',
+        targetRole: null,
+      })
+    } else if (body.action === 'close') {
+      await notify(tx, {
+        tenantId: session.tenantId,
+        title: `${sessionLabel(updated)} encerrada`,
+        body: `Sessão encerrada com ${quorum.present} presente(s). Minuta de ata disponível em Relatórios.`,
+        kind: 'session',
+        module: 'reports',
+        targetRole: null,
+      })
+    }
+
+    return { updated, quorum }
+  })
+
+  const [summary] = await buildSessionSummaries(db, session.tenantId, [result.updated])
+  return Response.json({ session: summary, quorum: result.quorum })
+})

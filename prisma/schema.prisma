@@ -1,0 +1,1271 @@
+// Legis SaaS — schema multi-tenant (adaptado ao sandbox: SQLite/Prisma)
+// Ver docs/adr/ para decisões arquiteturais.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Plataforma SaaS ────────────────────────────────────────────────────────
+
+model Tenant {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  city         String
+  uf           String
+  plan         String   @default("profissional")
+  primaryColor String   @default("#166a45")
+  accentColor  String   @default("#b45309")
+  logoUrl      String?
+  timezone     String   @default("America/Sao_Paulo")
+  settings     String   @default("{}") // JSON TenantSettings (quórum, votos, alertas)
+  active       Boolean  @default(true)
+  trialEndsAt  DateTime? // Onda 5/F24: trial self-onboarding (14d) — bloqueio suave de escrita ao expirar
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users            User[]
+  legislatures     Legislature[]
+  parliamentarians Parliamentarian[]
+  matters          LegislativeMatter[]
+  sessions         Session[]
+  sessionNumberCounters SessionNumberCounter[]
+  sessionAgendaRevisions SessionAgendaRevision[]
+  auditEvents      AuditEvent[]
+  outboxEvents     OutboxEvent[]
+  parties          Party[]
+  blocs            Bloc[]
+  boardPositions   BoardPosition[]
+  committees       Committee[]
+  mandates         Mandate[]
+  leaves           Leave[]
+  matterTypeConfigs MatterTypeConfig[]
+  protocols        ProtocolEntry[]
+  tasks            LegislativeTask[]
+  webhookEndpoints WebhookEndpoint[]
+  notifications    Notification[]
+  aiArtifacts      AiArtifact[]
+  subscription     Subscription?
+  migrationRuns    MigrationRun[]
+  invoices         Invoice[]
+  publications     Publication[]
+  hearings         PublicHearing[]
+  templates        DocumentTemplate[]
+  citizenSubscriptions CitizenSubscription[]
+  exportJobs       ExportJob[]
+  apiKeys          ApiKey[] // Onda 5/F23
+  healthSnapshots  TenantHealthSnapshot[] // Onda 5/F24
+  documentSignatures DocumentSignature[] // Onda 5/F22
+  transmissions   Transmission[]
+}
+
+// ─── Fase 9: Autenticação real (sessões com cookie httpOnly) ────────────────
+
+model AuthSession {
+  id              String    @id @default(cuid())
+  userId          String
+  tokenHash       String    @unique // SHA-256 do token do cookie (o token puro nunca é persistido)
+  impersonationId String? // Onda 4/Fase 20: sessão de suporte operando como outro usuário
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  userAgent       String?
+  ip              String?
+  lastUsedAt      DateTime? // Onda 5/F22: best-effort na resolução da sessão (throttle interno)
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonation SupportImpersonation? @relation("ImpersonationSession", fields: [impersonationId], references: [id])
+
+  @@index([userId])
+}
+
+// ─── Fase 10: Faturamento do SaaS (faturas por tenant/período) ─────────────
+
+model Invoice {
+  id            String    @id @default(cuid())
+  tenantId      String
+  number        Int // sequencial por tenant (exibido como 0001/AAAA)
+  periodYear    Int
+  periodMonth   Int
+  status        String    @default("open") // open|paid|canceled (overdue computado por dueAt)
+  lines         String    @default("[]") // JSON [{description, quantity, unitCents, totalCents}]
+  subtotalCents Int       @default(0)
+  discountCents Int       @default(0)
+  totalCents    Int       @default(0)
+  issuedAt      DateTime  @default(now())
+  dueAt         DateTime
+  paidAt        DateTime?
+  paidMethod    String? // pix|boleto|cartao|transferencia
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, periodYear, periodMonth])
+  @@index([tenantId, status])
+}
+
+// ─── Fase 11: Publicações oficiais + participação popular ──────────────────
+
+model Publication {
+  id               String    @id @default(cuid())
+  tenantId         String
+  number           Int // sequencial por tenant/ano
+  year             Int
+  kind             String // ata_sessao|decreto|resolucao|portaria|edital|ata
+  title            String
+  contentMd        String    @default("")
+  sessionId        String?
+  matterId         String?
+  status           String    @default("draft") // draft|published|revoked
+  publishedAt      DateTime?
+  revokedAt        DateTime?
+  revokedReason    String?
+  verificationCode String    @default("")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, year, number])
+  @@index([tenantId, status])
+}
+
+model PublicHearing {
+  id           String   @id @default(cuid())
+  tenantId     String
+  title        String
+  subject      String
+  matterId     String?
+  scheduledAt  DateTime
+  location     String?
+  status       String   @default("scheduled") // scheduled|open|closed|canceled
+  questionsOpen Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id])
+  questions HearingQuestion[]
+
+  @@index([tenantId, status])
+}
+
+model HearingQuestion {
+  id           String    @id @default(cuid())
+  hearingId    String
+  authorName   String
+  authorEmail  String?
+  district     String?
+  question     String
+  status       String    @default("pending") // pending|approved|rejected|answered
+  answer       String?
+  moderatedBy  String?
+  answeredAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  hearing PublicHearing @relation(fields: [hearingId], references: [id], onDelete: Cascade)
+
+  @@index([hearingId, status])
+}
+
+// ─── Fase 8: Plataforma SaaS (planos, assinaturas, entitlements) ────────────
+
+model Plan {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  priceCents Int      @default(0)
+  limits     String   @default("{}") // JSON {maxParliamentarians, maxSessionsPerMonth, features: string[]}
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  tenantId         String    @unique
+  planId           String
+  status           String    @default("trial") // trial|active|past_due|canceled
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plan   Plan   @relation(fields: [planId], references: [id])
+}
+
+model User {
+  id                String         @id @default(cuid())
+  tenantId          String?
+  name              String
+  email             String         @unique
+  role              String // platform_owner|platform_support|tenant_admin|legislative_admin|session_operator|media_operator|presiding_officer|parliamentarian|auditor
+  jobTitle          String?
+  parliamentarianId String?        @unique
+  passwordHash      String? // Fase 9: scrypt (atores demo continuam sem senha)
+  mfaSecret         String? // Onda 5/F22: segredo TOTP base32 — removido ao desabilitar; nunca retornado após enable
+  mfaEnabled        Boolean        @default(false) // Onda 5/F22
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  tenant        Tenant?         @relation(fields: [tenantId], references: [id])
+  parliamentarian Parliamentarian? @relation(fields: [parliamentarianId], references: [id])
+  authSessions  AuthSession[]
+  impersonationsAsSupport SupportImpersonation[] @relation("ImpersonationSupport")
+  impersonationsAsTarget  SupportImpersonation[] @relation("ImpersonationTarget")
+  npsResponses  NpsResponse[] // Onda 5/F24
+}
+
+model Legislature {
+  id        String  @id @default(cuid())
+  tenantId  String
+  number    Int
+  startYear Int
+  endYear   Int
+  current   Boolean @default(false)
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  boardPositions BoardPosition[]
+  mandates       Mandate[]
+
+  @@index([tenantId])
+}
+
+// ─── Estrutura institucional ────────────────────────────────────────────────
+
+model Parliamentarian {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  displayName String?
+  party       String
+  bloc        String?
+  boardRole   String   @default("vereador") // presidente|vice_presidente|primeiro_secretario|vereador
+  committee   String?
+  email       String?
+  phone       String?
+  photoUrl    String?
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  users           User[]
+  attendanceEvents AttendanceEvent[]
+  votes           Vote[]
+  speeches        Speech[]
+  boardPositions  BoardPosition[]
+  committeeMembers CommitteeMember[]
+  mandates        Mandate[]
+  leaves          Leave[]
+  substituteLeaves Leave[]           @relation("LeaveSubstitute")
+
+  @@index([tenantId, active])
+}
+
+// ─── Processo legislativo ──────────────────────────────────────────────────
+
+model LegislativeMatter {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String // projeto_de_lei|decreto_legislativo|requerimento|indicacao|mocao|emenda
+  number    Int
+  year      Int
+  ementa    String
+  authors   String // JSON array de nomes
+  status    String   @default("em_tramitacao") // em_tramitacao|incluida_pauta|aprovado|rejeitado|retirado|arquivado|sancionado|vetado
+  regime    String   @default("ordinario") // ordinario|urgencia
+  summary   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  agendaItems AgendaItem[]
+  votings     Voting[]
+  proceedings Proceeding[]
+  versions    MatterVersion[]
+  attachments MatterAttachment[]
+  protocols   ProtocolEntry[]
+  tasks       LegislativeTask[]
+  relatedFrom RelatedMatter[] @relation("RelatedFrom")
+  relatedTo   RelatedMatter[] @relation("RelatedTo")
+  outcomes    MatterOutcome[]
+
+  @@unique([tenantId, type, number, year])
+  @@index([tenantId, year, status])
+}
+
+// ─── Sessões ────────────────────────────────────────────────────────────────
+
+model Session {
+  id              String    @id @default(cuid())
+  tenantId        String
+  number          Int
+  year            Int
+  type            String    @default("ordinaria") // ordinaria|extraordinaria|solene|especial
+  scheduledAt     DateTime
+  openedAt        DateTime?
+  closedAt        DateTime?
+  status          String    @default("draft") // draft|scheduled|check_in|open|suspended|resumed|closed|cancelled
+  presidentId     String?
+  presidentName   String?
+  secretaryName   String?
+  location        String    @default("Plenário")
+  agendaPublished Boolean   @default(false)
+  notes           String?
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  agendaItems      AgendaItem[]
+  agendaRevisions  SessionAgendaRevision[]
+  attendanceEvents AttendanceEvent[]
+  votings          Voting[]
+  speeches         Speech[]
+  transmission     Transmission?
+
+  @@unique([tenantId, number, year])
+  @@index([tenantId, status])
+}
+
+// Numeração anual alocada atomicamente por Câmara, sem depender de MAX(number).
+model SessionNumberCounter {
+  tenantId   String
+  year       Int
+  lastNumber Int
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, year])
+}
+
+// Cópia histórica da pauta e da política; aplicação só insere e lê revisões.
+model SessionAgendaRevision {
+  id          String   @id @default(cuid())
+  tenantId    String
+  sessionId   String
+  revision    Int
+  agendaJson  String
+  policyJson  String
+  changeJson  String?
+  justification String?
+  actorId     String?
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, revision])
+  @@index([tenantId, createdAt])
+}
+
+// Etapa 003: intenção operacional + confirmação de sinal; sem chave de stream no banco.
+model Transmission {
+  id              String    @id @default(cuid())
+  tenantId        String
+  sessionId       String    @unique
+  status          String    @default("draft") // draft|ready|monitoring|ended (sinal local)
+  version         Int       @default(1)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  commands        TransmissionCommand[]
+  destinationIntents MediaDestinationIntent[]
+
+  @@index([tenantId, status])
+}
+
+model TransmissionCommand {
+  id              String       @id @default(cuid())
+  transmissionId  String
+  idempotencyKey  String
+  action          String
+  version         Int
+  createdAt       DateTime     @default(now())
+
+  transmission    Transmission @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+
+  @@unique([transmissionId, idempotencyKey])
+}
+
+// Etapa 006: estado desejado sem URL/chave. Um reconciliador aplica no MediaMTX.
+model MediaDestinationIntent {
+  id                 String    @id @default(cuid())
+  transmissionId     String
+  destinationId      String
+  desiredEnabled     Boolean
+  generation         Int       @default(1)
+  observedGeneration Int       @default(0)
+  syncStatus         String    @default("pending") // pending|applied|error
+  attempts           Int       @default(0)
+  lastErrorCode      String?
+  nextAttemptAt      DateTime?
+  leaseOwner         String?
+  leaseUntil         DateTime?
+  lastAppliedAt      DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  transmission       Transmission @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+
+  @@unique([transmissionId, destinationId])
+  @@index([nextAttemptAt, leaseUntil])
+}
+
+// Etapa 007: sinal de vida compartilhado para supervisão externa do worker.
+model MediaWorkerHeartbeat {
+  id          String   @id
+  owner       String
+  lastBeatAt  DateTime
+  lastCycleAt DateTime?
+  updatedAt   DateTime @updatedAt
+}
+
+// Etapa 008: serializa alterações da lista forward por caminho entre workers.
+model MediaPathLease {
+  path       String   @id
+  owner      String
+  leaseUntil DateTime
+  updatedAt  DateTime @updatedAt
+}
+
+model AgendaItem {
+  id            String   @id @default(cuid())
+  sessionId     String
+  order         Int
+  section       String   @default("ordem_do_dia") // expediente|ordem_do_dia|comunicacoes
+  matterId      String?
+  matterType    String?
+  matterNumber  String?
+  matterYear    Int?
+  title         String
+  kind          String   @default("individual") // individual|lote
+  batchItems    String? // JSON com ementas do lote
+  status        String   @default("pendente") // pendente|em_leitura|em_discussao|em_votacao|aprovado|rejeitado|retirado|adiado
+  resultSummary String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  session Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  matter  LegislativeMatter? @relation(fields: [matterId], references: [id])
+  votings Voting[]
+
+  @@index([sessionId, order])
+}
+
+model AttendanceEvent {
+  id                String   @id @default(cuid())
+  sessionId         String
+  parliamentarianId String
+  kind              String // check_in|check_out|temporary_leave|return|mark
+  status            String // presente|saida_temporaria|licenciado|afastado|ausente
+  source            String   @default("operador") // operador|pwa|qr|biometria
+  actorId           String?
+  note              String?
+  createdAt         DateTime @default(now())
+
+  session         Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  parliamentarian Parliamentarian  @relation(fields: [parliamentarianId], references: [id])
+
+  @@index([sessionId, parliamentarianId])
+}
+
+// ─── Votação ────────────────────────────────────────────────────────────────
+
+model Voting {
+  id             String    @id @default(cuid())
+  sessionId      String
+  agendaItemId   String?
+  matterId       String?
+  question       String
+  mode           String    @default("nominal") // nominal|simbolico|secreto
+  status         String    @default("draft") // draft|ready|open|paused|closed|annulled
+  rule           String    @default("maioria_simples") // maioria_simples|maioria_absoluta|unanimidade
+  openedAt       DateTime?
+  closedAt       DateTime?
+  presentAtOpen  Int?
+  quorumAtOpen   Int?
+  presentAtClose Int?
+  quorumAtClose  Int?
+  hidePartial    Boolean   @default(false)
+  resultStatus   String? // aprovado|rejeitado|empate|sem_quorum|anulado
+  resultCounts   String? // JSON {sim,nao,abstencoes,naoRegistraram,presentes}
+  resultDetail   String? // JSON lista nominal (nulo quando secreto)
+  justification  String?
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  session     Session              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agendaItem  AgendaItem?          @relation(fields: [agendaItemId], references: [id])
+  matter      LegislativeMatter?   @relation(fields: [matterId], references: [id])
+  votes       Vote[]
+  options     VotingOption[]
+  receipts    VoteReceipt[]
+
+  @@index([sessionId, status])
+}
+
+model Vote {
+  id                String    @id @default(cuid())
+  votingId          String
+  parliamentarianId String
+  value             String // sim|nao|abstencao ou chave de VotingOption customizada
+  commandId         String
+  actorId           String?
+  changedAt         DateTime?
+  receivedAt        DateTime  @default(now())
+
+  voting          Voting          @relation(fields: [votingId], references: [id], onDelete: Cascade)
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+
+  @@unique([votingId, parliamentarianId])
+  @@unique([votingId, commandId])
+  @@index([votingId])
+}
+
+// ─── Discursos ──────────────────────────────────────────────────────────────
+
+model Speech {
+  id                String    @id @default(cuid())
+  sessionId         String
+  parliamentarianId String?
+  externalSpeaker   String?
+  kind              String    @default("grande_expediente") // grande_expediente|explicacoes_pessoais|consideracoes_finais|homenagem|ordem
+  subject           String?
+  side              String? // situacao|oposicao|neutro
+  status            String    @default("fila") // fila|falando|pausado|encerrado
+  plannedSeconds    Int       @default(300)
+  elapsedSeconds    Int       @default(0)
+  startedAt         DateTime?
+  pausedAt          DateTime?
+  finishedAt        DateTime?
+  timerEvents       String? // JSON [{acao,em}]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  session         Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  parliamentarian Parliamentarian?  @relation(fields: [parliamentarianId], references: [id])
+
+  @@index([sessionId, status])
+}
+
+// ─── Auditoria e eventos (outbox) ──────────────────────────────────────────
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  tenantId      String
+  actorId       String?
+  actorName     String
+  actorRole     String
+  action        String
+  aggregateType String // session|voting|vote|attendance|speech|matter|parliamentarian|tenant
+  aggregateId   String?
+  summary       String
+  beforeValue   String?
+  afterValue    String?
+  justification String?
+  correlationId String?
+  ip            String?
+  prevHash      String?
+  chainHash     String
+  createdAt     DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, aggregateType, aggregateId])
+}
+
+model OutboxEvent {
+  id              String    @id @default(cuid())
+  tenantId        String
+  eventType       String
+  aggregateId     String
+  sessionId       String?
+  internalPayload String // JSON completo (escopo interno)
+  publicPayload   String? // JSON sanitizado (escopo público/telão; nulo = não público)
+  status          String    @default("pending") // pending|published
+  createdAt       DateTime  @default(now())
+  publishedAt     DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([status, createdAt])
+}
+
+// ─── Fase 5: Estrutura institucional (partidos, blocos, mesa, comissões) ────
+
+model Party {
+  id        String   @id @default(cuid())
+  tenantId  String
+  acronym   String
+  name      String
+  number    Int?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, acronym])
+  @@index([tenantId, active])
+}
+
+model Bloc {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  partyAcronyms String   @default("[]") // JSON array de siglas
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId, active])
+}
+
+model BoardPosition {
+  id                String    @id @default(cuid())
+  tenantId          String
+  legislatureId     String
+  role              String // presidente|vice_presidente|primeiro_secretario|segundo_secretario
+  parliamentarianId String
+  startDate         DateTime
+  endDate           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  legislature     Legislature    @relation(fields: [legislatureId], references: [id])
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+
+  @@index([tenantId, legislatureId])
+  @@index([tenantId, endDate])
+}
+
+model Committee {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  acronym     String
+  kind        String   @default("permanente") // permanente|temporaria|especial
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id])
+  members  CommitteeMember[]
+  meetings CommitteeMeeting[]
+
+  @@unique([tenantId, acronym])
+  @@index([tenantId, active])
+}
+
+model CommitteeMember {
+  id                String    @id @default(cuid())
+  committeeId       String
+  parliamentarianId String
+  role              String    @default("titular") // presidente|vice|relator|titular|suplente
+  startDate         DateTime
+  endDate           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  committee       Committee       @relation(fields: [committeeId], references: [id])
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+
+  @@unique([committeeId, parliamentarianId, startDate])
+  @@index([committeeId, endDate])
+}
+
+model CommitteeMeeting {
+  id          String   @id @default(cuid())
+  committeeId String
+  scheduledAt DateTime
+  subject     String
+  status      String   @default("agendada") // agendada|realizada|cancelada
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  committee Committee @relation(fields: [committeeId], references: [id])
+
+  @@index([committeeId, scheduledAt])
+}
+
+model Mandate {
+  id                String    @id @default(cuid())
+  tenantId          String
+  parliamentarianId String
+  legislatureId     String
+  startDate         DateTime
+  endDate           DateTime?
+  votes             Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+  legislature     Legislature    @relation(fields: [legislatureId], references: [id])
+
+  @@unique([parliamentarianId, legislatureId])
+  @@index([tenantId, legislatureId])
+}
+
+model Leave {
+  id                String    @id @default(cuid())
+  tenantId          String
+  parliamentarianId String
+  kind              String // licenca|afastamento|suplencia
+  startDate         DateTime
+  endDate           DateTime?
+  reason            String
+  substituteId      String? // id de Parliamentarian (suplente)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  parliamentarian Parliamentarian @relation(fields: [parliamentarianId], references: [id])
+  substitute      Parliamentarian? @relation("LeaveSubstitute", fields: [substituteId], references: [id])
+
+  @@index([tenantId, parliamentarianId])
+}
+
+model MatterTypeConfig {
+  id            String   @id @default(cuid())
+  tenantId      String
+  code          String // ex.: projeto_de_lei
+  name          String
+  defaultRegime String   @default("ordinario") // ordinario|urgencia
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, code])
+}
+
+// ─── Fase 5: Processo legislativo (tramitação, versões, anexos, protocolo) ──
+
+model Proceeding {
+  id          String    @id @default(cuid())
+  matterId    String
+  seq         Int
+  action      String // despacho|parecer|emenda|inclusao_pauta|sessao|sanco|veto|arquivamento|desarquivamento|outro
+  fromStatus  String
+  toStatus    String
+  actorName   String
+  actorRole   String
+  notes       String?
+  documentRef String?
+  dueAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  matter LegislativeMatter @relation(fields: [matterId], references: [id])
+
+  @@unique([matterId, seq])
+}
+
+model MatterVersion {
+  id         String   @id @default(cuid())
+  matterId   String
+  version    Int
+  text       String
+  authorName String
+  createdAt  DateTime @default(now())
+
+  matter LegislativeMatter @relation(fields: [matterId], references: [id])
+
+  @@unique([matterId, version])
+}
+
+model MatterAttachment {
+  id        String   @id @default(cuid())
+  matterId  String
+  name      String
+  kind      String   @default("anexo") // texto_integral|anexo|parecer|emenda|outro
+  sizeBytes Int      @default(0)
+  url       String?
+  createdAt DateTime @default(now())
+
+  matter LegislativeMatter @relation(fields: [matterId], references: [id])
+
+  @@index([matterId])
+}
+
+model ProtocolEntry {
+  id         String   @id @default(cuid())
+  tenantId   String
+  number     Int
+  year       Int
+  kind       String // materia|documento|oficio|requerimento
+  senderName String
+  subject    String
+  matterId   String?
+  status     String   @default("recebido") // recebido|distribuido|arquivado|anulado
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant             @relation(fields: [tenantId], references: [id])
+  matter LegislativeMatter? @relation(fields: [matterId], references: [id])
+
+  @@unique([tenantId, number, year])
+  @@index([tenantId, status])
+}
+
+model LegislativeTask {
+  id           String   @id @default(cuid())
+  tenantId     String
+  matterId     String?
+  title        String
+  kind         String   @default("prazo") // prazo|parecer|distribuicao|outro
+  dueAt        DateTime
+  status       String   @default("pendente") // pendente|concluida|cancelada
+  assigneeName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant             @relation(fields: [tenantId], references: [id])
+  matter LegislativeMatter? @relation(fields: [matterId], references: [id])
+
+  @@index([tenantId, status, dueAt])
+}
+
+// ─── Fase 6: Notificações e webhooks ────────────────────────────────────────
+
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  tenantId    String
+  url         String
+  secret      String
+  events      String // JSON array de eventTypes (allowlist pública + test.ping)
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId, active])
+}
+
+model WebhookDelivery {
+  id            String    @id @default(cuid())
+  endpointId    String
+  eventType     String
+  payload       String // JSON
+  status        String    @default("pending") // pending|success|failed|dead
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime?
+  lastError     String?
+  responseStatus Int?
+  createdAt     DateTime  @default(now())
+  deliveredAt   DateTime?
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  tenantId   String
+  title      String
+  body       String
+  kind       String // session|voting|task|webhook|system
+  module     String? // ModuleId para navegação no frontend
+  targetRole String? // papel destinatário; null = todos os papéis do tenant
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+// ─── Fase 7: IA assistiva (rastreabilidade + revisão humana obrigatória) ────
+
+model AiArtifact {
+  id         String    @id @default(cuid())
+  tenantId   String
+  kind       String // ata_draft|ementa|proceedings_summary|transcript|ocr_text
+  sessionId  String?
+  matterId   String?
+  input      String // JSON do contexto enviado ao modelo
+  output     String // JSON da saída (rascunho — nunca documento oficial)
+  model      String
+  provider   String    @default("z-ai")
+  status     String    @default("draft") // draft|approved|rejected
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+// ─── Fase 8: Importador de migração (pipeline auditável) ────────────────────
+
+model MigrationRun {
+  id          String    @id @default(cuid())
+  tenantId    String
+  stage       String    @default("inspect") // inspect|validate|plan|dry_run|import|reconcile|report|rollback
+  status      String    @default("running") // running|completed|failed
+  homologated Boolean   @default(false)
+  stats       String    @default("{}") // JSON por estágio
+  report      String? // JSON do relatório final
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  mappings MigrationMapping[]
+  issues   MigrationIssue[]
+  tenant   Tenant            @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+model MigrationMapping {
+  id          String @id @default(cuid())
+  runId       String
+  sourceTable String
+  sourceId    String
+  targetModel String
+  targetId    String
+  transformed String @default("[]") // JSON de transformações aplicadas
+  run         MigrationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, sourceTable, sourceId])
+}
+
+// ─── Fase 14: Modelos de documento versionados por tenant (§7.10) ──────────
+
+model DocumentTemplate {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String
+  kind           String // ata_sessao|decreto|resolucao|portaria|edital|oficio
+  description    String?
+  active         Boolean  @default(true)
+  currentVersion Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant   Tenant                   @relation(fields: [tenantId], references: [id])
+  versions DocumentTemplateVersion[]
+
+  @@index([tenantId])
+}
+
+model DocumentTemplateVersion {
+  id          String   @id @default(cuid())
+  templateId  String
+  version     Int
+  bodyMd      String
+  changeNote  String?
+  authorName  String
+  createdAt   DateTime @default(now())
+
+  template DocumentTemplate @relation(fields: [templateId], references: [id])
+
+  @@unique([templateId, version])
+  @@index([templateId])
+}
+
+model MigrationIssue {
+  id        String @id @default(cuid())
+  runId     String
+  severity  String // info|warn|error
+  sourceRef String?
+  message   String
+  run       MigrationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, severity])
+}
+
+// ─── Onda 4 / Fase 17: ciclo de vida da matéria (relacionamentos + desfechos) ─
+
+model RelatedMatter {
+  id              String   @id @default(cuid())
+  matterId        String
+  relatedMatterId String
+  kind            String // altera|revoga|regula|subsidiaria|emenda|substitutivo
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  matter        LegislativeMatter @relation("RelatedFrom", fields: [matterId], references: [id], onDelete: Cascade)
+  relatedMatter LegislativeMatter @relation("RelatedTo", fields: [relatedMatterId], references: [id])
+
+  @@unique([matterId, relatedMatterId])
+  @@index([matterId])
+  @@index([relatedMatterId])
+}
+
+model MatterOutcome {
+  id        String   @id @default(cuid())
+  matterId  String
+  kind      String // sancao|veto_total|veto_parcial
+  actorName String
+  date      DateTime @default(now())
+  notes     String?
+  dueAt     DateTime? // prazo de apreciação quando veto
+  createdAt DateTime @default(now())
+
+  matter LegislativeMatter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  @@index([matterId])
+}
+
+// ─── Onda 4 / Fase 18: votação avançada (opções customizadas + recibos) ──────
+
+model VotingOption {
+  id       String @id @default(cuid())
+  votingId String
+  key      String // slug estável (ex.: sim|nao|abstencao|constar_ata)
+  label    String
+  order    Int    @default(0)
+
+  voting Voting @relation(fields: [votingId], references: [id], onDelete: Cascade)
+
+  @@unique([votingId, key])
+}
+
+model VoteReceipt {
+  id                String   @id @default(cuid())
+  votingId          String
+  parliamentarianId String
+  receiptCode       String
+  payloadHash       String
+  issuedAt          DateTime @default(now())
+
+  voting Voting @relation(fields: [votingId], references: [id], onDelete: Cascade)
+
+  @@unique([votingId, parliamentarianId])
+  @@index([votingId])
+}
+
+// ─── Onda 4 / Fase 19: participação pública (assinaturas do cidadão) ─────────
+
+model CitizenSubscription {
+  id          String    @id @default(cuid())
+  tenantId    String
+  email       String
+  targetKind  String // matter|session|hearing
+  targetId    String
+  token       String    @unique
+  confirmedAt DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email, targetKind, targetId])
+  @@index([tenantId, targetKind, targetId])
+}
+
+// ─── Onda 4 / Fase 20: operação e suporte da plataforma ─────────────────────
+
+model SupportImpersonation {
+  id            String    @id @default(cuid())
+  supportUserId String
+  targetUserId  String
+  reason        String
+  expiresAt     DateTime
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+
+  supportUser User          @relation("ImpersonationSupport", fields: [supportUserId], references: [id])
+  targetUser  User          @relation("ImpersonationTarget", fields: [targetUserId], references: [id])
+  sessions    AuthSession[] @relation("ImpersonationSession")
+
+  @@index([supportUserId])
+  @@index([targetUserId])
+}
+
+model PlatformAlert {
+  id         String    @id @default(cuid())
+  kind       String
+  severity   String    @default("warning") // info|warning|critical
+  message    String
+  actionHint String?
+  meta       String    @default("{}")
+  createdAt  DateTime  @default(now())
+  ackAt      DateTime?
+  ackBy      String?
+
+  @@index([kind, ackAt])
+}
+
+model ExportJob {
+  id         String    @id @default(cuid())
+  tenantId   String
+  status     String    @default("pending") // pending|running|done|failed
+  progress   Int       @default(0)
+  error      String?
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, status])
+}
+
+// ─── v0.12.0: Planejamento e Roadmap (Onda 5 — ROADMAP §12) ──────────────────
+// Nível PLATAFORMA (sem tenant): fases e tasks do plano de continuidade,
+// consultáveis no produto por qualquer papel autenticado (leitura) e
+// gerenciadas por platform_owner (escrita via platform.manage).
+
+model RoadmapPhase {
+  id        String @id @default(cuid())
+  code      String @unique // F21..F24
+  wave      String // "Onda 5"
+  name      String
+  period    String
+  objective String
+  status    String @default("planejada") // planejada|em_andamento|concluida
+  order     Int
+
+  tasks RoadmapTask[]
+
+  @@index([wave, order])
+}
+
+model RoadmapTask {
+  id             String    @id @default(cuid())
+  phaseCode      String
+  title          String
+  detail         String
+  status         String    @default("pendente") // pendente|em_andamento|concluido|bloqueado
+  order          Int
+  updatedByName  String?
+  updatedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  phase RoadmapPhase @relation(fields: [phaseCode], references: [code])
+
+  @@index([phaseCode, order])
+  @@unique([phaseCode, order])
+}
+
+// ─── Onda 5 / Fase 21: agendador de tarefas (nível PLATAFORMA — ADR-022) ────
+
+model ScheduledJob {
+  id           String    @id @default(cuid())
+  kind         String    @unique // alert.scan|export.watchdog|health.check|tenant.health_snapshot
+  title        String
+  everySeconds Int       @default(300) // mínimo 60s no PATCH
+  lastRunAt    DateTime?
+  nextRunAt    DateTime  @default(now())
+  lastStatus   String? // ok|error|skipped
+  lastNote     String?
+  active       Boolean   @default(true)
+  updatedBy    String? // nome do ator (decisões de plataforma fora da cadeia de auditoria de tenant)
+  updatedAt    DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+// ─── Onda 5 / Fase 22: assinatura eletrônica de documentos (ADR-023) ────────
+
+model DocumentSignature {
+  id                         String   @id @default(cuid())
+  tenantId                   String
+  kind                       String // ata_sessao|parecer
+  documentId                 String // id da Publication/ata (ou parecer)
+  signatoryParliamentarianId String
+  signatoryName              String
+  docHash                    String // sha256 do conteúdo publicado do documento
+  prevHash                   String? // hash da assinatura anterior do mesmo documento (cadeia)
+  signatureCode              String // HMAC(segredo tenant, docHash+parl+signedAt)[:16] — padrão ADR-019
+  signedAt                   DateTime @default(now())
+  createdAt                  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, kind, documentId, signatoryParliamentarianId]) // idempotente por documento+signatário
+  @@index([tenantId, documentId])
+}
+
+// ─── Onda 5 / Fase 23: chaves de API (ADR-024) ──────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  prefix      String // legk_ + 8 caracteres exibíveis
+  hash        String    @unique // sha256 da chave completa (a chave pura nunca é persistida)
+  scopes      String    @default("[]") // JSON ["matters.read","sessions.read","publications.read","calendar.read"]
+  lastUsedAt  DateTime? // best-effort, sem log de IP (minimização LGPD)
+  revokedAt   DateTime? // revogação append-only — a linha nunca é apagada
+  createdAt   DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+// ─── Onda 5 / Fase 24: crescimento do SaaS (ADR-025) ────────────────────────
+
+model OnboardingRequest {
+  id          String   @id @default(cuid())
+  chamberName String
+  city        String
+  uf          String // sigla 2 letras
+  email       String
+  slug        String   @unique
+  status      String   @default("pendente") // pendente|ativada|rejeitada
+  note        String?
+  createdAt   DateTime @default(now())
+}
+
+model TenantHealthSnapshot {
+  id         String   @id @default(cuid())
+  tenantId   String
+  score      Int // 0–100 — determinístico (sessões/matérias/logins/webhooks 30d)
+  metrics    String   @default("{}") // JSON com as métricas-base
+  capturedAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, capturedAt])
+}
+
+model NpsResponse {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String
+  score     Int // 0–10
+  comment   String?
+  version   String // versão do produto avaliada
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, version]) // idempotente por usuário/versão — atualiza a própria resposta
+}

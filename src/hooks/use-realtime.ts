@@ -1,0 +1,144 @@
+/**
+ * Hook de tempo real — socket.io via gateway Caddy (/?XTransformPort=3003).
+ * Deduplicação por eventId; reconexão exponencial; status sempre visível.
+ *
+ * Singleton: todos os consumidores compartilham um socket interno; handlers
+ * são registrados num registry module-level e sempre lêem closures atualizadas.
+ */
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { io, type Socket } from 'socket.io-client'
+import type { RealtimeEvent, RealtimeEventType } from '@/lib/contracts'
+import { useApp } from '@/lib/store'
+
+type Handler = (event: RealtimeEvent) => void
+type HandlerMap = Partial<Record<RealtimeEventType, Handler>>
+
+const registry = new Map<string, HandlerMap>()
+const socketState: { socket: Socket | null; tenantId: string | null; actorId: string | null; refCount: number; seen: Set<string> } = {
+  socket: null,
+  tenantId: null,
+  actorId: null,
+  refCount: 0,
+  seen: new Set(),
+}
+
+function ensureSocket(tenantId: string, actorId: string): Socket {
+  if (socketState.socket && socketState.tenantId === tenantId && socketState.actorId === actorId) return socketState.socket
+
+  socketState.socket?.disconnect()
+  const socket = io('/?XTransformPort=3003', {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 10000,
+    timeout: 12000,
+    auth: async (callback) => {
+      try {
+        const headers = new Headers()
+        const actorId = localStorage.getItem('legis.actorId')
+        if (actorId) headers.set('x-actor-id', actorId)
+        const response = await fetch('/api/v1/realtime/token', {
+          headers,
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+        if (!response.ok) throw new Error('Falha ao autorizar tempo real')
+        const body = await response.json() as { token: string }
+        callback({ tenantId, scope: 'internal', token: body.token })
+      } catch {
+        callback({ tenantId, scope: 'internal', token: '' })
+      }
+    },
+  })
+  socketState.socket = socket
+  socketState.tenantId = tenantId
+  socketState.actorId = actorId
+  socketState.seen = new Set()
+
+  const { setConnection, markEvent } = useApp.getState()
+
+  socket.on('connect', () => {
+    setConnection('connecting')
+  })
+  socket.on('subscribed', (subscription: { tenantId?: string; scope?: string }) => {
+    if (subscription.tenantId === tenantId && subscription.scope === 'internal') {
+      useApp.getState().setConnection('online')
+    }
+  })
+  socket.on('subscribe_error', () => {
+    useApp.getState().setConnection('offline')
+  })
+  socket.on('disconnect', (reason) => {
+    useApp.getState().setConnection('offline')
+    if (reason === 'io server disconnect') socket.connect()
+  })
+  socket.io.on('reconnect_attempt', () => {
+    useApp.getState().setConnection('reconnecting')
+  })
+  socket.on('connect_error', () => {
+    const st = useApp.getState().connection
+    if (st !== 'reconnecting') useApp.getState().setConnection('reconnecting')
+  })
+
+  socket.onAny((eventType: string, event: RealtimeEvent) => {
+    if (!event || typeof event !== 'object' || !('eventId' in event)) return
+    if (socketState.seen.has(event.eventId)) return
+    socketState.seen.add(event.eventId)
+    if (socketState.seen.size > 800) {
+      socketState.seen = new Set(Array.from(socketState.seen).slice(-400))
+    }
+    markEvent()
+    for (const handlers of registry.values()) {
+      const h = handlers[eventType as RealtimeEventType]
+      if (h) h(event)
+    }
+  })
+
+  return socket
+}
+
+export function useRealtime(handlers: HandlerMap) {
+  const tenantId = useApp((s) => s.bootstrap?.tenant.id ?? null)
+  const actorId = useApp((s) => s.actorId)
+  const idRef = useRef<string>(`h${Math.random().toString(36).slice(2)}`)
+
+  // Sempre atualiza as closures mais recentes no registry
+  registry.set(idRef.current, handlers)
+
+  useEffect(() => {
+    if (!tenantId || !actorId) return
+    const socket = ensureSocket(tenantId, actorId)
+    socketState.refCount += 1
+
+    return () => {
+      socketState.refCount -= 1
+      registry.delete(idRef.current)
+      if (socketState.refCount <= 0) {
+        socketState.socket?.disconnect()
+        socketState.socket = null
+        socketState.tenantId = null
+        socketState.actorId = null
+        socketState.refCount = 0
+      }
+    }
+  }, [tenantId, actorId])
+}
+
+/** Assinatura pública (portal/telão) — instância independente */
+export function connectPublicSocket(tenantId: string): Socket {
+  const s = io('/?XTransformPort=3003', {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 10000,
+    auth: { tenantId, scope: 'public' },
+  })
+  s.on('connect', () => {
+    s.emit('subscribe', { tenantId, scope: 'public' })
+  })
+  return s
+}

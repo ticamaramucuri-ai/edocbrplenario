@@ -1,0 +1,10 @@
+[Unit]
+Description=Legis - verificar saúde da mídia a cada 15 segundos
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=15s
+Unit=legis-media-health.service
+
+[Install]
+WantedBy=timers.target

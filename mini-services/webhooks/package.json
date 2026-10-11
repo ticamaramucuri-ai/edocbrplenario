@@ -1,0 +1,7 @@
+{
+  "name": "legis-webhooks",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  }
+}

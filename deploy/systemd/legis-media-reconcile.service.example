@@ -1,0 +1,25 @@
+# Copie e ajuste os caminhos/usuário para a instalação da Câmara piloto.
+# O EnvironmentFile deve ser 0600 e conter DATABASE_URL, MEDIA_CONTROL_URL,
+# MEDIA_METRICS_URL e MEDIA_DESTINATIONS_FILE. Nunca coloque stream keys aqui.
+[Unit]
+Description=Legis - reconciliação dos destinos de mídia
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=legis
+Group=legis
+WorkingDirectory=/opt/legis/current
+EnvironmentFile=/etc/legis/media-reconcile.env
+ExecStart=/usr/local/bin/bun scripts/media-reconcile.ts
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/legis
+
+[Install]
+WantedBy=multi-user.target
