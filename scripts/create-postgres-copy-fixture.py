@@ -27,6 +27,12 @@ for tenant_id, slug, name in [(tenant_a, 'fixture-a', 'Câmara A'), (tenant_b, '
                internalPayload, publicPayload, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)''',
                (f'outbox-{slug}', tenant_id, 'session.created', f'session-{slug}',
                 '{"title":"Sessão pública","internal":"restrito"}', '{"title":"Sessão pública"}', now))
+    if tenant_id == tenant_a:
+        document = b'%PDF-1.4\n\x00binario\xff\n%%EOF'
+        db.execute('''INSERT INTO "SessionDocument" (id, tenantId, sessionId, kind, version, name,
+                   sizeBytes, sha256, content, createdById, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                   ('document-a', tenant_id, f'session-{slug}', 'pauta', 1, 'pauta.pdf', len(document),
+                    hashlib.sha256(document).hexdigest(), document, 'actor-a', now))
 db.execute('''INSERT INTO "WebhookEndpoint" (id, tenantId, url, secret, events, updatedAt)
               VALUES (?, ?, ?, ?, ?, ?)''',
            ('endpoint-a', tenant_a, 'https://example.invalid/hook', 'segredo-ficticio', '["session.created"]', now))

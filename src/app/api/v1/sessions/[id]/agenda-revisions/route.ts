@@ -22,6 +22,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
     actorId: revision.actorId,
     agenda: JSON.parse(revision.agendaJson),
     policy: JSON.parse(revision.policyJson),
+    documents: JSON.parse(revision.documentManifestJson),
     change: revision.changeJson ? JSON.parse(revision.changeJson) : null,
     justification: revision.justification,
     notice: revision.noticeJson ? JSON.parse(revision.noticeJson) : null,

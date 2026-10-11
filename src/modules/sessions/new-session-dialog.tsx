@@ -70,6 +70,7 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
   const [scheduledAt, setScheduledAt] = useState(defaultDateTimeLocal())
   const [presidentId, setPresidentId] = useState<string>('')
   const [secretaryName, setSecretaryName] = useState('')
+  const [location, setLocation] = useState('Plenário')
   const [notes, setNotes] = useState('')
   const [matterIds, setMatterIds] = useState<string[]>([])
   const [official, setOfficial] = useState(false)
@@ -100,6 +101,7 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
         scheduledAt: new Date(scheduledAt).toISOString(),
         presidentId: effectivePresidentId,
         secretaryName: secretaryName.trim() || undefined,
+        location: location.trim(),
         notes: notes.trim() || undefined,
         matterIds: matterIds.length > 0 ? matterIds : undefined,
         official,
@@ -123,6 +125,10 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
     }
     if (!effectivePresidentId) {
       setError('Selecione o presidente da sessão.')
+      return
+    }
+    if (location.trim().length < 2) {
+      setError('Informe o local da sessão.')
       return
     }
     setError(null)
@@ -200,6 +206,10 @@ export function NewSessionDialog({ open, onOpenChange }: { open: boolean; onOpen
               onChange={(e) => setSecretaryName(e.target.value)}
               placeholder="Nome do secretário da sessão"
             />
+          </div>
+          <div className="grid gap-2 sm:col-span-2">
+            <Label htmlFor="session-location">Local da sessão *</Label>
+            <Input id="session-location" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Plenário da Câmara" />
           </div>
         </div>
 

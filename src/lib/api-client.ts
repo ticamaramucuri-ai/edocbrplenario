@@ -88,6 +88,8 @@ import type {
   PlanView,
   MigrationRunView,
   OfficialConfigurationView,
+  SessionDocumentView,
+  NoticeDeliveryView,
 } from './contracts'
 
 /** Fase 18 — recibo verificável do próprio parlamentar (GET /me/receipts). */
@@ -169,6 +171,7 @@ export const api = {
     scheduledAt: string
     presidentId: string
     secretaryName?: string
+    location?: string
     notes?: string
     matterIds?: string[]
     official?: boolean
@@ -824,7 +827,31 @@ export const api = {
   meNotice: (sessionId: string) => request<{ notice: { sessionId: string; revision: number; noticeSha256: string; issuedAt: string; acknowledgedAt: string | null; publicUrl: string | null } | null }>(`/me/notices?sessionId=${encodeURIComponent(sessionId)}`),
   acknowledgeNotice: (notice: { sessionId: string; revision: number; noticeSha256: string }) =>
     request<{ notice: { acknowledgedAt: string } }>('/me/notices', { method: 'POST', body: JSON.stringify(notice) }),
-  noticeRecipients: (sessionId: string) => request<{ revision: number | null; total: number; acknowledged: number; recipients: Array<{ parliamentarianId: string; name: string; acknowledgedAt: string | null }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipients`),
+  noticeRecipients: (sessionId: string) => request<{ revision: number | null; noticeSha256?: string; total: number; acknowledged: number; recipients: Array<{ parliamentarianId: string; name: string; acknowledgedAt: string | null }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipients`),
+  sessionDocuments: (sessionId: string) => request<{ documents: SessionDocumentView[] }>(`/sessions/${encodeURIComponent(sessionId)}/documents`),
+  uploadSessionDocument: async (sessionId: string, kind: SessionDocumentView['kind'], file: File) => {
+    const form = new FormData()
+    form.set('kind', kind)
+    form.set('file', file)
+    const headers = new Headers()
+    const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+    if (actorId) headers.set('x-actor-id', actorId)
+    const response = await fetch(`${BASE}/sessions/${encodeURIComponent(sessionId)}/documents`, { method: 'POST', headers, body: form })
+    const result = await response.json()
+    if (!response.ok) throw new ApiRequestError(result as ApiError)
+    return result as { document: SessionDocumentView }
+  },
+  downloadSessionDocument: async (sessionId: string, documentId: string) => {
+    const headers = new Headers()
+    const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+    if (actorId) headers.set('x-actor-id', actorId)
+    const response = await fetch(`${BASE}/sessions/${encodeURIComponent(sessionId)}/documents/${encodeURIComponent(documentId)}`, { headers })
+    if (!response.ok) throw new ApiRequestError(await response.json() as ApiError)
+    return response.blob()
+  },
+  noticeDeliveries: (sessionId: string, revision?: number) => request<{ revision: number | null; noticeSha256?: string; deliveries: NoticeDeliveryView[] }>(`/sessions/${encodeURIComponent(sessionId)}/notice-deliveries${revision ? `?revision=${revision}` : ''}`),
+  attestNoticeDelivery: (sessionId: string, data: { revision: number; noticeSha256: string; parliamentarianId: string; channel: NoticeDeliveryView['channel']; evidenceReference: string; deliveredAt: string; commandId: string; acknowledged: true }) =>
+    request<{ delivery: NoticeDeliveryView; mode: 'manual_attestation' }>(`/sessions/${encodeURIComponent(sessionId)}/notice-deliveries`, { method: 'POST', body: JSON.stringify(data) }),
   noticeRecipientPreview: (sessionId: string) => request<{ policy: 'active' | 'mandate_and_leave'; total: number; recipients: Array<{ id: string; name: string }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipient-preview`),
   meCheckIn: (note?: string) =>
     request<{

@@ -51,6 +51,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [044 — Identidade partidária e arquivos](044-identidade-partidaria-arquivos.md) | Implementação local concluída | Emblema por partido/Câmara, volume configurável e inventário de imagens | Homologação de persistência e restore conjunto na 045 |
 
 | [045 — Fundação operacional SaaS](045-fundacao-operacional-saas.md) | Em andamento | Leases PostgreSQL e rate limit compartilhado com provas concorrentes | E-mail, fanout realtime, backup de arquivos, RTO/RPO e homologação persistente |
+| [046 — Configuração oficial por Câmara](046-configuracao-oficial-por-camara.md) | Incremento técnico concluído | Checklist, aprovação versionada e bloqueio de publicação oficial sem configuração vigente | Validação institucional das regras e composição de Mucuri |
+| [047 — Preparação formal da sessão](047-preparacao-formal-sessao.md) | Incremento técnico concluído | PDFs versionados, manifesto na convocação e declaração manual de entrega por revisão | Canal institucional com comprovante técnico, assinatura e aceite |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

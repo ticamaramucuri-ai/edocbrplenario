@@ -2,7 +2,7 @@
 
 **Data-base:** 11/10/2026 · **Revisão:** 1 · **Escopo:** código, esquema, testes, CI e documentos deste repositório até a etapa 042. Este plano orienta o desenvolvimento; não declara o sistema homologado para atos oficiais.
 
-**Atualização de execução:** as etapas [043](etapas/043-linha-de-base.md), [044](etapas/044-identidade-partidaria-arquivos.md) e o incremento técnico da [046](etapas/046-configuracao-oficial-por-camara.md) foram implementados após o inventário abaixo. A tabela de lacunas preserva a fotografia da etapa 042. A fase [045](etapas/045-fundacao-operacional-saas.md) segue em andamento: leases e rate limit distribuído passaram em homologação descartável; persistência institucional, e-mail, fanout realtime e recuperação medida ainda faltam. A 046 depende de validação institucional para uso oficial.
+**Atualização de execução:** as etapas [043](etapas/043-linha-de-base.md), [044](etapas/044-identidade-partidaria-arquivos.md) e incrementos técnicos de [046](etapas/046-configuracao-oficial-por-camara.md) e [047](etapas/047-preparacao-formal-sessao.md) foram implementados após o inventário abaixo. A tabela de lacunas preserva a fotografia da etapa 042. A fase [045](etapas/045-fundacao-operacional-saas.md) segue em andamento: leases e rate limit distribuído passaram em homologação descartável; persistência institucional, e-mail, fanout realtime e recuperação medida ainda faltam. A 046 depende de validação institucional; a 047 ainda não envia nem verifica convocações por canal externo.
 
 ## 1. Decisão executiva
 
@@ -49,7 +49,7 @@ Há ainda decisões dependentes do responsável institucional: retenção de doc
 
 ## 4. Ordem crescente de desenvolvimento
 
-As fases 043–044 e o incremento técnico da 046 tiveram execução local após esta revisão; 045 e 047–057 ainda têm entregas pendentes. Cada fase termina com código, teste, documentação numerada em `docs/etapas/`, runbook atualizado e evidência de aceite. Uma fase não avança para dados oficiais porque passou apenas em ambiente fictício. Preparação institucional de Mucuri pode ocorrer em paralelo, sem cadastrar fatos presumidos.
+As fases 043–044 e incrementos técnicos de 046–047 tiveram execução local após esta revisão; 045 e 046–057 ainda têm entregas institucionais ou técnicas pendentes. Cada fase termina com código, teste, documentação numerada em `docs/etapas/`, runbook atualizado e evidência de aceite. Uma fase não avança para dados oficiais porque passou apenas em ambiente fictício. Preparação institucional de Mucuri pode ocorrer em paralelo, sem cadastrar fatos presumidos.
 
 | Ordem | Fase e objetivo | Entrega mínima para passar à seguinte | Dependência/decisão |
 |---|---|---|---|

@@ -113,7 +113,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       )
     }
 
-    let publication: { agendaJson: string; policyJson: string; tenant: { id: string; slug: string; name: string; city: string; uf: string; timezone: string } } | null = null
+    let publication: { agendaJson: string; policyJson: string; documentManifestJson: string; tenant: { id: string; slug: string; name: string; city: string; uf: string; timezone: string } } | null = null
     if (body.action === 'schedule') {
       const tenant = await tx.tenant.findUnique({ where: { id: session.tenantId } })
       if (!tenant) throw new DomainError('NOT_FOUND', 404, 'Câmara não encontrada', 'Câmara não encontrada.')
@@ -162,12 +162,15 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const agenda = await tx.agendaItem.findMany({
         where: { sessionId: session.id }, orderBy: [{ order: 'asc' }, { id: 'asc' }],
       })
+      const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: session.id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, sizeBytes: true, sha256: true } })
+      const latestDocuments = documents.filter((document, index) => documents.findIndex((candidate) => candidate.kind === document.kind) === index)
       const matters = agenda.filter((item) => item.section === 'ordem_do_dia'
         && item.matterId && !['retirado', 'adiado'].includes(item.status)).length
       if (matters < policy.minimumAgendaMatters) {
         throw new DomainError('SESSION_PRECONDITION', 409, 'Pauta incompleta', `Esta Câmara exige ao menos ${policy.minimumAgendaMatters} matéria(s) na ordem do dia; há ${matters}.`)
       }
       publication = {
+        documentManifestJson: JSON.stringify(latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }))),
         agendaJson: JSON.stringify(agenda.map((item) => ({
           id: item.id, order: item.order, section: item.section, matterId: item.matterId,
           title: item.title, kind: item.kind, batchItems: item.batchItems,
@@ -203,6 +206,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const notice = createSessionNotice({
         tenant: publication.tenant, session: updated, revision: 1, issuedAt: now,
         agenda: JSON.parse(publication.agendaJson), policy: JSON.parse(publication.policyJson),
+        documents: JSON.parse(publication.documentManifestJson),
         exceptionReason: body.noticeExceptionReason,
       })
       noticeHash = notice.noticeSha256
@@ -212,6 +216,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         revision: 1,
         agendaJson: publication.agendaJson,
         policyJson: publication.policyJson,
+        documentManifestJson: publication.documentManifestJson,
         noticeJson: notice.noticeJson,
         noticeSha256: notice.noticeSha256,
         actorId: actor.id,

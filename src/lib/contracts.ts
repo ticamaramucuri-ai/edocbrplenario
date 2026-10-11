@@ -224,6 +224,28 @@ export type OfficialConfigurationView = {
   revisions: { id: string; version: number; snapshotSha256: string; approvalReference: string; approvedByName: string; approvedAt: string }[]
 }
 
+export type SessionDocumentView = {
+  id: string
+  kind: 'pauta' | 'convocacao' | 'apoio'
+  version: number
+  name: string
+  sizeBytes: number
+  sha256: string
+  createdById: string
+  createdAt: string
+}
+
+export type NoticeDeliveryView = {
+  id: string
+  revision: number
+  parliamentarianId: string
+  channel: 'presencial' | 'email_externo' | 'mensagem_externa' | 'outro'
+  evidenceReference: string
+  deliveredAt: string
+  recordedByName: string
+  createdAt: string
+}
+
 export type AgendaItemView = {
   id: string
   order: number

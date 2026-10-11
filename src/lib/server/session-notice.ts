@@ -7,6 +7,7 @@ export function createSessionNotice(input: {
   revision: number
   issuedAt: Date
   agenda: unknown
+  documents?: unknown
   policy: unknown
   justification?: string | null
   exceptionReason?: string | null
@@ -27,6 +28,7 @@ export function createSessionNotice(input: {
     revision: input.revision,
     issuedAt: input.issuedAt.toISOString(),
     agenda: input.agenda,
+    documents: input.documents ?? [],
     policy: input.policy,
     justification: input.justification ?? null,
     exceptionReason: input.exceptionReason ?? null,

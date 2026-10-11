@@ -37,6 +37,8 @@ model Tenant {
   sessionNumberCounters SessionNumberCounter[]
   sessionAgendaRevisions SessionAgendaRevision[]
   sessionNoticeRecipients SessionNoticeRecipient[]
+  sessionDocuments SessionDocument[]
+  sessionNoticeDeliveries SessionNoticeDelivery[]
   auditEvents      AuditEvent[]
   outboxEvents     OutboxEvent[]
   parties          Party[]
@@ -356,6 +358,8 @@ model Session {
   agendaItems      AgendaItem[]
   agendaRevisions  SessionAgendaRevision[]
   noticeRecipients SessionNoticeRecipient[]
+  documents        SessionDocument[]
+  noticeDeliveries SessionNoticeDelivery[]
   attendanceEvents AttendanceEvent[]
   votings          Voting[]
   speeches         Speech[]
@@ -385,6 +389,7 @@ model SessionAgendaRevision {
   revision    Int
   agendaJson  String
   policyJson  String
+  documentManifestJson String @default("[]")
   changeJson  String?
   justification String?
   noticeJson  String?
@@ -418,6 +423,51 @@ model SessionNoticeRecipient {
 
   @@unique([sessionId, revision, parliamentarianId])
   @@index([tenantId, parliamentarianId, issuedAt])
+  @@index([tenantId, sessionId, revision])
+}
+
+// PDFs da preparação: conteúdo preservado no banco, versões append-only por tipo.
+model SessionDocument {
+  id          String   @id @default(cuid())
+  tenantId    String
+  sessionId   String
+  kind        String // pauta|convocacao|apoio
+  version     Int
+  name        String
+  mimeType    String   @default("application/pdf")
+  sizeBytes   Int
+  sha256      String
+  content     Bytes
+  createdById String
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, kind, version])
+  @@index([tenantId, sessionId, createdAt])
+}
+
+// Declaração interna de entrega realizada fora do sistema, vinculada ao hash da convocação.
+model SessionNoticeDelivery {
+  id                String   @id @default(cuid())
+  tenantId          String
+  sessionId         String
+  revision          Int
+  parliamentarianId String
+  noticeSha256      String
+  channel           String // presencial|email_externo|mensagem_externa|outro
+  evidenceReference String
+  deliveredAt       DateTime
+  recordedById      String
+  recordedByName    String
+  commandId         String
+  createdAt         DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, commandId])
   @@index([tenantId, sessionId, revision])
 }
 

@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { AgendaItemView, SessionStatus } from '@/lib/contracts'
 import { AGENDA_SECTION_LABEL } from '@/modules/_shared'
 import { AgendaAmendmentDialog } from '@/modules/sessions/agenda-amendment-dialog'
+import { PreparationPanel } from '@/modules/sessions/preparation-panel'
 
 export function AgendaPanel({
   sessionId,
@@ -107,6 +108,7 @@ export function AgendaPanel({
           {noticeRecipients.recipients.map((person) => <li key={person.parliamentarianId}>{person.name} — {person.acknowledgedAt ? `ciência em ${new Date(person.acknowledgedAt).toLocaleString('pt-BR')}` : 'pendente'}</li>)}
         </ul>}
       </div>}
+      <PreparationPanel sessionId={sessionId} sessionStatus={sessionStatus} />
 
       {isLoading ? (
         <div className="space-y-2">

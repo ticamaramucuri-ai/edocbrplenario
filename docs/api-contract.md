@@ -11,6 +11,12 @@ limit dos endpoints públicos.
 
 `POST /api/v1/sessions` aceita `official?: boolean` (padrão `false`). Uma sessão oficial permanece em rascunho até que `POST /api/v1/sessions/:id/transition` com `action: "schedule"` confirme a configuração atual aprovada, a presidência da Mesa e o mandato na data da sessão. A publicação grava `officialConfigurationId` na sessão; alteração posterior do cadastro exige nova aprovação apenas para novas publicações. `GET /api/v1/sessions/:id/readiness` inclui `official_config` para rascunhos oficiais. As respostas interna e pública de sessão incluem `official`.
 
+## Adição da etapa 047 — documentos e declarações de entrega
+
+`POST /api/v1/sessions` aceita `location?` (local explícito; padrão legado `Plenário`). `GET /api/v1/sessions/:id/documents` lista metadados das versões PDF da sessão. `POST` no mesmo caminho, com `multipart/form-data` (`kind`: `pauta|convocacao|apoio`, `file`: PDF de até 5 MB), exige `session.create` e rascunho; retorna `201 {document}` com versão e SHA-256. `GET /api/v1/sessions/:id/documents/:documentId` entrega o PDF autenticado como anexo. A publicação inclui a última versão por tipo em `documentManifestJson` e no hash da convocação; `GET /agenda-revisions` expõe o manifesto de cada revisão.
+
+`GET /api/v1/sessions/:id/notice-deliveries?revision=N` exige `session.transition` e lista as declarações da revisão solicitada (por padrão a atual). `POST` no mesmo caminho exige `{revision, noticeSha256, parliamentarianId, channel, evidenceReference, deliveredAt, commandId, acknowledged:true}`. `channel` é `presencial|email_externo|mensagem_externa|outro`; o UUID `commandId` torna o lançamento idempotente. Só destinatários da revisão vigente podem receber novos lançamentos. Retorna `201` na criação, `200` na repetição idêntica e `409` para revisão vencida ou reaproveitamento conflitante do comando. O campo `mode: "manual_attestation"` deixa claro que o sistema não transmitiu nem verificou a entrega externa.
+
 ## Convenções gerais
 
 - **Ator**: rotas internas usam sessão autenticada; `x-actor-id` só funciona no modo
@@ -69,7 +75,7 @@ Sem parâmetros (usa tenant do ator; `platform_*` usa `?tenant=slug`, default pr
 derivado (presença atual), `agendaCount`, `totalMembers`.
 
 ### POST `/api/v1/sessions`
-Body: `{ type: SessionType, scheduledAt: ISO, presidentId, secretaryName?, notes?, matterIds?: string[] }`
+Body: `{ type: SessionType, scheduledAt: ISO, presidentId, secretaryName?, location?, notes?, matterIds?: string[], official?: boolean }`
 Cria sempre em `draft` com pauta preliminar (expediente fixo + ordem_do_dia pelas matérias selecionadas + comunicações). A pauta só é publicada pela transição `schedule`. A numeração anual é alocada atomicamente por Câmara; o ano usa o fuso configurado da Câmara. `matterIds` duplicados e tipos de sessão desabilitados para a Câmara são rejeitados.
 → `{ session: SessionSummary }` (201).
 

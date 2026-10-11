@@ -133,6 +133,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A sessão mudou. Recarregue a pauta.')
     const updated = await tx.session.findUniqueOrThrow({ where: { id } })
     const issuedAt = new Date()
+    const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, sizeBytes: true, sha256: true } })
+    const latestDocuments = documents.filter((document, index) => documents.findIndex((candidate) => candidate.kind === document.kind) === index)
+    const documentManifest = latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }))
     const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication,
       minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours,
       minimumAmendmentHours: change.policy.minimumAmendmentHours, urgentNoticeExceptionTypes: change.policy.urgentNoticeExceptionTypes,
@@ -140,11 +143,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       exceptionReason: change.deadline.exceptionReason }
     const notice = createSessionNotice({ tenant: change.tenant, session: updated, revision: change.revision,
       issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification,
+      documents: documentManifest,
       exceptionReason: change.deadline.exceptionReason })
     await tx.sessionAgendaRevision.create({ data: {
       tenantId: session.tenantId, sessionId: id, revision: change.revision,
       agendaJson: JSON.stringify(change.after),
       policyJson: JSON.stringify(policySnapshot),
+      documentManifestJson: JSON.stringify(documentManifest),
       changeJson: JSON.stringify({ action: command.action, before: change.before, after: change.after }),
       justification: command.justification, actorId: actor.id,
       noticeJson: notice.noticeJson, noticeSha256: notice.noticeSha256, createdAt: issuedAt,

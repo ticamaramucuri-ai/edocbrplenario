@@ -62,6 +62,8 @@ def convert(value: object, data_type: str) -> object:
         return date_value(value)
     if data_type == 'boolean':
         return 'true' if value in (1, True, '1', 'true', 'TRUE') else 'false'
+    if data_type == 'bytea':
+        return '\\x' + bytes(value).hex()
     return str(value)
 
 
@@ -76,6 +78,8 @@ def canonical_value(value: object, data_type: str) -> str:
         if str(value).lower() in ('0', 'false', 'f'):
             return 'false'
         raise ValueError('booleano inválido durante conciliação')
+    if data_type == 'bytea':
+        return ('\\x' + bytes(value).hex()) if isinstance(value, (bytes, bytearray, memoryview)) else str(value).lower()
     if data_type in ('integer', 'bigint', 'smallint', 'numeric', 'real', 'double precision'):
         return str(Decimal(str(value)).normalize())
     return str(value)
@@ -137,8 +141,8 @@ def copy(source: Path, env: dict[str, str]) -> None:
                 raise RuntimeError(f'tabelas divergentes: SQLite={len(source_tables)}, PostgreSQL={len(target_tables)}')
             if query(env, "SELECT to_regclass('public._edocbr_schema_migration') IS NOT NULL") != 't':
                 raise RuntimeError('execute as migrações PostgreSQL antes da cópia')
-            if query(env, "SELECT count(*) FROM \"_edocbr_schema_migration\" WHERE status='applied'") != '7':
-                raise RuntimeError('migrações 0001 a 0007 devem estar aplicadas')
+            if query(env, "SELECT count(*) FROM \"_edocbr_schema_migration\" WHERE status='applied'") != '8':
+                raise RuntimeError('migrações 0001 a 0008 devem estar aplicadas')
             edges = [tuple(line.split('|', 1)) for line in query(env, '''SELECT c.relname, p.relname
               FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid
               JOIN pg_class p ON p.oid=k.confrelid WHERE k.contype='f' AND k.connamespace='public'::regnamespace''').splitlines()]
