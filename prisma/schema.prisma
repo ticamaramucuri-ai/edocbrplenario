@@ -36,6 +36,7 @@ model Tenant {
   sessions         Session[]
   sessionNumberCounters SessionNumberCounter[]
   sessionAgendaRevisions SessionAgendaRevision[]
+  sessionNoticeRecipients SessionNoticeRecipient[]
   auditEvents      AuditEvent[]
   outboxEvents     OutboxEvent[]
   parties          Party[]
@@ -330,6 +331,7 @@ model Session {
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
   agendaItems      AgendaItem[]
   agendaRevisions  SessionAgendaRevision[]
+  noticeRecipients SessionNoticeRecipient[]
   attendanceEvents AttendanceEvent[]
   votings          Voting[]
   speeches         Speech[]
@@ -370,6 +372,28 @@ model SessionAgendaRevision {
 
   @@unique([sessionId, revision])
   @@index([tenantId, createdAt])
+}
+
+// Destinatários congelados para cada revisão publicada. Ciência é um ato interno,
+// não uma comprovação de entrega por e-mail ou mensagem.
+model SessionNoticeRecipient {
+  id                String    @id @default(cuid())
+  tenantId          String
+  sessionId         String
+  revision          Int
+  parliamentarianId String
+  recipientName     String
+  noticeSha256      String
+  issuedAt          DateTime
+  acknowledgedAt    DateTime?
+  ackActorId        String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, revision, parliamentarianId])
+  @@index([tenantId, parliamentarianId, issuedAt])
+  @@index([tenantId, sessionId, revision])
 }
 
 // Etapa 003: intenção operacional + confirmação de sinal; sem chave de stream no banco.

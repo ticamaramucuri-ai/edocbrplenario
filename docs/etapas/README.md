@@ -17,5 +17,6 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [011 — Política de publicação por Câmara](011-politica-publicacao-saas.md) | Concluída para o escopo inicial | Tipos, secretário e mínimo de matérias por tenant; edição de rascunho; revisão 1 | Emendas versionadas à pauta |
 | [012 — Emendas à pauta publicada](012-emendas-pauta-publicada.md) | Concluída localmente para o escopo definido | Prévia e confirmação de inclusão, reordenação e retirada, com revisão e motivo públicos | Convocação formal e política regimental por Câmara |
 | [013 — Convocação pública por Câmara](013-convocacao-publica-saas.md) | Concluída localmente para emissão/consulta | Antecedência por Câmara, conteúdo congelado e SHA-256 por revisão | Ciência dos destinatários e regras de exceção |
+| [014 — Ciência da convocação](014-ciencia-convocacao.md) | Concluída localmente para registro interno | Destinatários congelados por revisão, ciência individual e acompanhamento | Regras regimentais de retificação e exceção por Câmara |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.

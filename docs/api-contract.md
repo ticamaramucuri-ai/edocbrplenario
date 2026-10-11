@@ -90,6 +90,12 @@ Também verifica `minimumNoticeHours` da Câmara e emite, na mesma transação, 
 ### GET `/api/v1/public/sessions/:id/notices?tenant=slug&revision=n`
 Sem autenticação, mas escopado pela Câmara pública e por sessão não rascunho. `revision` é opcional; sem ela, retorna a convocação mais recente. → `{ revision, publishedAt, sha256, notice }`. Convocação ausente ou pertencente a outra Câmara → 404. O SHA-256 corresponde aos bytes UTF-8 do JSON serializado em `notice`.
 
+### GET/POST `/api/v1/me/notices`
+`GET` exige parlamentar autenticado/vinculado e `sessionId` na query; retorna `{ notice }` da revisão vigente da sessão, ou `null` quando não há destinatário. `POST` exige `{ sessionId, revision, noticeSha256 }`; confirma ciência somente se ambos correspondem à convocação vigente e o ator consta da lista congelada. Resposta idempotente; revisão alterada retorna 409. Essa confirmação não é prova de entrega externa.
+
+### GET `/api/v1/sessions/:id/notice-recipients`
+Exige `session.transition`; devolve a revisão vigente, hash, total, número de ciências e lista de nomes/horários dos destinatários daquela Câmara. Revisões legadas sem convocação retornam revisão nula.
+
 ### POST `/api/v1/sessions/:id/agenda-amendments`
 Permissão `session.transition`. Body: `{ action: 'add'|'move'|'retire', mode: 'preview'|'apply', version, justification, matterId? | itemId?, position? }`. `position` é índice zero da Ordem do Dia. Disponível somente em `scheduled`, com pauta publicada e revisão inicial. `preview` → `{ preview: { before, after, summary, revision, policy } }` sem mutação. `apply` → `{ amendment: ... }` (201); grava revisão, auditoria e outbox atomicamente. Exige mínimo de matérias conforme política da Câmara. Versão antiga → 409; matéria de outra Câmara → 404; outra Câmara não acessa a sessão → 403.
 

@@ -784,6 +784,10 @@ export const api = {
 
   // ─── Fase 7: App do Parlamentar (/me) ────────────────────────────────────
   meContext: () => request<MeContextViewExt>('/me/context'),
+  meNotice: (sessionId: string) => request<{ notice: { sessionId: string; revision: number; noticeSha256: string; issuedAt: string; acknowledgedAt: string | null; publicUrl: string | null } | null }>(`/me/notices?sessionId=${encodeURIComponent(sessionId)}`),
+  acknowledgeNotice: (notice: { sessionId: string; revision: number; noticeSha256: string }) =>
+    request<{ notice: { acknowledgedAt: string } }>('/me/notices', { method: 'POST', body: JSON.stringify(notice) }),
+  noticeRecipients: (sessionId: string) => request<{ revision: number | null; total: number; acknowledged: number; recipients: Array<{ parliamentarianId: string; name: string; acknowledgedAt: string | null }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipients`),
   meCheckIn: (note?: string) =>
     request<{
       attendance: { status: string; present: boolean; lastEventAt: string | null }

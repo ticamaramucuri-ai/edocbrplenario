@@ -38,6 +38,12 @@ export function AgendaPanel({
     queryKey: ['session', sessionId],
     queryFn: () => api.getSession(sessionId),
   })
+  const { data: noticeRecipients } = useQuery({
+    queryKey: ['notice-recipients', sessionId],
+    queryFn: () => api.noticeRecipients(sessionId),
+    enabled: can('session.transition') && sessionStatus !== 'draft',
+    refetchInterval: 15_000,
+  })
 
   // Comandos de pauta exigem session.transition no servidor (RBAC real)
   const canEdit =
@@ -83,6 +89,13 @@ export function AgendaPanel({
         <ListOrdered className="size-3.5" aria-hidden /> Pauta da sessão ({agenda.length} itens)
       </p>
       {can('session.transition') && sessionStatus === 'scheduled' && data && <Button variant="outline" size="sm" className="justify-self-start" onClick={() => setAmending(true)}>Emendar pauta publicada</Button>}
+      {noticeRecipients?.revision && <div className="rounded-md border bg-muted/30 p-3 text-sm">
+        <p className="font-medium">Ciência da convocação · revisão {noticeRecipients.revision}: {noticeRecipients.acknowledged}/{noticeRecipients.total}</p>
+        <p className="text-xs text-muted-foreground">Destinatários ativos no momento da emissão. A ciência não comprova entrega externa.</p>
+        {noticeRecipients.recipients.length > 0 && <ul className="mt-2 space-y-1 text-xs">
+          {noticeRecipients.recipients.map((person) => <li key={person.parliamentarianId}>{person.name} — {person.acknowledgedAt ? `ciência em ${new Date(person.acknowledgedAt).toLocaleString('pt-BR')}` : 'pendente'}</li>)}
+        </ul>}
+      </div>}
 
       {isLoading ? (
         <div className="space-y-2">

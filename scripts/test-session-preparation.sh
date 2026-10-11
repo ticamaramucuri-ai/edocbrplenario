@@ -8,3 +8,4 @@ DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-prepar
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-policy.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/agenda-amendments.test.ts
 DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice.test.ts
+DATABASE_URL="file:$database" LEGIS_DEMO_MODE=true bun test tests/session-notice-ack.test.ts

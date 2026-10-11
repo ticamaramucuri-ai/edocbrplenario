@@ -19,6 +19,7 @@ import { SESSION_TRANSITIONS, currentAttendance, tenantSettings, type SessionAct
 import { buildSessionSummaries, sessionLabel } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 import { createSessionNotice } from '@/lib/server/session-notice'
+import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
 
 export const dynamic = 'force-dynamic'
 
@@ -171,6 +172,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         actorId: actor.id,
         createdAt: now,
       } })
+      await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: session.id,
+        revision: 1, noticeSha256: notice.noticeSha256, issuedAt: now })
     }
 
     await writeAudit(tx, {

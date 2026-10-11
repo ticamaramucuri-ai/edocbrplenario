@@ -758,11 +758,25 @@ function ParliamentarianApp() {
     refetchInterval: 15_000,
     retry: 1,
   })
+  const { data: noticeData } = useQuery({
+    queryKey: ['me-notice', data?.session?.id],
+    queryFn: () => api.meNotice(data!.session!.id),
+    enabled: !!data?.session?.id,
+    refetchInterval: 15_000,
+  })
+  const acknowledge = useMutation({
+    mutationFn: (notice: { sessionId: string; revision: number; noticeSha256: string }) => api.acknowledgeNotice(notice),
+    onSuccess: () => {
+      toast.success('Ciência da convocação registrada')
+      void queryClient.invalidateQueries({ queryKey: ['me-notice', data?.session?.id] })
+    },
+  })
 
   // Tempo real: qualquer evento relevante invalida o contexto vivo.
   useRealtime({
     'session.state_changed': () => {
       void queryClient.invalidateQueries({ queryKey: ['me-context'] })
+      void queryClient.invalidateQueries({ queryKey: ['me-notice'] })
       // F22: encerramento/publicação da ata muda o card “Assinar ata”
       // (alvo = última sessão encerrada — ver SignAtaCard).
       void queryClient.invalidateQueries({ queryKey: ['me-ata-signatures'] })
@@ -844,6 +858,21 @@ function ParliamentarianApp() {
       ) : (
         <>
           <SessionCard context={data} onCheckIn={() => checkIn.mutate()} checkingIn={checkIn.isPending} />
+          {noticeData?.notice && <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Convocação · revisão {noticeData.notice.revision}</CardTitle>
+              <CardDescription>Emitida em {fmtDateTime(noticeData.notice.issuedAt)}. Leia a convocação antes de confirmar ciência.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {noticeData.notice.publicUrl && <a className="text-sm font-medium text-primary underline" href={noticeData.notice.publicUrl} target="_blank" rel="noopener noreferrer">Ler convocação e pauta completas</a>}
+              <p className="break-all text-xs text-muted-foreground">SHA-256: {noticeData.notice.noticeSha256}</p>
+              {noticeData.notice.acknowledgedAt ? <p className="text-sm text-primary">Ciência registrada em {fmtDateTime(noticeData.notice.acknowledgedAt)}</p> :
+                <Button className="w-full" disabled={acknowledge.isPending} onClick={() => acknowledge.mutate({ sessionId: noticeData.notice!.sessionId, revision: noticeData.notice!.revision, noticeSha256: noticeData.notice!.noticeSha256 })}>
+                  {acknowledge.isPending ? 'Registrando…' : 'Confirmar ciência da convocação'}
+                </Button>}
+              <p className="text-xs text-muted-foreground">Esta confirmação registra sua leitura no sistema; não registra voto nem comprova entrega externa.</p>
+            </CardContent>
+          </Card>}
           <SignAtaCard context={data} />
           <VotingCard context={data} />
           <SpeechCard context={data} />

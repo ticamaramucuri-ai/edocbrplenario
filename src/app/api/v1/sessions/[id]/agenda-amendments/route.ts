@@ -13,6 +13,7 @@ import { matterLabel } from '@/lib/server/serializers'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { createSessionNotice } from '@/lib/server/session-notice'
+import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,6 +142,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       justification: command.justification, actorId: actor.id,
       noticeJson: notice.noticeJson, noticeSha256: notice.noticeSha256, createdAt: issuedAt,
     } })
+    await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: id,
+      revision: change.revision, noticeSha256: notice.noticeSha256, issuedAt })
     await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'agenda.amended', aggregateType: 'session', aggregateId: id,
       summary: `${change.summary} Revisão ${change.revision}.`, before: { revision: change.revision - 1 }, after: { revision: change.revision, action: command.action, noticeSha256: notice.noticeSha256 },
       justification: command.justification, correlationId, ip: clientIp(req) })
