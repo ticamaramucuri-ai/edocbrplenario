@@ -230,9 +230,21 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       let countsSimbolico: { sim: number; nao: number; abstencoes: number } | undefined
       let customCounts: Record<string, number> | undefined
       if (voting.mode === 'simbolico') {
+        const confirmed = session.official ? await tx.symbolicTallyRevision.findFirst({
+          where: { votingId: voting.id }, orderBy: { revision: 'desc' },
+        }) : null
+        if (session.official && !confirmed?.confirmedAt) {
+          throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Contagem sem conferência',
+            'A votação simbólica oficial exige proposta e confirmação por pessoas distintas antes do encerramento.')
+        }
+        const officialCounts = confirmed ? JSON.parse(confirmed.countsJson) as Record<string, number> : null
+        if (officialCounts && (body.customCounts || body.sim !== undefined || body.nao !== undefined || body.abstencoes !== undefined)) {
+          throw new DomainError('VALIDATION_ERROR', 422, 'Contagem já confirmada',
+            'No encerramento oficial, a contagem vem da revisão confirmada; não a envie novamente.')
+        }
         if (customOptions.length > 0) {
           // Fase 18: simbólica com opções customizadas → contagem por chave
-          if (!body.customCounts) {
+          if (!body.customCounts && !officialCounts) {
             throw new DomainError(
               'VALIDATION_ERROR',
               422,
@@ -250,8 +262,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
             )
           }
           const optionKeys = new Set(customOptions.map((o) => o.key))
-          const unknown = Object.keys(body.customCounts).filter((k) => !optionKeys.has(k))
-          const missing = customOptions.filter((o) => body.customCounts![o.key] === undefined)
+          const suppliedCounts = body.customCounts ?? officialCounts ?? {}
+          const unknown = Object.keys(suppliedCounts).filter((k) => !optionKeys.has(k))
+          const missing = customOptions.filter((o) => suppliedCounts[o.key] === undefined)
           if (unknown.length > 0 || missing.length > 0) {
             throw new DomainError(
               'VALIDATION_ERROR',
@@ -271,11 +284,11 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
               }
             )
           }
-          customCounts = body.customCounts
+          customCounts = suppliedCounts
         } else if (
-          body.sim === undefined ||
-          body.nao === undefined ||
-          body.abstencoes === undefined
+          (officialCounts?.sim ?? body.sim) === undefined ||
+          (officialCounts?.nao ?? body.nao) === undefined ||
+          (officialCounts?.abstencoes ?? body.abstencoes) === undefined
         ) {
           throw new DomainError(
             'VALIDATION_ERROR',
@@ -291,7 +304,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
             }
           )
         } else {
-          countsSimbolico = { sim: body.sim, nao: body.nao, abstencoes: body.abstencoes }
+          countsSimbolico = { sim: (officialCounts?.sim ?? body.sim)!, nao: (officialCounts?.nao ?? body.nao)!,
+            abstencoes: (officialCounts?.abstencoes ?? body.abstencoes)! }
         }
       }
 
@@ -337,8 +351,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         )
       }
 
-      const updated = await tx.voting.update({
-        where: { id: voting.id },
+      const closed = await tx.voting.updateMany({
+        where: { id: voting.id, version: voting.version, status: voting.status },
         data: {
           status: 'closed',
           closedAt: now,
@@ -347,9 +361,12 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           resultStatus: computed.resultStatus,
           resultCounts: JSON.stringify(computed.counts),
           resultDetail,
-          version: voting.version + 1,
+          version: { increment: 1 },
         },
       })
+      if (closed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão',
+        'A votação foi alterada durante o encerramento. Atualize e tente novamente.')
+      const updated = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
 
       // Fase 18 (ADR-019): recibos verificáveis na MESMA transação — nominal e
       // secreto emitem um recibo por voto; simbólico apenas com votos individuais;

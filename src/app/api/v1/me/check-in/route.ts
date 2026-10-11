@@ -23,6 +23,7 @@ export const dynamic = 'force-dynamic'
 
 const bodySchema = z.object({
   note: z.string().max(500).optional(),
+  commandId: z.string().uuid().optional(),
 })
 
 const LIVE_STATUSES = ['check_in', 'open', 'suspended', 'resumed']
@@ -41,6 +42,9 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       'Nenhuma sessão disponível',
       'Não há sessão agendada, em andamento ou encerrada recentemente para registrar presença.'
     )
+  }
+  if (session.official && !body.commandId) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Chave obrigatória', 'Informe commandId para registrar presença em sessão oficial.')
   }
   if (!LIVE_STATUSES.includes(session.status)) {
     throw new DomainError(
@@ -64,6 +68,20 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
   }
 
   const result = await withTransaction(async (tx) => {
+    if (body.commandId) {
+      const prior = await tx.attendanceEvent.findUnique({ where: { sessionId_commandId: { sessionId: session.id, commandId: body.commandId } } })
+      if (prior) {
+        if (prior.parliamentarianId !== parliamentarian.id || prior.kind !== 'check_in' || prior.status !== 'presente' ||
+            prior.source !== 'pwa' || prior.actorId !== actor.id || prior.note !== (body.note ?? null)) {
+          throw new DomainError('CONFLICT_VERSION', 409, 'Comando reutilizado', 'A chave já pertence a outro registro de presença.')
+        }
+        return { event: prior, quorum: (await currentAttendance(tx, session.id, session.tenantId)).quorum, replay: true }
+      }
+    }
+    const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    if (!LIVE_STATUSES.includes(currentSession.status)) {
+      throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Sessão indisponível', 'A sessão mudou de estado. Atualize antes de registrar presença.')
+    }
     const openVoting = await tx.voting.findFirst({ where: { sessionId: session.id, status: { in: ['open', 'paused'] } },
       orderBy: { openedAt: 'desc' }, select: { eligibleVoterIdsAtOpen: true } })
     const frozenIds = openVoting?.eligibleVoterIdsAtOpen ? JSON.parse(openVoting.eligibleVoterIdsAtOpen) as string[] : null
@@ -80,6 +98,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
     const event = await tx.attendanceEvent.create({
       data: {
         sessionId: session.id,
+        commandId: body.commandId ?? null,
         parliamentarianId: parliamentarian.id,
         kind: 'check_in',
         status: 'presente',
@@ -149,7 +168,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       },
     })
 
-    return { event, quorum }
+    return { event, quorum, replay: false }
   })
 
   return Response.json({
@@ -159,6 +178,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       lastEventAt: result.event.createdAt.toISOString(),
     },
     quorum: result.quorum,
+    replay: result.replay,
     message: `Presença registrada por ${ATTENDANCE_STATUS_LABEL.presente.toLowerCase()} via app.`,
   })
 })

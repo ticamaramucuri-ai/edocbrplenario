@@ -230,10 +230,10 @@ export const api = {
     scheduledAt: string; deadlineAt: string; minimumHours: number;
     state: 'passed' | 'due_soon' | 'on_time'; exceptionAllowed: boolean
   }> }>('/sessions/notice-calendar'),
-  attendance: (sessionId: string, parliamentarianId: string, action: string, note?: string) =>
+  attendance: (sessionId: string, parliamentarianId: string, action: string, note?: string, commandId = crypto.randomUUID()) =>
     request<{ attendance: AttendanceRow; quorum: QuorumInfo }>(`/sessions/${sessionId}/attendance`, {
       method: 'POST',
-      body: JSON.stringify({ parliamentarianId, action, note }),
+      body: JSON.stringify({ parliamentarianId, action, note, commandId }),
     }),
   addAgenda: (sessionId: string, matterIds: string[]) =>
     request<{ agenda: AgendaItemView[] }>(`/sessions/${sessionId}/agenda`, {
@@ -295,6 +295,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ action, version, ...extra }),
     }),
+  symbolicTallies: (id: string) => request<{ revisions: Array<{ id: string; revision: number; counts: Record<string, number>;
+    proposedByName: string; confirmedByName: string | null; confirmedAt: string | null }> }>(`/votings/${id}/symbolic-tally`),
+  changeSymbolicTally: (id: string, data: { action: 'propose' | 'confirm'; version: number; revisionId?: string;
+    sim?: number; nao?: number; abstencoes?: number; customCounts?: Record<string, number> }) =>
+    request<{ version: number }>(`/votings/${id}/symbolic-tally`, { method: 'POST', body: JSON.stringify(data) }),
   votingImpediments: (id: string) => request<{ policy: 'disabled' | 'retain_base' | 'reduce_base'; policyAtOpen: string | null;
     impediments: Array<{ id: string; parliamentarianId: string; parliamentarianName: string; reason: string }> }>(`/votings/${id}/impediments`),
   changeVotingImpediment: (id: string, data: { action: 'register' | 'revoke'; parliamentarianId: string; version: number; reason: string }) =>
@@ -853,13 +858,13 @@ export const api = {
   attestNoticeDelivery: (sessionId: string, data: { revision: number; noticeSha256: string; parliamentarianId: string; channel: NoticeDeliveryView['channel']; evidenceReference: string; deliveredAt: string; commandId: string; acknowledged: true }) =>
     request<{ delivery: NoticeDeliveryView; mode: 'manual_attestation' }>(`/sessions/${encodeURIComponent(sessionId)}/notice-deliveries`, { method: 'POST', body: JSON.stringify(data) }),
   noticeRecipientPreview: (sessionId: string) => request<{ policy: 'active' | 'mandate_and_leave'; total: number; recipients: Array<{ id: string; name: string }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipient-preview`),
-  meCheckIn: (note?: string) =>
+  meCheckIn: (note?: string, commandId = crypto.randomUUID()) =>
     request<{
       attendance: { status: string; present: boolean; lastEventAt: string | null }
       quorum: QuorumInfo
     }>('/me/check-in', {
       method: 'POST',
-      body: JSON.stringify(note ? { note } : {}),
+      body: JSON.stringify({ note, commandId }),
     }),
   meVote: (votingId: string, value: VoteValue | string, commandId: string) =>
     request<{

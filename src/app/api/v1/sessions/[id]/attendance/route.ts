@@ -6,7 +6,6 @@
  */
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { db } from '@/lib/db'
 import { withTransaction } from '@/lib/server/tx'
 import { apiHandler, clientIp, DomainError } from '@/lib/server/errors'
 import { resolveActor } from '@/lib/server/actor'
@@ -34,7 +33,8 @@ const bodySchema = z.object({
   parliamentarianId: z.string().min(1, 'Informe o parlamentar.'),
   action: z.enum(['check_in', 'check_out', 'return', 'mark_licenca', 'mark_afastado', 'mark_ausente', 'mark_presente']),
   note: z.string().max(500).optional(),
-  source: z.enum(['operador', 'pwa', 'qr', 'biometria']).optional(),
+  source: z.literal('operador').optional(),
+  commandId: z.string().uuid().optional(),
 })
 
 const LIVE_STATUSES = ['check_in', 'open', 'suspended', 'resumed']
@@ -48,27 +48,35 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
   const session = await loadSession(actor, id)
   const parliamentarian = await loadParliamentarian(actor, body.parliamentarianId)
+  if (parliamentarian.tenantId !== session.tenantId) {
+    throw new DomainError('FORBIDDEN_TENANT', 403, 'Câmara divergente', 'O parlamentar não pertence à Câmara da sessão.')
+  }
+  if (session.official && !body.commandId) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Chave obrigatória', 'Informe commandId para registrar presença em sessão oficial.')
+  }
   const spec = ACTIONS[body.action]
 
-  const statusLabel = SESSION_STATUS_LABEL[session.status as keyof typeof SESSION_STATUS_LABEL] ?? session.status
-  if (spec.liveOnly && !LIVE_STATUSES.includes(session.status)) {
-    throw new DomainError(
-      'SESSION_INVALID_TRANSITION',
-      409,
-      'Transição inválida',
-      `Presença (${body.action}) exige sessão em credenciamento/aberta/suspensa/retomada — status atual: ${statusLabel}.`
-    )
-  }
-  if (!spec.liveOnly && !MARK_STATUSES.includes(session.status)) {
-    throw new DomainError(
-      'SESSION_INVALID_TRANSITION',
-      409,
-      'Transição inválida',
-      `Marcação manual (${body.action}) só é permitida em sessão agendada ou em credenciamento — status atual: ${statusLabel}.`
-    )
-  }
-
   const result = await withTransaction(async (tx) => {
+    if (body.commandId) {
+      const prior = await tx.attendanceEvent.findUnique({ where: { sessionId_commandId: { sessionId: session.id, commandId: body.commandId } } })
+      if (prior) {
+        if (prior.parliamentarianId !== parliamentarian.id || prior.kind !== spec.kind || prior.status !== spec.status ||
+            prior.source !== 'operador' || prior.actorId !== actor.id || prior.note !== (body.note ?? null)) {
+          throw new DomainError('CONFLICT_VERSION', 409, 'Comando reutilizado', 'A chave já pertence a outro registro de presença.')
+        }
+        return { event: prior, quorum: (await currentAttendance(tx, session.id, session.tenantId)).quorum, replay: true }
+      }
+    }
+    const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    const statusLabel = SESSION_STATUS_LABEL[currentSession.status as keyof typeof SESSION_STATUS_LABEL] ?? currentSession.status
+    if (spec.liveOnly && !LIVE_STATUSES.includes(currentSession.status)) {
+      throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Transição inválida',
+        `Presença (${body.action}) exige sessão em credenciamento/aberta/suspensa/retomada — status atual: ${statusLabel}.`)
+    }
+    if (!spec.liveOnly && !MARK_STATUSES.includes(currentSession.status)) {
+      throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Transição inválida',
+        `Marcação manual (${body.action}) só é permitida em sessão agendada ou em credenciamento — status atual: ${statusLabel}.`)
+    }
     const openVoting = await tx.voting.findFirst({ where: { sessionId: session.id, status: { in: ['open', 'paused'] } },
       orderBy: { openedAt: 'desc' }, select: { eligibleVoterIdsAtOpen: true } })
     const frozenIds = openVoting?.eligibleVoterIdsAtOpen ? JSON.parse(openVoting.eligibleVoterIdsAtOpen) as string[] : null
@@ -85,6 +93,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     const event = await tx.attendanceEvent.create({
       data: {
         sessionId: session.id,
+        commandId: body.commandId ?? null,
         parliamentarianId: parliamentarian.id,
         kind: spec.kind,
         status: spec.status,
@@ -152,7 +161,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       },
     })
 
-    return { event, quorum }
+    return { event, quorum, replay: false }
   })
 
   return Response.json({
@@ -164,10 +173,11 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       boardRole: parliamentarian.boardRole,
       photoUrl: parliamentarian.photoUrl ?? null,
       partyEmblemUrl: parliamentarian.partyEmblemUrl ?? null,
-      status: spec.status,
-      present: spec.status === 'presente',
-      lastEventAt: new Date().toISOString(),
+      status: result.event.status,
+      present: result.event.status === 'presente',
+      lastEventAt: result.event.createdAt.toISOString(),
     },
     quorum: result.quorum,
+    replay: result.replay,
   })
 })

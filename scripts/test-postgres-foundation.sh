@@ -32,10 +32,13 @@ source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 for model, fields, indexes in [
     ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries'], []),
     ('SessionAgendaRevision', ['documentManifestJson'], []),
+    ('AttendanceEvent', ['commandId'], []),
+    ('Voting', ['symbolicTallies'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),
@@ -49,7 +52,8 @@ for model, fields, indexes in [
     body = match.group(2)
     body = '\n'.join(line for line in body.split('\n')
                      if not any(re.match(rf'\s*{field}\s', line) for field in fields)
-                     and not any(f'@@index([{index}])' in line for index in indexes))
+                     and not any(f'@@index([{index}])' in line for index in indexes)
+                     and not (model == 'AttendanceEvent' and '@@unique([sessionId, commandId])' in line))
     source = source[:match.start(2)] + body + source[match.end(2):]
 Path(sys.argv[2]).write_text(source)
 PY
@@ -162,6 +166,8 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/session-notice-alerts.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/session-journey.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
+  bun test tests/attendance-commands.test.ts tests/symbolic-tally-official.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/session-readiness.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

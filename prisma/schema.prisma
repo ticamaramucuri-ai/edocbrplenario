@@ -614,6 +614,7 @@ model AgendaItem {
 model AttendanceEvent {
   id                String   @id @default(cuid())
   sessionId         String
+  commandId         String?  // chave de repetição segura; nulo apenas para histórico legado/ensaio
   parliamentarianId String
   kind              String // check_in|check_out|temporary_leave|return|mark
   status            String // presente|saida_temporaria|licenciado|afastado|ausente
@@ -626,6 +627,7 @@ model AttendanceEvent {
   parliamentarian Parliamentarian  @relation(fields: [parliamentarianId], references: [id])
 
   @@index([sessionId, parliamentarianId])
+  @@unique([sessionId, commandId])
 }
 
 // ─── Votação ────────────────────────────────────────────────────────────────
@@ -666,8 +668,27 @@ model Voting {
   options     VotingOption[]
   receipts    VoteReceipt[]
   impediments VotingImpediment[]
+  symbolicTallies SymbolicTallyRevision[]
 
   @@index([sessionId, status])
+}
+
+model SymbolicTallyRevision {
+  id              String    @id @default(cuid())
+  votingId        String
+  revision        Int
+  countsJson      String
+  proposedById    String
+  proposedByName  String
+  confirmedById   String?
+  confirmedByName String?
+  proposedAt      DateTime  @default(now())
+  confirmedAt     DateTime?
+
+  voting Voting @relation(fields: [votingId], references: [id], onDelete: Cascade)
+
+  @@unique([votingId, revision])
+  @@index([votingId, proposedAt])
 }
 
 model Vote {

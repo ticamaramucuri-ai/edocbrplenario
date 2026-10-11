@@ -10,6 +10,8 @@
 
 `migrations/0008_session_preparation.sql` adiciona PDFs versionados da sessão (`BYTEA`), o manifesto documental em cada revisão de pauta e declarações manuais de entrega externa da convocação. O copiador SQLite→PostgreSQL converte e concilia bytes por representação hexadecimal.
 
+`migrations/0009_attendance_commands.sql` adiciona a chave idempotente de presença por sessão. `migrations/0010_symbolic_tally_revisions.sql` registra revisões da contagem simbólica para conferência por duas identidades. O ensaio de fundação aplica ambas e testa os fluxos também em PostgreSQL.
+
 O executor `scripts/postgres-migrate.py` registra histórico e checksum e usa bloqueio consultivo. Defina `POSTGRES_MIGRATION_URL` em um gerenciador de segredos/ambiente e execute `bun run db:postgres:status` ou `bun run db:postgres:migrate`. Para remover somente os índices 0002, use `bun run db:postgres:rollback-indexes`. Falha de migração fica registrada e exige reparo explícito; não edite SQL já aplicado. Nunca aplique 0001 sobre banco com tabelas da aplicação.
 
 A cópia de dados é feita por `POSTGRES_COPY_URL` e `bun run db:postgres:copy --source /caminho/da/replica.db`. O destino precisa estar migrado e vazio; a origem é lida via snapshot. Leia os limites na [etapa 037](../../docs/etapas/037-executor-copia-postgres.md) antes de usar em uma implantação. O SQLite do piloto não foi migrado.

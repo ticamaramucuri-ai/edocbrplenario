@@ -53,6 +53,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [045 — Fundação operacional SaaS](045-fundacao-operacional-saas.md) | Em andamento | Leases PostgreSQL e rate limit compartilhado com provas concorrentes | E-mail, fanout realtime, backup de arquivos, RTO/RPO e homologação persistente |
 | [046 — Configuração oficial por Câmara](046-configuracao-oficial-por-camara.md) | Incremento técnico concluído | Checklist, aprovação versionada e bloqueio de publicação oficial sem configuração vigente | Validação institucional das regras e composição de Mucuri |
 | [047 — Preparação formal da sessão](047-preparacao-formal-sessao.md) | Incremento técnico concluído | PDFs versionados, manifesto na convocação e declaração manual de entrega por revisão | Canal institucional com comprovante técnico, assinatura e aceite |
+| [048 — Condução e presença](048-conducao-presenca.md) | Incremento técnico concluído | Comando idempotente, origem controlada e escopo da Câmara | Dispositivo, acessibilidade e ensaio presencial |
+| [049 — Votação oficial](049-votacao-oficial.md) | Incremento técnico concluído | Proposta e confirmação independente da contagem simbólica oficial | Matriz regimental e ensaio concorrente multi-instância |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

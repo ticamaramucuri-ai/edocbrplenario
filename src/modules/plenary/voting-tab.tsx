@@ -155,6 +155,16 @@ function VotingPanel({
   const [revocationReason, setRevocationReason] = useState('')
   const impedimentQuery = useQuery({ queryKey: ['voting-impediments', voting.id],
     queryFn: () => api.votingImpediments(voting.id), enabled: canWrite })
+  const officialSymbolic = data.session.official && voting.mode === 'simbolico'
+  const tallyQuery = useQuery({ queryKey: ['symbolic-tallies', voting.id, voting.version],
+    queryFn: () => api.symbolicTallies(voting.id), enabled: canWrite && officialSymbolic })
+  const latestTally = tallyQuery.data?.revisions[0]
+  const tallyMutation = useMutation({
+    mutationFn: (vars: { action: 'propose' | 'confirm'; revisionId?: string; sim?: number; nao?: number;
+      abstencoes?: number; customCounts?: Record<string, number> }) =>
+      api.changeSymbolicTally(voting.id, { ...vars, version: voting.version }),
+    onSuccess: () => { invalidate(); tallyQuery.refetch(); toast.success('Conferência simbólica atualizada') },
+  })
   const impedimentMutation = useMutation({
     mutationFn: (vars: { action: 'register' | 'revoke'; parliamentarianId: string; reason: string }) =>
       api.changeVotingImpediment(voting.id, { ...vars, version: voting.version }),
@@ -227,8 +237,9 @@ function VotingPanel({
                   >
                     <PauseCircle /> Pausar
                   </Button>
-                  <Button size="sm" onClick={() => setCloseOpen(true)} disabled={transition.isPending}>
-                    <Lock /> Encerrar votação
+                  <Button size="sm" onClick={() => officialSymbolic && latestTally?.confirmedAt
+                    ? transition.mutate({ action: 'close' }) : setCloseOpen(true)} disabled={transition.isPending || tallyMutation.isPending}>
+                    <Lock /> {officialSymbolic && !latestTally?.confirmedAt ? 'Conferir contagem' : 'Encerrar votação'}
                   </Button>
                 </>
               )}
@@ -242,8 +253,9 @@ function VotingPanel({
                   >
                     <PlayCircle /> Retomar
                   </Button>
-                  <Button size="sm" onClick={() => setCloseOpen(true)} disabled={transition.isPending}>
-                    <Lock /> Encerrar votação
+                  <Button size="sm" onClick={() => officialSymbolic && latestTally?.confirmedAt
+                    ? transition.mutate({ action: 'close' }) : setCloseOpen(true)} disabled={transition.isPending || tallyMutation.isPending}>
+                    <Lock /> {officialSymbolic && !latestTally?.confirmedAt ? 'Conferir contagem' : 'Encerrar votação'}
                   </Button>
                 </>
               )}
@@ -262,6 +274,23 @@ function VotingPanel({
             </div>
           )}
         </div>
+
+        {officialSymbolic && ['open', 'paused'].includes(voting.status) && <div className="rounded-lg border p-3 text-sm">
+          {latestTally ? <>
+            <p>Contagem proposta por {latestTally.proposedByName} · revisão {latestTally.revision}.
+              {latestTally.confirmedAt ? ` Confirmada por ${latestTally.confirmedByName}.` : ' Aguarda conferência independente.'}</p>
+            <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
+              {Object.entries(latestTally.counts).map(([key, count]) => <div key={key} className="flex gap-1">
+                <dt>{options.find((option) => option.key === key)?.label ?? ({ sim: 'Sim', nao: 'Não', abstencoes: 'Abstenções' }[key as 'sim' | 'nao' | 'abstencoes'] ?? key)}:</dt>
+                <dd className="font-semibold">{count}</dd>
+              </div>)}
+            </dl>
+            {!latestTally.confirmedAt && canWrite && <Button className="mt-2" size="sm" variant="outline"
+              disabled={tallyMutation.isPending} onClick={() => tallyMutation.mutate({ action: 'confirm', revisionId: latestTally.id })}>
+              Confirmar como segunda pessoa
+            </Button>}
+          </> : <p>Registre a contagem; uma segunda pessoa deverá confirmá-la antes do encerramento.</p>}
+        </div>}
 
         {/* Progresso de participação */}
         {voting.status !== 'cancelled' && <div>
@@ -350,10 +379,12 @@ function VotingPanel({
           onOpenChange={setCloseOpen}
           presentCount={presentCount}
           options={options}
-          busy={transition.isPending}
+          busy={transition.isPending || tallyMutation.isPending}
+          official={officialSymbolic}
           onConfirm={(counts) => {
             setCloseOpen(false)
-            transition.mutate({ action: 'close', extra: counts })
+            if (officialSymbolic) tallyMutation.mutate({ action: 'propose', ...counts })
+            else transition.mutate({ action: 'close', extra: counts })
           }}
         />
       ) : (
@@ -807,6 +838,7 @@ function CloseSymbolicDialog({
   presentCount,
   options,
   busy,
+  official,
   onConfirm,
 }: {
   open: boolean
@@ -815,6 +847,7 @@ function CloseSymbolicDialog({
   /** Fase 18: opções customizadas — contagem por chave em vez de sim/nao/abstencoes. */
   options: VotingOptionView[]
   busy: boolean
+  official: boolean
   onConfirm: (counts: { sim: number; nao: number; abstencoes: number } | { customCounts: Record<string, number> }) => void
 }) {
   const [sim, setSim] = useState(0)
@@ -830,7 +863,8 @@ function CloseSymbolicDialog({
             <Timer className="size-5 text-primary" /> Encerrar votação simbólica
           </DialogTitle>
           <DialogDescription>
-            Informe as contagens apuradas pela Presidência. Parlamentares presentes que não entram
+            {official ? 'Proponha a contagem para conferência por outra pessoa. ' : 'Informe as contagens apuradas pela Presidência. '}
+            Parlamentares presentes que não entram
             nas contagens são registrados como “não registraram” ({presentCount} presentes na
             abertura).
           </DialogDescription>
@@ -943,7 +977,7 @@ function CloseSymbolicDialog({
             }
             disabled={busy}
           >
-            Encerrar e apurar
+            {official ? 'Enviar para conferência' : 'Encerrar e apurar'}
           </Button>
         </DialogFooter>
       </DialogContent>

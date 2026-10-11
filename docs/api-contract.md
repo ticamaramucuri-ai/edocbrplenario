@@ -17,6 +17,12 @@ limit dos endpoints públicos.
 
 `GET /api/v1/sessions/:id/notice-deliveries?revision=N` exige `session.transition` e lista as declarações da revisão solicitada (por padrão a atual). `POST` no mesmo caminho exige `{revision, noticeSha256, parliamentarianId, channel, evidenceReference, deliveredAt, commandId, acknowledged:true}`. `channel` é `presencial|email_externo|mensagem_externa|outro`; o UUID `commandId` torna o lançamento idempotente. Só destinatários da revisão vigente podem receber novos lançamentos. Retorna `201` na criação, `200` na repetição idêntica e `409` para revisão vencida ou reaproveitamento conflitante do comando. O campo `mode: "manual_attestation"` deixa claro que o sistema não transmitiu nem verificou a entrega externa.
 
+## Adições das etapas 048–049 — presença e contagem simbólica
+
+`POST /api/v1/sessions/:id/attendance` aceita `commandId` UUID e o exige quando `session.official=true`. A origem desta rota é sempre `operador`; declarar `pwa`, `qr` ou `biometria` recebe 422. `POST /api/v1/me/check-in` aceita a mesma chave, obrigatória em sessão oficial, e grava origem `pwa` atribuída pelo servidor. Repetição idêntica retorna `200` com `replay:true` e o horário original, sem novo evento; reutilização divergente retorna 409. O cliente deve conservar a chave durante tentativas de rede da mesma ação.
+
+`GET /api/v1/votings/:id/symbolic-tally` lista as revisões da contagem. `POST` com `{action:"propose",version,sim,nao,abstencoes}` ou `{action:"propose",version,customCounts}` cria revisão quando a votação simbólica oficial está aberta/pausada. Secretaria/operador ou administração propõem; `POST` com `{action:"confirm",version,revisionId}` exige Presidência ou administração em **outra identidade**. Ambas as ações incrementam a versão da votação, auditam e notificam a Mesa sem divulgar a contagem parcial no evento público. Após confirmação, `POST /votings/:id/transition` com `{action:"close",version}` obtém a contagem persistida; números avulsos no fechamento são rejeitados. Revisão confirmada não pode ser substituída pela mesma rota.
+
 ## Convenções gerais
 
 - **Ator**: rotas internas usam sessão autenticada; `x-actor-id` só funciona no modo

@@ -18,6 +18,7 @@
     "test:session:preparation": "bash scripts/test-session-preparation.sh",
     "test:official-configuration": "bash scripts/test-official-configuration.sh",
     "test:session:formal-preparation": "bash scripts/test-session-formal-preparation.sh",
+    "test:plenary:official-increments": "bash scripts/test-plenary-official-increments.sh",
     "test:session:journey": "bash scripts/test-session-journey.sh",
     "test:session:readiness": "bash scripts/test-session-readiness.sh",
     "test:session:capacity": "bash scripts/test-session-capacity.sh",
