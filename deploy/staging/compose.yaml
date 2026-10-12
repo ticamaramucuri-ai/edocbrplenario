@@ -1,0 +1,22 @@
+name: edocbr-plenario-staging
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: edocbr_stage
+      POSTGRES_USER: edocbr_stage
+      POSTGRES_PASSWORD: ${STAGE_DB_PASSWORD:?Configure STAGE_DB_PASSWORD no arquivo privado .env}
+    ports:
+      - "127.0.0.1:${STAGE_DB_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edocbr_stage -d edocbr_stage"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  postgres_data:

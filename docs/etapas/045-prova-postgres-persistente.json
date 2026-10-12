@@ -1,0 +1,1 @@
+{"appliedMigrations": 13, "checkedAt": "2026-10-12T01:44:36.149888+00:00", "database": "postgresql", "host": "127.0.0.1", "persistentVolume": "edocbr-plenario-staging_postgres_data", "port": 55432, "restartAndQuerySeconds": 2.003, "restartPersistenceVerified": true, "scope": "local-persistent-staging", "sqliteCutoverPerformed": false}
