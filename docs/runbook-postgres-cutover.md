@@ -25,4 +25,5 @@
 
 - **Antes da primeira escrita PostgreSQL:** se uma verificação falhar, manter PostgreSQL fora de serviço e restaurar a configuração SQLite original; só reabrir depois de confirmar integridade e serviços.
 - **Depois da primeira escrita PostgreSQL:** não retornar diretamente ao snapshot SQLite. Congelar novas escritas, preservar `pg_dump`/WAL e trilhas, avaliar reconciliação de transações com responsáveis técnicos e institucionais. Recuperar PostgreSQL para um ponto consistente é o caminho preferencial; uma reversão para SQLite exige plano de replay e prova de que nenhum voto, ato ou recibo foi perdido.
+- Antes de um ensaio institucional, execute `bun run test:recovery:drill` para validar o procedimento em fixture descartável. O JSON de laboratório mede apenas as etapas internas; nunca use esses números como RTO/RPO da Câmara.
 - Registrar a duração real desde incidente até serviço útil (RTO observado) e o último ato confirmado preservado (RPO observado), incluindo arquivos, filas e mídia. Comparar com metas aprovadas previamente; tempos de laboratório não substituem essas metas.

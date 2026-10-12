@@ -1,0 +1,16 @@
+{
+  "assetBytes": 4194304,
+  "assetRootsVerified": 4,
+  "backupSeconds": 0.097,
+  "checkedAt": "2026-10-12T01:40:33.055603+00:00",
+  "databaseRowsVerified": 4,
+  "integrity": "verified",
+  "manifestSha256": "73fabb90bd26ccccd1028fc2b3ca7d468ade2e1dbf23be10e117f114fa53369e",
+  "note": "Tempos de fixture descartável; não incluem incidente, corte, restart da aplicação ou escrita concorrente.",
+  "restoreAndReadSeconds": 0.093,
+  "rpoObserved": false,
+  "rtoObserved": false,
+  "scope": "disposable-sqlite-fixture",
+  "totalSeconds": 0.289,
+  "verifySeconds": 0.098
+}
