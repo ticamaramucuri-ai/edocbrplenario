@@ -1949,7 +1949,7 @@ function SubscriptionsTab() {
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Cidadãos que acompanham matérias, sessões e audiências por e-mail, com dupla confirmação
-          (double opt-in). Assinaturas pendentes aguardam o clique no link enviado ao cidadão;
+          (double opt-in). Assinaturas pendentes aguardam o clique no link de confirmação; o envio exige SMTP institucional ativo.
           revogação é auditada e não apaga o histórico (LGPD).
         </p>
 

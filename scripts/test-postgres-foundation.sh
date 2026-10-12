@@ -34,6 +34,7 @@ source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MediaPublicObservation \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'\nmodel MailDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 for model, fields, indexes in [
     ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries'], []),
@@ -42,6 +43,7 @@ for model, fields, indexes in [
     ('Voting', ['symbolicTallies'], []),
     ('Publication', ['reviewHash', 'reviewedById', 'reviewedByName', 'reviewedAt', 'reviewReference', 'publishedContentSha256', 'activeAtaSessionKey'], []),
     ('Transmission', ['publicObservationId', 'observations'], []),
+    ('CitizenSubscription', ['mailDeliveries'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),
@@ -175,6 +177,8 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/official-closure.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/media-public-link.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
+  bun test tests/mail-delivery.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/session-readiness.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

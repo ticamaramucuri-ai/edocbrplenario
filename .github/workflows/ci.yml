@@ -25,6 +25,8 @@ jobs:
       - run: bun run test:session:journey
       - run: bun run test:plenary:official-increments
       - run: bun run test:official:closure
+      - run: bun run test:pilot:preflight
+      - run: bun run test:mail:delivery
       - run: bun run test:session:readiness
       - run: bun run test:session:capacity
       - run: bun run test:tenant:health-portability

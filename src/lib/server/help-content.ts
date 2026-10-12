@@ -51,7 +51,7 @@ const GUIDES: HelpGuide[] = [
       },
       {
         title: 'Gerencie o acompanhamento do cidadão',
-        body: 'Na aba Assinaturas de Publicações e Audiências, veja quem acompanha matérias, sessões e audiências (dupla confirmação por e-mail): copie o link de confirmação das pendências (no sandbox não há envio de e-mail) e revogue quando necessário — cada revogação é auditada e o registro nunca é apagado (LGPD). No portal, o botão Verificar autenticidade permite a qualquer pessoa conferir uma publicação pelo código impresso.',
+        body: 'Na aba Assinaturas de Publicações e Audiências, veja quem acompanha matérias, sessões e audiências (dupla confirmação por e-mail): com SMTP institucional configurado, a confirmação entra na fila de envio; sem ele, a pendência deve ser tratada pela Câmara. Revogações são auditadas. No portal, Verificar autenticidade confere uma publicação pelo código impresso.',
       },
       {
         title: 'Acompanhe a saúde legislativa da Casa',
@@ -489,7 +489,7 @@ const FAQ: FaqItem[] = [
   {
     question: 'Como um cidadão acompanha uma matéria?',
     answer:
-      'No Portal Público, aba Acompanhar: informa o e-mail e a matéria, sessão ou audiência de interesse — a assinatura nasce pendente e só passa a valer após a confirmação pelo link enviado ao e-mail (dupla confirmação, anti-spam/LGPD). A Casa gerencia tudo em Publicações e Audiências → Assinaturas: estatísticas, link de confirmação das pendências e revogação auditada. Envios e verificações públicas têm limite por IP (429 com tempo de espera).',
+      'No Portal Público, aba Acompanhar: informa o e-mail e a matéria, sessão ou audiência de interesse — a assinatura nasce pendente e só passa a valer após a confirmação pelo link. Com SMTP configurado, o envio é feito por worker; sem ele, o portal informa a pendência. A Casa gerencia estatísticas, confirmação e revogação em Publicações e Audiências → Assinaturas. Requisições públicas têm limite por IP.',
   },
   {
     question: 'O suporte consegue acessar a Câmara sem que ninguém saiba?',

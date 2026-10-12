@@ -2,6 +2,8 @@
 
 **Data:** 11/10/2026 · **Estado:** roteiro e critérios de aceite preparados; piloto institucional não iniciado.
 
+**Pré-voo automatizado:** `DATABASE_URL=file:../db/custom.db bun run pilot:preflight --tenant=camara-mucuri-ba` consulta apenas a Câmara indicada, sem alterar dados. O JSON diferencia verificações automáticas de evidências institucionais; termina com código 2 se houver bloqueios. O ensaio de 11/10/2026 encontrou Mucuri ativa, mas sem legislatura/mandatos/Mesa/regras aprovadas, sem usuários nos papéis de operação, com a base local SQLite, sem SMTP configurado e sem destino social público configurado. Não há sessão oficial cadastrada. O relatório **nunca** transforma verificação técnica em aceite da Câmara. `bun run test:pilot:preflight` prova isolamento entre duas Câmaras e ausência de dados pessoais na saída.
+
 Esta etapa não cadastra vereadores, regras, atas nem sessões oficiais presumidos. O primeiro ensaio usa uma Câmara de teste e dados fictícios. A Câmara Municipal de Mucuri/BA só entra no piloto oficial depois de conferir e aprovar suas próprias informações, responsáveis e procedimentos.
 
 ## Critérios de entrada

@@ -16,6 +16,8 @@
 
 `migrations/0012_media_public_observation.sql` registra a conferência humana da página pública por destino e a observação utilizada ao publicar o link oficial. Não armazena chaves RTMPS.
 
+`migrations/0013_mail_delivery.sql` adiciona a fila de confirmação por e-mail. Cada item aponta para a assinatura e guarda apenas o hash do token vigente; o worker relê o token antes de enviar e cancela itens revogados ou substituídos.
+
 O executor `scripts/postgres-migrate.py` registra histórico e checksum e usa bloqueio consultivo. Defina `POSTGRES_MIGRATION_URL` em um gerenciador de segredos/ambiente e execute `bun run db:postgres:status` ou `bun run db:postgres:migrate`. Para remover somente os índices 0002, use `bun run db:postgres:rollback-indexes`. Falha de migração fica registrada e exige reparo explícito; não edite SQL já aplicado. Nunca aplique 0001 sobre banco com tabelas da aplicação.
 
 A cópia de dados é feita por `POSTGRES_COPY_URL` e `bun run db:postgres:copy --source /caminho/da/replica.db`. O destino precisa estar migrado e vazio; a origem é lida via snapshot. Leia os limites na [etapa 037](../../docs/etapas/037-executor-copia-postgres.md) antes de usar em uma implantação. O SQLite do piloto não foi migrado.

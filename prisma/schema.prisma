@@ -1311,9 +1311,32 @@ model CitizenSubscription {
   createdAt   DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
+  mailDeliveries MailDelivery[]
 
   @@unique([tenantId, email, targetKind, targetId])
   @@index([tenantId, targetKind, targetId])
+}
+
+// Correio transacional: referência ao token vigente, sem duplicá-lo na fila.
+model MailDelivery {
+  id             String    @id @default(cuid())
+  tenantId       String
+  subscriptionId String
+  tokenHash      String
+  status         String    @default("pending") // pending|sent|canceled|dead
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime?
+  leaseOwner     String?
+  leaseUntil     DateTime?
+  sentAt         DateTime?
+  lastErrorCode  String?
+  createdAt      DateTime  @default(now())
+
+  subscription CitizenSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, tokenHash])
+  @@index([status, nextAttemptAt, leaseUntil, createdAt])
+  @@index([tenantId, status])
 }
 
 // ─── Onda 4 / Fase 20: operação e suporte da plataforma ─────────────────────

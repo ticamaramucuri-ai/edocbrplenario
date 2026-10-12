@@ -3,10 +3,10 @@
  * Endpoint PÚBLICO sem autenticação; tenant resolvido por `?tenant=slug`
  * (padrão das rotas public/*). Dupla confirmação (double opt-in):
  *  - nova assinatura nasce `pending` com token UUID e resposta 201 SEM
- *    expor o token (o link de confirmação "sai por e-mail"; no sandbox não
- *    há SMTP — o link é copiável pela gestão no módulo Publicações);
+ *    expor o token; entrega por fila SMTP quando configurada, com orientação
+ *    explícita quando o transporte institucional ainda não está ativo;
  *  - idempotente por (tenant, e-mail, alvo): pendente → 200 "aguardando
- *    confirmação" (token NÃO é reemitido); confirmada → 200 com a view;
+ *    confirmação" (token NÃO é reemitido, fila antiga é reparada); confirmada → 200 com a view;
  *  - assinatura REVOGADA pelo tenant que assina de novo → reativação com
  *    novo token e nova confirmação pendente (único registro por par único).
  *
@@ -14,12 +14,14 @@
  * precisa existir no tenant (sessão rascunho / audiência cancelada → 404).
  * Rate limit: 5 requisições / hora / IP (bucket public:subscriptions) —
  * 429 Problem Details + Retry-After. Sem auditoria (rota anônima — o e-mail
- * do cidadão não entra na cadeia pública) e sem outbox (RealtimeEventType
- * não cobre assinaturas; e-mail de confirmação é o canal do evento).
+ * do cidadão não entra na cadeia pública); o e-mail é enfileirado na mesma
+ * transação do registro, sem expor o token na resposta ou nos logs.
  */
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { db } from '@/lib/db'
+import { withTransaction } from '@/lib/server/tx'
+import { mailTransportConfigured, queueSubscriptionConfirmation } from '@/lib/server/mail-delivery'
 import { apiHandler, clientIp, notFound } from '@/lib/server/errors'
 import { resolvePublicTenant } from '@/lib/server/public-tenant'
 import {
@@ -83,13 +85,18 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
       },
     },
   })
+  const confirmationDelivery = mailTransportConfigured() ? 'queued' : 'awaiting_configuration'
+  const pendingMessage = confirmationDelivery === 'queued'
+    ? 'Assinatura registrada. O link de confirmação está na fila de e-mail; confira sua caixa de entrada após o envio.'
+    : 'Assinatura registrada. O correio institucional ainda não está configurado; a Câmara deve orientar a confirmação.'
 
   // Idempotência: pendente → 200 sem reemitir token.
   if (existing && !existing.revokedAt && !existing.confirmedAt) {
+    await withTransaction((tx) => queueSubscriptionConfirmation(tx, existing))
     return Response.json({
       status: 'pending',
-      message:
-        'Esta assinatura já está registrada e aguarda a confirmação pelo link enviado ao seu e-mail.',
+      message: pendingMessage,
+      confirmationDelivery,
       subscription: toCitizenSubscriptionView(existing, targetLabel),
     })
   }
@@ -105,28 +112,32 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
   }
 
   // Revogada + nova assinatura → reativa com novo token (double opt-in de novo).
-  const subscription = existing
-    ? await db.citizenSubscription.update({
-        where: { id: existing.id },
-        data: { token: randomUUID(), confirmedAt: null, revokedAt: null },
-      })
-    : await db.citizenSubscription.create({
-        data: {
-          tenantId: tenant.id,
-          email,
-          targetKind: body.targetKind,
-          targetId: body.targetId,
-          token: randomUUID(),
-          confirmedAt: null,
-          revokedAt: null,
-        },
-      })
+  const subscription = await withTransaction(async (tx) => {
+    const current = existing
+      ? await tx.citizenSubscription.update({
+          where: { id: existing.id },
+          data: { token: randomUUID(), confirmedAt: null, revokedAt: null },
+        })
+      : await tx.citizenSubscription.create({
+          data: {
+            tenantId: tenant.id,
+            email,
+            targetKind: body.targetKind,
+            targetId: body.targetId,
+            token: randomUUID(),
+            confirmedAt: null,
+            revokedAt: null,
+          },
+        })
+    await queueSubscriptionConfirmation(tx, current)
+    return current
+  })
 
   return Response.json(
     {
       status: 'pending',
-      message:
-        'Assinatura registrada! Para valer, confirme pelo link enviado ao seu e-mail (dupla confirmação).',
+      message: pendingMessage,
+      confirmationDelivery,
       subscription: toCitizenSubscriptionView(subscription, targetLabel),
     },
     { status: 201 }

@@ -2244,6 +2244,7 @@ function HearingsPortalTab({ slug, primaryColor }: { slug: string; primaryColor:
 
 type SubscribeResponse = {
   status: 'pending' | 'confirmed'
+  confirmationDelivery?: 'queued' | 'awaiting_configuration'
   message: string
   subscription: {
     id: string
@@ -2343,22 +2344,23 @@ function SubscribeTab({ slug, primaryColor }: { slug: string; primaryColor: stri
         return
       }
       if (httpStatus === 201) {
+        const queued = data.confirmationDelivery === 'queued'
         setBanner({
           tone: 'success',
-          title: 'Assinatura registrada! Confirme pelo link enviado ao seu e-mail.',
+          title: queued ? 'Assinatura registrada; aguarde o e-mail de confirmação.' : 'Assinatura registrada; confirmação pendente.',
           text: `${data.message} A dupla confirmação garante que ninguém cadastre e-mails de terceiros.`,
         })
         toast.success('Assinatura registrada', {
-          description: 'Confirme pelo link enviado ao seu e-mail para começar a receber novidades.',
+          description: data.message,
         })
       } else {
         setBanner({
           tone: 'info',
           title: 'Assinatura já registrada — aguardando confirmação',
-          text: `${data.message} Verifique sua caixa de entrada (e o spam) e clique no link recebido.`,
+          text: data.message,
         })
         toast.info('Aguardando confirmação', {
-          description: 'Esta assinatura já existe — confirme pelo link enviado ao seu e-mail.',
+          description: data.message,
         })
       }
     },
