@@ -51,7 +51,8 @@ import { healthScoreFromMetrics, TENANT_HEALTH_SQL } from '../../src/lib/server/
 
 // ─── Configuração ───────────────────────────────────────────────────────────
 
-const PORT = 3005
+const PORT = Number(process.env.SCHEDULER_PORT || 3005)
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('SCHEDULER_PORT inválida.')
 const DB_PATH = process.env.SCHEDULER_DB_PATH?.trim() || resolve(import.meta.dir, '../../db/custom.db')
 process.env.DATABASE_URL ??= `file:${DB_PATH}?connection_limit=1&socket_timeout=30`
 const TICK_INTERVAL_MS = 30_000
@@ -63,6 +64,8 @@ const SESSION_WINDOW_HOURS = 48
 const SERVICES: Array<{ key: string; label: string; url: string }> = [
   { key: 'realtime', label: 'Tempo real (socket.io, porta 3003)', url: 'http://localhost:3003/' },
   { key: 'webhooks', label: 'Entregas de webhook (porta 3004)', url: 'http://localhost:3004/' },
+  ...(process.env.SMTP_HOST?.trim() && process.env.SMTP_FROM?.trim() && process.env.PUBLIC_BASE_URL?.trim()
+    ? [{ key: 'mail', label: 'Correio de confirmação (porta 3006)', url: process.env.MAIL_WORKER_HEALTH_URL || 'http://127.0.0.1:3006/health' }] : []),
 ]
 
 // ─── Logging conciso em JSON ────────────────────────────────────────────────
@@ -174,6 +177,8 @@ function upsertAlert(spec: AlertSpec): boolean {
         ? 'sessionId'
         : spec.kind === 'webhook.dead_letter'
           ? 'endpointId'
+          : spec.kind === 'mail.dead_letter' || spec.kind === 'mail.backlog'
+            ? 'tenantId'
           : spec.kind === 'export.orphan'
             ? 'jobId'
             : 'service'
@@ -221,6 +226,15 @@ const selectDeadDeliveries = db.prepare(`
   JOIN Tenant t ON t.id = e.tenantId
   WHERE d.status = 'dead'
   GROUP BY e.id, e.url, t.id, t.slug, t.name
+`)
+
+const selectMailIssues = db.prepare(`
+  SELECT d.tenantId, t.slug AS tenantSlug, t.name AS tenantName,
+         SUM(CASE WHEN d.status = 'dead' THEN 1 ELSE 0 END) AS deadCount,
+         SUM(CASE WHEN d.status = 'pending' AND d.createdAt <= ? THEN 1 ELSE 0 END) AS staleCount
+  FROM MailDelivery d JOIN Tenant t ON t.id = d.tenantId
+  WHERE d.status IN ('dead', 'pending')
+  GROUP BY d.tenantId, t.slug, t.name
 `)
 
 function fmtDay(ms: number): string {
@@ -303,6 +317,22 @@ function runAlertScan(): { status: 'ok' | 'error'; note: string } {
     alertsOpen++
   }
 
+  for (const row of runQuery<{ tenantId: string; tenantSlug: string; tenantName: string; deadCount: number; staleCount: number }>(
+    selectMailIssues, Date.now() - 15 * 60_000)) {
+    for (const [kind, count] of [['mail.dead_letter', row.deadCount], ['mail.backlog', row.staleCount]] as const) {
+      if (!count) continue
+      conditions++
+      upsertAlert({ kind, severity: 'warning',
+        message: kind === 'mail.dead_letter'
+          ? `${count} confirmação(ões) por e-mail esgotada(s) para "${row.tenantName}".`
+          : `${count} confirmação(ões) por e-mail pendente(s) há mais de 15 minutos para "${row.tenantName}".`,
+        actionHint: 'Confira SMTP e worker de correio; revise e retome entregas esgotadas em Publicações → Assinaturas.',
+        meta: { tenantId: row.tenantId, tenantSlug: row.tenantSlug, count },
+      })
+      alertsOpen++
+    }
+  }
+
   return {
     status: 'ok',
     note: `Varredura: ${conditions} condições avaliadas, ${alertsOpen} alertas criados/existentes`,
@@ -368,7 +398,7 @@ async function serviceAlive(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS), cache: 'no-store' })
     await res.text().catch(() => '')
-    return true
+    return res.ok
   } catch {
     return false
   }

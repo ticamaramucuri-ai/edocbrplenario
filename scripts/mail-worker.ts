@@ -25,6 +25,13 @@ const transporter = nodemailer.createTransport({
 const send = async ({ to, subject, text }: { to: string; subject: string; text: string }) => {
   await transporter.sendMail({ from: process.env.SMTP_FROM, to, subject, text })
 }
+const healthPort = Number(process.env.MAIL_WORKER_HEALTH_PORT || 3006)
+if (!Number.isInteger(healthPort) || healthPort < 1 || healthPort > 65535) throw new Error('MAIL_WORKER_HEALTH_PORT inválida.')
+const health = Bun.serve({ hostname: '127.0.0.1', port: healthPort, fetch(req) {
+  return new Response(new URL(req.url).pathname === '/health' ? 'ok' : 'not found', {
+    status: new URL(req.url).pathname === '/health' ? 200 : 404,
+  })
+} })
 let running = true
 process.on('SIGTERM', () => { running = false })
 process.on('SIGINT', () => { running = false })
@@ -34,6 +41,7 @@ try {
     if (running) await Bun.sleep(5000)
   }
 } finally {
+  health.stop()
   transporter.close()
   await db.$disconnect()
 }

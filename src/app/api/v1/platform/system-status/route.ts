@@ -21,6 +21,7 @@ import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import type { ServiceHealth, SystemStatusView } from '@/lib/contracts'
 import { listPlatformAlertViews, persistDerivedAlerts } from '@/lib/server/platform-alerts'
+import { mailTransportConfigured } from '@/lib/server/mail-delivery'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,17 +66,22 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const now = new Date()
   const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+  const mailConfigured = mailTransportConfigured()
 
   const dbDir = join(process.cwd(), 'db')
   const [
     realtime,
     webhooks,
+    mailWorker,
     fileBytes,
     walBytes,
     outboxPending,
     oldestPending,
     webhookPending,
     webhookDead,
+    mailPending,
+    mailDead,
+    mailOldestPending,
     tenantsTotal,
     tenantsActive,
     sessionsToday,
@@ -84,6 +90,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   ] = await Promise.all([
     checkService('realtime', 'Tempo real (socket.io)', 'http://localhost:3003/health'),
     checkService('webhooks', 'Entregas de webhook', 'http://localhost:3004/health'),
+    mailConfigured ? checkService('mail', 'Worker de correio (processo)', process.env.MAIL_WORKER_HEALTH_URL || 'http://127.0.0.1:3006/health') : Promise.resolve(null),
     fileSizeBytes(join(dbDir, 'custom.db')),
     fileSizeBytes(join(dbDir, 'custom.db-wal')),
     db.outboxEvent.count({ where: { status: 'pending' } }),
@@ -94,6 +101,9 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     }),
     db.webhookDelivery.count({ where: { status: 'pending' } }),
     db.webhookDelivery.count({ where: { status: 'dead' } }),
+    db.mailDelivery.count({ where: { status: 'pending' } }),
+    db.mailDelivery.count({ where: { status: 'dead' } }),
+    db.mailDelivery.findFirst({ where: { status: 'pending' }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
     db.tenant.count(),
     db.tenant.count({ where: { active: true } }),
     db.session.count({ where: { scheduledAt: { gte: dayStart, lt: dayEnd } } }),
@@ -108,7 +118,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const mem = process.memoryUsage()
   const mb = (x: number) => Number((x / 1024 / 1024).toFixed(1))
 
-  const services = [realtime, webhooks]
+  const services = [realtime, webhooks, ...(mailWorker ? [mailWorker] : [])]
 
   // Alertas derivados — SEMPRE com ação sugerida (o banner nunca é só cor).
   const alerts: SystemStatusView['alerts'] = []
@@ -151,7 +161,9 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     checkedAt: now.toISOString(),
     services,
     database: { fileBytes: fileBytes ?? 0, walBytes },
-    queues: { outboxPending, outboxOldestPendingMinutes, webhookPending, webhookDead },
+    queues: { outboxPending, outboxOldestPendingMinutes, webhookPending, webhookDead,
+      mailPending, mailDead, mailOldestPendingMinutes: mailOldestPending
+        ? Math.max(0, Math.floor((now.getTime() - mailOldestPending.createdAt.getTime()) / 60_000)) : null },
     activity: {
       tenantsActive,
       tenantsTotal,

@@ -1533,6 +1533,9 @@ export type SystemStatusView = {
     outboxOldestPendingMinutes: number | null
     webhookPending: number
     webhookDead: number
+    mailPending: number
+    mailDead: number
+    mailOldestPendingMinutes: number | null
   }
   activity: {
     tenantsActive: number

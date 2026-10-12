@@ -13,6 +13,7 @@ plataforma e da Câmara.
 | Realtime (socket.io) | 3003 | Publica eventos do outbox p/ salas `tenant:{id}` e `public:{id}` | `cd mini-services/realtime && bun run dev` |
 | Webhooks | 3004 | Entrega HMAC de `WebhookDelivery` com retry/dead-letter | `cd mini-services/webhooks && bun run dev` |
 | Scheduler | 3005 | Jobs e alertas periódicos | `cd mini-services/scheduler && bun run dev` |
+| Worker de correio | 3006 (health local) | Confirmações por SMTP e retentativas | `bun run mail:worker` |
 | Gateway (Caddy) | 81/443 | Única porta externa; WebSocket/HTTP com `?XTransformPort={porta}` | gerenciado pelo sandbox |
 
 Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
@@ -39,6 +40,15 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   defina `DATABASE_URL` PostgreSQL e use `cd mini-services/scheduler && bun run dev:postgres`.
   Execute uma instância por banco até haver claim/lease para jobs; o piloto usa
   `bun run dev`. Consulte a [etapa 035](etapas/035-scheduler-postgres.md).
+- Para confirmação por e-mail, configure `SMTP_HOST`, `SMTP_FROM`,
+  `PUBLIC_BASE_URL` e, se exigido, `SMTP_USER`/`SMTP_PASSWORD`; inicie
+  `bun run mail:worker`. Consulte `http://127.0.0.1:3006/health` no próprio
+  host e a aba Publicações → Assinaturas para pendências/esgotamentos.
+  O health atesta o processo, não a entrega pelo relay. O scheduler abre
+  alertas por Câmara para itens esgotados e pendentes há mais de 15 minutos;
+  verifique o SMTP antes de retomar uma entrega. Mantenha a porta 3006 restrita
+  ao host e ajuste `MAIL_WORKER_HEALTH_PORT`/`MAIL_WORKER_HEALTH_URL` juntos
+  caso o ambiente use outra porta.
 - O ensaio conjunto e as migrações SQL iniciais estão descritos na
   [etapa 036](etapas/036-ensaio-integrado-postgres.md). O baseline 0001 só pode
   ser aplicado em banco PostgreSQL vazio; o rollback 0002 remove apenas índices.

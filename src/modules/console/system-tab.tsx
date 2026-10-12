@@ -37,6 +37,7 @@ import {
   Database,
   History,
   Info,
+  Mail,
   MemoryStick,
   Pause,
   Play,
@@ -853,6 +854,12 @@ export default function SystemTab() {
                   value={queues?.webhookDead ?? '—'}
                   highlight={(queues?.webhookDead ?? 0) > 0}
                 />
+                <Metric icon={<Mail className="size-3" />} label="E-mails pendentes" value={queues?.mailPending ?? '—'} />
+                <Metric icon={<History className="size-3" />} label="Mais antigo no correio"
+                  value={queues?.mailOldestPendingMinutes !== null && queues?.mailOldestPendingMinutes !== undefined
+                    ? `há ${queues.mailOldestPendingMinutes} min` : '—'} />
+                <Metric icon={<AlertTriangle className="size-3" />} label="E-mails esgotados"
+                  value={queues?.mailDead ?? '—'} highlight={(queues?.mailDead ?? 0) > 0} />
               </CardShell>
 
               <CardShell title="Atividade" icon={<CalendarDays />}>

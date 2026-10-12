@@ -8,6 +8,8 @@ type Probe = (url: string) => Promise<boolean>
 const SERVICES = [
   { key: 'realtime', label: 'Tempo real (socket.io, porta 3003)', url: process.env.REALTIME_HEALTH_URL || 'http://localhost:3003/health' },
   { key: 'webhooks', label: 'Entregas de webhook (porta 3004)', url: process.env.WEBHOOKS_HEALTH_URL || 'http://localhost:3004/health' },
+  ...(process.env.SMTP_HOST?.trim() && process.env.SMTP_FROM?.trim() && process.env.PUBLIC_BASE_URL?.trim()
+    ? [{ key: 'mail', label: 'Correio de confirmação (porta 3006)', url: process.env.MAIL_WORKER_HEALTH_URL || 'http://127.0.0.1:3006/health' }] : []),
 ]
 
 export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
@@ -76,6 +78,28 @@ export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
         meta: { endpointId, tenantId: endpoint.tenantId, tenantSlug: endpoint.tenant.slug, deadCount: count },
         key: 'endpointId', value: endpointId,
       })
+    }
+    const staleBefore = new Date(now.getTime() - 15 * 60_000)
+    const [mailDead, mailStale] = await Promise.all([
+      db.mailDelivery.groupBy({ by: ['tenantId'], where: { status: 'dead' }, _count: { _all: true } }),
+      db.mailDelivery.groupBy({ by: ['tenantId'], where: { status: 'pending', createdAt: { lte: staleBefore } }, _count: { _all: true } }),
+    ])
+    const mailTenants = await db.tenant.findMany({ where: { id: { in: [...new Set([...mailDead, ...mailStale].map((row) => row.tenantId))] } },
+      select: { id: true, name: true, slug: true } })
+    const mailTenantById = new Map(mailTenants.map((tenant) => [tenant.id, tenant]))
+    for (const [kind, rows] of [['mail.dead_letter', mailDead], ['mail.backlog', mailStale]] as const) {
+      for (const row of rows) {
+        const tenant = mailTenantById.get(row.tenantId)
+        if (!tenant) continue
+        const count = row._count._all
+        conditions++
+        await upsertAlert({ kind, severity: 'warning',
+          message: kind === 'mail.dead_letter'
+            ? `${count} confirmação(ões) por e-mail esgotada(s) para "${tenant.name}".`
+            : `${count} confirmação(ões) por e-mail pendente(s) há mais de 15 minutos para "${tenant.name}".`,
+          actionHint: 'Confira SMTP e worker de correio; revise e retome entregas esgotadas em Publicações → Assinaturas.',
+          meta: { tenantId: tenant.id, tenantSlug: tenant.slug, count }, key: 'tenantId', value: tenant.id })
+      }
     }
     return { status: 'ok', note: `Varredura: ${conditions} condições avaliadas, ${conditions} alertas criados/existentes` }
   }

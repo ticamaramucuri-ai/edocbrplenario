@@ -232,6 +232,9 @@ function HealthSummary({ status }: { status: SystemStatusWithAlerts | undefined 
             {queues?.webhookDead ?? '—'}
           </span>
         </p>
+        <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+          E-mails pendentes: {queues?.mailPending ?? '—'} · Esgotados: {queues?.mailDead ?? '—'}
+        </p>
       </div>
       <div className="rounded-xl border bg-card p-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
