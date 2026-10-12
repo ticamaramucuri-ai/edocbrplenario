@@ -2,6 +2,8 @@
 
 **Data:** 11/10/2026 · **Estado:** implementada e verificada localmente.
 
+**Evolução:** a [etapa 052](052-transmissao-social-assistida.md) substituiu a confirmação isolada nas sessões oficiais por uma observação auditada da página pública e autorização por outra identidade.
+
 O painel da sessão apresenta fonte, destinos encaminhando, segmentos de gravação e publicação do link. Cada Câmara configura seus próprios destinos no arquivo privado. A URL de visualização (`publicUrl`) é distinta da URL RTMPS com chave. O operador confere vídeo e áudio na plataforma antes de publicar o link. O sistema exige fonte pronta, intenção aplicada e saída RTMPS observada, grava a confirmação na auditoria e publica a URL no portal ao vivo e no detalhe público da sessão. O link pode ser retirado e fica preservado no registro após o encerramento para eventual replay, sujeito à conferência do operador.
 
 O endpoint usa permissão `media.manage`, versão otimista e idempotência. O portal somente recebe o endereço HTTPS de visualização. O teste integrado em banco descartável cobre isolamento entre Câmaras, falta de confirmação, reconciliação pendente, destino ocioso, perda de sinal, publicação, repetição do comando, retirada, auditoria sem stream key e visibilidade pública ao vivo e histórica. Executar `bun run test:media:public-link`.

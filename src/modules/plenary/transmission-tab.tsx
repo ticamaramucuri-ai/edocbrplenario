@@ -21,7 +21,12 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
   const queryClient = useQueryClient()
   const [busy, setBusy] = useState(false)
   const [archiveBusy, setArchiveBusy] = useState(false)
+  const [observationDestinationId, setObservationDestinationId] = useState<string | null>(null)
+  const [observationNote, setObservationNote] = useState('')
+  const [videoChecked, setVideoChecked] = useState(false)
+  const [audioChecked, setAudioChecked] = useState(false)
   const can = useApp((state) => state.can)
+  const actorId = useApp((state) => state.actor?.id)
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['transmission', sessionId],
     queryFn: () => api.getTransmission(sessionId),
@@ -31,6 +36,11 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
     queryKey: ['media-destinations', sessionId],
     queryFn: () => api.getMediaDestinations(sessionId),
     refetchInterval: 3000,
+  })
+  const observations = useQuery({
+    queryKey: ['media-public-observations', sessionId],
+    queryFn: () => api.getMediaPublicObservations(sessionId),
+    refetchInterval: 5000,
   })
   const recording = useQuery({
     queryKey: ['media-recording', sessionId],
@@ -103,15 +113,42 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
 
   async function setPublicLink(action: 'publish' | 'withdraw', destinationId?: string) {
     if (!data || busy) return
+    const observation = action === 'publish' && data.transmission.official
+      ? observations.data?.observations.find((item) => item.destinationId === destinationId &&
+        item.observerId !== actorId && item.destinationGeneration === destinations.data?.destinations.find((destination) => destination.id === destinationId)?.generation &&
+        item.publicUrl === destinations.data?.destinations.find((destination) => destination.id === destinationId)?.publicUrl &&
+        Date.now() - new Date(item.observedAt).getTime() <= 10 * 60_000)
+      : undefined
+    if (action === 'publish' && data.transmission.official && !observation) {
+      toast.error('Outra pessoa deve registrar vídeo e áudio na página pública nos últimos 10 minutos.')
+      return
+    }
     if (action === 'publish' && !window.confirm('Você conferiu vídeo e áudio da transmissão na página pública da plataforma?')) return
     setBusy(true)
     try {
       await api.setTransmissionPublicLink(sessionId, {
         action, destinationId, platformConfirmed: action === 'publish',
+        observationId: observation?.id,
         version: data.transmission.version, idempotencyKey: crypto.randomUUID(),
       })
       await queryClient.invalidateQueries({ queryKey: ['transmission', sessionId] })
       toast.success(action === 'publish' ? 'Link público publicado no portal.' : 'Link público retirado do portal.')
+    } catch {
+      // A API apresenta o erro operacional.
+    } finally { setBusy(false) }
+  }
+
+  async function recordObservation(destinationId: string) {
+    if (busy || !videoChecked || !audioChecked || observationNote.trim().length < 10) return
+    setBusy(true)
+    try {
+      await api.recordMediaPublicObservation(sessionId, { destinationId, videoOk: true, audioOk: true, evidenceNote: observationNote.trim() })
+      await queryClient.invalidateQueries({ queryKey: ['media-public-observations', sessionId] })
+      setObservationDestinationId(null)
+      setObservationNote('')
+      setVideoChecked(false)
+      setAudioChecked(false)
+      toast.success('Conferência externa registrada para este destino.')
     } catch {
       // A API apresenta o erro operacional.
     } finally { setBusy(false) }
@@ -149,7 +186,9 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         <CardContent className="space-y-1 text-sm">
           <p>Fonte local: <strong>{source.ready ? 'pronta' : 'aguardando sinal'}</strong></p>
           <p>Destinos RTMPS confirmados pelo controlador: <strong>{forwarding.length}</strong></p>
-          <p>Link público: <strong>{transmission.publicLink ? 'publicado após confirmação do operador' : 'não publicado'}</strong></p>
+          <p>Link público: <strong>{transmission.publicLink
+            ? transmission.official && !transmission.publicLink.observationId ? 'legado sem conferência; oculto no portal' : 'publicado após conferência externa'
+            : 'não publicado'}</strong></p>
           <p>Gravação: <strong>{recording.data?.configured ? `${recording.data.segmentCount} segmento(s) catalogado(s)` : 'não confirmada'}</strong></p>
           <p className="text-muted-foreground">Saída RTMPS e segmentos locais não comprovam que o vídeo e o áudio estão disponíveis para o público. Confira a página da rede social em outro dispositivo antes de publicar o link.</p>
         </CardContent>
@@ -182,9 +221,11 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
         <CardHeader><h2 className="text-base font-semibold leading-none">Destinos de transmissão</h2></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">O estado “encaminhando” confirma a saída RTMPS do MediaMTX. A live pública deve ser conferida também na plataforma.</p>
+          {transmission.official && <p className="text-muted-foreground">Na sessão oficial, uma pessoa registra a observação da página pública e outra publica o link em até 10 minutos.</p>}
           {transmission.publicLink && <div className="rounded border border-emerald-600/40 bg-emerald-50 p-3 dark:bg-emerald-950/20">
             <p className="font-medium">Link publicado no portal</p>
             <a href={transmission.publicLink.url} target="_blank" rel="noopener noreferrer" className="break-all underline">{transmission.publicLink.url}</a>
+            {transmission.publicLink.observationId && <p className="text-xs">Conferência vinculada: {observations.data?.observations.find((item) => item.id === transmission.publicLink?.observationId)?.observerName ?? transmission.publicLink.observationId}</p>}
             {can('media.manage') && <div className="mt-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => void setPublicLink('withdraw')}>Retirar link</Button></div>}
           </div>}
           {destinations.data && !destinations.data.controllerAvailable && <p className="text-destructive">Controlador indisponível ({destinations.data.controllerErrorCode}). As solicitações permanecem registradas e serão repetidas pelo worker.</p>}
@@ -198,10 +239,22 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
                 <p role="status" className="text-muted-foreground">{item.state === 'disabled' ? 'Desativado' : item.state === 'forwarding' ? 'Encaminhando' : item.state === 'error' ? 'Erro no encaminhamento' : item.state === 'unknown' ? 'Estado externo desconhecido' : 'Aguardando sinal/conexão'}{item.outboundBytes !== null ? ` · ${new Intl.NumberFormat('pt-BR').format(item.outboundBytes)} bytes enviados` : ''}</p>
                 <p className="text-xs text-muted-foreground">Solicitado: {item.desiredEnabled ? 'ativo' : 'inativo'} · Reconciliação: {item.syncStatus === 'unmanaged' ? 'sem comando' : item.syncStatus === 'pending' ? 'pendente' : item.syncStatus === 'applied' ? 'aplicada' : 'erro'}{item.lastErrorCode ? ` (${item.lastErrorCode})` : ''}</p>
                 {!item.hasPublicUrl && <p className="text-xs text-muted-foreground">URL pública deste evento ainda não configurada.</p>}
+                {item.publicUrl && <a href={item.publicUrl} target="_blank" rel="noopener noreferrer" className="block max-w-lg break-all text-xs underline">Abrir página pública do evento</a>}
+                {observations.data?.observations.find((observation) => observation.destinationId === item.id) && <p className="text-xs text-muted-foreground">Última conferência: {observations.data.observations.find((observation) => observation.destinationId === item.id)?.observerName}, {new Date(observations.data.observations.find((observation) => observation.destinationId === item.id)!.observedAt).toLocaleString('pt-BR')}</p>}
               </div>
               {can('media.manage') && <div className="flex flex-wrap gap-2">
                 <Button variant={item.desiredEnabled || item.enabled === true ? 'outline' : 'default'} disabled={busy || (!(item.desiredEnabled || item.enabled === true) && (transmission.status !== 'monitoring' || !source.ready))} onClick={() => void setDestination(item.id, !(item.desiredEnabled || item.enabled === true))}>{item.desiredEnabled || item.enabled === true ? 'Desativar' : 'Ativar'}</Button>
+                {item.hasPublicUrl && <Button variant="outline" disabled={busy || transmission.status !== 'monitoring' || !source.ready || !item.desiredEnabled || item.syncStatus !== 'applied' || item.state !== 'forwarding'} onClick={() => { setObservationDestinationId(item.id); setObservationNote(''); setVideoChecked(false); setAudioChecked(false) }}>Registrar conferência externa</Button>}
                 {item.hasPublicUrl && <Button variant="outline" disabled={busy || transmission.status !== 'monitoring' || !source.ready || !item.desiredEnabled || item.syncStatus !== 'applied' || item.state !== 'forwarding'} onClick={() => void setPublicLink('publish', item.id)}>Publicar link</Button>}
+              </div>}
+              {observationDestinationId === item.id && <div className="w-full space-y-2 rounded border bg-muted/40 p-3">
+                <p className="font-medium">Conferência em outro dispositivo, na página pública</p>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={videoChecked} onChange={(event) => setVideoChecked(event.target.checked)} /> Vídeo visível e contínuo</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={audioChecked} onChange={(event) => setAudioChecked(event.target.checked)} /> Áudio audível e inteligível</label>
+                <label className="block">Referência do ensaio ou observação
+                  <input className="mt-1 w-full rounded border bg-background p-2" maxLength={500} value={observationNote} onChange={(event) => setObservationNote(event.target.value)} placeholder="Ex.: celular na rede móvel, áudio conferido às 14h" />
+                </label>
+                <Button size="sm" disabled={busy || !videoChecked || !audioChecked || observationNote.trim().length < 10} onClick={() => void recordObservation(item.id)}>Salvar conferência</Button>
               </div>}
             </div>
           ))}

@@ -80,6 +80,8 @@ import type {
   MyNpsView,
   TransmissionView,
   MediaDestinationsView,
+  MediaPublicObservationsView,
+  MediaPublicObservationView,
   MediaRecordingView,
   SessionReadinessView,
   RecordingArchiveView,
@@ -194,12 +196,15 @@ export const api = {
   }),
   getTransmission: (id: string) => request<TransmissionView>(`/sessions/${id}/transmission`, { silent: true }),
   getMediaDestinations: (id: string) => request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`, { silent: true }),
+  getMediaPublicObservations: (id: string) => request<MediaPublicObservationsView>(`/sessions/${id}/transmission/observations`, { silent: true }),
+  recordMediaPublicObservation: (id: string, data: { destinationId: string; videoOk: true; audioOk: true; evidenceNote: string }) =>
+    request<{ observation: MediaPublicObservationView }>(`/sessions/${id}/transmission/observations`, { method: 'POST', body: JSON.stringify(data) }),
   getMediaRecording: (id: string) => request<MediaRecordingView>(`/sessions/${id}/transmission/recording`, { silent: true }),
   getSessionReadiness: (id: string) => request<SessionReadinessView>(`/sessions/${id}/readiness`, { silent: true }),
   getRecordingArchive: (id: string, verify = false) => request<RecordingArchiveView>(`/sessions/${id}/transmission/archive${verify ? '?verify=1' : ''}`, { silent: !verify }),
   commandRecordingArchive: (id: string, data: { action: 'build' | 'publish' | 'withdraw'; version: number; idempotencyKey: string; gapJustification?: string }) =>
     request<RecordingArchiveView>(`/sessions/${id}/transmission/archive`, { method: 'POST', body: JSON.stringify(data) }),
-  setTransmissionPublicLink: (id: string, data: { action: 'publish' | 'withdraw'; version: number; idempotencyKey: string; destinationId?: string; platformConfirmed?: boolean }) =>
+  setTransmissionPublicLink: (id: string, data: { action: 'publish' | 'withdraw'; version: number; idempotencyKey: string; destinationId?: string; platformConfirmed?: boolean; observationId?: string }) =>
     request<TransmissionView>(`/sessions/${id}/transmission/public-link`, { method: 'POST', body: JSON.stringify(data) }),
   setMediaDestination: (id: string, destinationId: string, enabled: boolean) =>
     request<MediaDestinationsView>(`/sessions/${id}/transmission/destinations`, {

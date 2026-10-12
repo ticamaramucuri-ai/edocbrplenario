@@ -490,6 +490,7 @@ model Transmission {
   publicUrl       String?
   publicDestinationId String?
   publicPublishedAt DateTime?
+  publicObservationId String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -497,8 +498,30 @@ model Transmission {
   session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   commands        TransmissionCommand[]
   destinationIntents MediaDestinationIntent[]
+  observations    MediaPublicObservation[]
 
   @@index([tenantId, status])
+}
+
+// Conferência humana da página pública, separada do estado RTMPS local.
+model MediaPublicObservation {
+  id             String   @id @default(cuid())
+  tenantId       String
+  sessionId      String
+  transmissionId String
+  destinationId  String
+  destinationGeneration Int
+  publicUrl      String
+  observerId     String
+  observerName   String
+  videoOk        Boolean
+  audioOk        Boolean
+  evidenceNote   String
+  observedAt     DateTime @default(now())
+
+  transmission   Transmission @relation(fields: [transmissionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, sessionId, destinationId, observedAt])
 }
 
 model TransmissionCommand {

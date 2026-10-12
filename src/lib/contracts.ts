@@ -31,12 +31,13 @@ export type TransmissionView = {
   transmission: {
     id: string | null
     sessionId: string
+    official: boolean
     status: 'draft' | 'ready' | 'monitoring' | 'ended'
     effectiveStatus: 'draft' | 'ready' | 'monitoring' | 'signal_lost' | 'ended'
     version: number
     startedAt: string | null
     endedAt: string | null
-    publicLink: { url: string; destinationId: string; publishedAt: string } | null
+    publicLink: { url: string; destinationId: string; publishedAt: string; observationId: string | null } | null
   }
   source: {
     configured: boolean
@@ -59,10 +60,12 @@ export type MediaDestinationsView = {
     label: string
     platform: 'youtube' | 'facebook' | 'instagram' | 'other'
     hasPublicUrl: boolean
+    publicUrl: string | null
     enabled: boolean | null
     state: 'disabled' | 'idle' | 'forwarding' | 'error' | 'unknown'
     outboundBytes: number | null
     desiredEnabled: boolean
+    generation: number | null
     syncStatus: 'unmanaged' | 'pending' | 'applied' | 'error'
     lastErrorCode: string | null
   }>
@@ -74,6 +77,21 @@ export type MediaRecordingView = {
   segmentCount: number
   latestSegmentAt: string | null
 }
+
+export type MediaPublicObservationView = {
+  id: string
+  destinationId: string
+  destinationGeneration: number
+  publicUrl: string
+  observerId: string
+  observerName: string
+  videoOk: boolean
+  audioOk: boolean
+  evidenceNote: string
+  observedAt: string
+}
+
+export type MediaPublicObservationsView = { observations: MediaPublicObservationView[] }
 
 /** Checagem operacional por sessão. `broadcastReady` trata apenas do transporte local. */
 export type SessionReadinessView = {

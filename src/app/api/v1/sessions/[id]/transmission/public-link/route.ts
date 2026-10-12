@@ -20,6 +20,7 @@ const schema = z.object({
   idempotencyKey: z.string().min(8).max(128),
   destinationId: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,39}$/).optional(),
   platformConfirmed: z.boolean().optional(),
+  observationId: z.string().optional(),
 })
 
 export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
@@ -40,7 +41,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         version: existing.version, startedAt: existing.startedAt?.toISOString() ?? null,
         endedAt: existing.endedAt?.toISOString() ?? null,
         publicLink: existing.publicUrl && existing.publicDestinationId && existing.publicPublishedAt
-          ? { url: existing.publicUrl, destinationId: existing.publicDestinationId, publishedAt: existing.publicPublishedAt.toISOString() } : null,
+          ? { url: existing.publicUrl, destinationId: existing.publicDestinationId, publishedAt: existing.publicPublishedAt.toISOString(),
+            observationId: existing.publicObservationId } : null,
       }, source, replayed: true }, { headers: { 'Cache-Control': 'no-store' } })
     }
   }
@@ -81,6 +83,17 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       if (row.status !== 'monitoring' || !intent?.desiredEnabled || intent.syncStatus !== 'applied') {
         throw new DomainError('MEDIA_PUBLIC_NOT_READY', 409, 'Destino não pronto', 'O destino deixou de estar pronto durante a publicação.')
       }
+      if (session.official) {
+        const observation = body.observationId ? await tx.mediaPublicObservation.findFirst({
+          where: { id: body.observationId, tenantId: session.tenantId, sessionId: id, transmissionId: row.id,
+            destinationId: body.destinationId, destinationGeneration: intent.generation, publicUrl: url! },
+        }) : null
+        if (!observation || !observation.videoOk || !observation.audioOk || observation.observerId === actor.id ||
+            observation.observedAt.getTime() < Date.now() - 10 * 60_000) {
+          throw new DomainError('MEDIA_PUBLIC_CONFIRMATION_REQUIRED', 409, 'Conferência externa necessária',
+            'Outra pessoa deve registrar vídeo e áudio na página pública deste destino nos últimos 10 minutos.')
+        }
+      }
     }
     if (body.action === 'withdraw' && !row.publicUrl) throw new DomainError('MEDIA_PUBLIC_LINK_MISSING', 409, 'Link ausente', 'Não há link publicado para retirar.')
     const updated = await tx.transmission.update({
@@ -90,6 +103,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         publicUrl: url,
         publicDestinationId: body.action === 'publish' ? body.destinationId : null,
         publicPublishedAt: body.action === 'publish' ? new Date() : null,
+        publicObservationId: body.action === 'publish' ? body.observationId ?? null : null,
       },
     })
     await tx.transmissionCommand.create({ data: { transmissionId: row.id, idempotencyKey: body.idempotencyKey, action: command, version: updated.version } })
@@ -98,7 +112,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       aggregateType: 'transmission', aggregateId: row.id,
       summary: body.action === 'publish' ? `Link público do destino ${body.destinationId} confirmado e publicado.` : 'Link público retirado.',
       before: { publicUrl: row.publicUrl, destinationId: row.publicDestinationId },
-      after: { publicUrl: updated.publicUrl, destinationId: updated.publicDestinationId, platformConfirmed: body.action === 'publish' },
+      after: { publicUrl: updated.publicUrl, destinationId: updated.publicDestinationId,
+        observationId: updated.publicObservationId, platformConfirmed: body.action === 'publish' },
       correlationId, ip: clientIp(req),
     })
     await emitOutbox(tx, {
@@ -116,7 +131,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       version: result.row.version,
       startedAt: result.row.startedAt?.toISOString() ?? null, endedAt: result.row.endedAt?.toISOString() ?? null,
       publicLink: result.row.publicUrl && result.row.publicDestinationId && result.row.publicPublishedAt
-        ? { url: result.row.publicUrl, destinationId: result.row.publicDestinationId, publishedAt: result.row.publicPublishedAt.toISOString() }
+        ? { url: result.row.publicUrl, destinationId: result.row.publicDestinationId, publishedAt: result.row.publicPublishedAt.toISOString(),
+          observationId: result.row.publicObservationId }
         : null,
     },
     source, replayed: result.replayed,

@@ -46,7 +46,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       select: { id: true, party: true },
     }),
     db.sessionAgendaRevision.findFirst({ where: { tenantId: tenant.id, sessionId: session.id }, orderBy: { revision: 'desc' } }),
-    db.transmission.findUnique({ where: { sessionId: session.id }, select: { publicUrl: true, publicPublishedAt: true } }),
+    db.transmission.findUnique({ where: { sessionId: session.id }, select: { publicUrl: true, publicPublishedAt: true, publicObservationId: true } }),
     db.sessionRecording.findUnique({ where: { sessionId: session.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true, replaySha256: true, manifestSha256: true } }),
     db.publication.findFirst({ where: { tenantId: tenant.id, kind: 'ata_sessao', status: 'published', activeAtaSessionKey: session.id },
       select: { id: true, publishedAt: true, publishedContentSha256: true, verificationCode: true } })
@@ -69,7 +69,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       status: session.status as string,
       agendaPublished: session.agendaPublished,
     },
-    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
+    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt && (!session.official || transmission.publicObservationId)
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
       : null,
     localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > new Date())

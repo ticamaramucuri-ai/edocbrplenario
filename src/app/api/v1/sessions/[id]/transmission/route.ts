@@ -21,19 +21,21 @@ const commandSchema = z.object({
   idempotencyKey: z.string().min(8).max(128),
 })
 
-function view(row: Transmission | null, sessionId: string, source: SourceProbe) {
+function view(row: Transmission | null, sessionId: string, source: SourceProbe, official: boolean) {
   const status = (row?.status ?? 'draft') as TransmissionStatus
   return {
     transmission: {
       id: row?.id ?? null,
       sessionId,
+      official,
       status,
       effectiveStatus: status === 'monitoring' && !source.ready ? 'signal_lost' : status,
       version: row?.version ?? 1,
       startedAt: row?.startedAt?.toISOString() ?? null,
       endedAt: row?.endedAt?.toISOString() ?? null,
       publicLink: row?.publicUrl && row.publicDestinationId && row.publicPublishedAt
-        ? { url: row.publicUrl, destinationId: row.publicDestinationId, publishedAt: row.publicPublishedAt.toISOString() }
+        ? { url: row.publicUrl, destinationId: row.publicDestinationId, publishedAt: row.publicPublishedAt.toISOString(),
+          observationId: row.publicObservationId }
         : null,
     },
     source,
@@ -44,12 +46,12 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
   const actor = await resolveActor(req)
   requirePermission(actor, 'media.read')
   const { id } = await ctx.params
-  await loadSession(actor, id)
+  const session = await loadSession(actor, id)
   const [row, source] = await Promise.all([
     db.transmission.findUnique({ where: { sessionId: id } }),
     probeMediaSource(id),
   ])
-  return Response.json(view(row, id, source), { headers: { 'Cache-Control': 'no-store' } })
+  return Response.json(view(row, id, source, session.official), { headers: { 'Cache-Control': 'no-store' } })
 })
 
 export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
@@ -131,5 +133,5 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     })
     return { row: updated, replayed: false }
   })
-  return Response.json({ ...view(result.row, id, source), replayed: result.replayed }, { headers: { 'Cache-Control': 'no-store' } })
+  return Response.json({ ...view(result.row, id, source, session.official), replayed: result.replayed }, { headers: { 'Cache-Control': 'no-store' } })
 })

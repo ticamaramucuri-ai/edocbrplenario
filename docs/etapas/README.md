@@ -57,6 +57,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [049 — Votação oficial](049-votacao-oficial.md) | Incremento técnico concluído | Proposta e confirmação independente da contagem simbólica oficial | Matriz regimental e ensaio concorrente multi-instância |
 | [050 — Sigilo e continuidade excepcional](050-sigilo-continuidade-excepcional.md) | Proteção técnica concluída | Voto secreto oficial bloqueado inclusive em registros legados | Redesenho criptográfico e decisão sobre contingência offline |
 | [051 — Ata e transparência](051-ata-transparencia.md) | Incremento técnico concluído | Revisão com hash, publicação por outra pessoa, retificação por novo ato e vínculo público à sessão e replay | Aceite institucional do texto, assinaturas e retenção |
+| [052 — Transmissão social assistida](052-transmissao-social-assistida.md) | Incremento técnico concluído | Observação auditável da página pública e duas identidades para link oficial | Canal, hardware, banda e ensaio institucional real |
+| [053 — Preparação do piloto de Mucuri](053-preparacao-piloto-mucuri.md) | Roteiro pronto; piloto não iniciado | Critérios de entrada, sequência de ensaio e evidências de aceite | Dados, responsáveis, infraestrutura e canal institucionais |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

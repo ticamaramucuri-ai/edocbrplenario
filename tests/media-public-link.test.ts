@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { db } from '@/lib/db'
 import { POST as publicLinkPost } from '@/app/api/v1/sessions/[id]/transmission/public-link/route'
+import { GET as observationsGet, POST as observationPost } from '@/app/api/v1/sessions/[id]/transmission/observations/route'
 import { GET as transmissionGet } from '@/app/api/v1/sessions/[id]/transmission/route'
 import { GET as destinationsGet } from '@/app/api/v1/sessions/[id]/transmission/destinations/route'
 import { GET as recordingGet } from '@/app/api/v1/sessions/[id]/transmission/recording/route'
@@ -42,8 +43,9 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   const tenant = await db.tenant.create({ data: { slug: `live-${suffix}`, name: 'Câmara Teste', city: 'Teste', uf: 'BA' } })
   const another = await db.tenant.create({ data: { slug: `other-${suffix}`, name: 'Outra Câmara', city: 'Teste', uf: 'BA' } })
   const operator = await db.user.create({ data: { tenantId: tenant.id, name: 'Operador', email: `operator-${suffix}@example.invalid`, role: 'media_operator' } })
+  const observer = await db.user.create({ data: { tenantId: tenant.id, name: 'Observadora', email: `observer-${suffix}@example.invalid`, role: 'media_operator' } })
   const otherOperator = await db.user.create({ data: { tenantId: another.id, name: 'Outro', email: `other-${suffix}@example.invalid`, role: 'media_operator' } })
-  const session = await db.session.create({ data: { tenantId: tenant.id, number: 1, year: 2026, status: 'open', scheduledAt: new Date() } })
+  const session = await db.session.create({ data: { tenantId: tenant.id, number: 1, year: 2026, status: 'open', official: true, scheduledAt: new Date() } })
   const secret = 'rtmps://example.test/live#STREAM-KEY-SECRET'
   const publicUrl = 'https://www.youtube.com/watch?v=abc123'
   directory = await mkdtemp(join(tmpdir(), 'media-public-link-'))
@@ -65,10 +67,16 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   }) as typeof fetch
   const transmission = await db.transmission.create({ data: { tenantId: tenant.id, sessionId: session.id, status: 'monitoring' } })
   const intent = await db.mediaDestinationIntent.create({ data: { transmissionId: transmission.id, destinationId: 'youtube', desiredEnabled: true, syncStatus: 'pending' } })
-  const command = (actorId: string, action: 'publish' | 'withdraw', version: number, key: string, confirmed = true) => publicLinkPost(
+  const command = (actorId: string, action: 'publish' | 'withdraw', version: number, key: string, confirmed = true, observationId?: string) => publicLinkPost(
     new NextRequest(`http://localhost/api/v1/sessions/${session.id}/transmission/public-link`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-actor-id': actorId },
-      body: JSON.stringify({ action, version, idempotencyKey: key, destinationId: 'youtube', platformConfirmed: confirmed }),
+      body: JSON.stringify({ action, version, idempotencyKey: key, destinationId: 'youtube', platformConfirmed: confirmed, observationId }),
+    }), { params: Promise.resolve({ id: session.id }) },
+  )
+  const observe = (actorId: string, evidenceNote = 'Celular em rede móvel; vídeo e áudio conferidos.') => observationPost(
+    new NextRequest(`http://localhost/api/v1/sessions/${session.id}/transmission/observations`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-actor-id': actorId },
+      body: JSON.stringify({ destinationId: 'youtube', videoOk: true, audioOk: true, evidenceNote }),
     }), { params: Promise.resolve({ id: session.id }) },
   )
   const live = () => publicLiveGet(new NextRequest(`http://localhost/api/v1/public/live?tenant=${tenant.slug}`), { params: Promise.resolve({}) })
@@ -87,15 +95,41 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   ready = false
   expect((await command(operator.id, 'publish', 1, crypto.randomUUID())).status).toBe(409)
   ready = true
+  expect((await command(operator.id, 'publish', 1, crypto.randomUUID())).status).toBe(409)
+  expect((await observe(otherOperator.id)).status).toBe(403)
+  const ownObservation = await observe(operator.id)
+  expect(ownObservation.status).toBe(201)
+  const ownObservationId = (await ownObservation.json()).observation.id as string
+  expect((await command(operator.id, 'publish', 1, crypto.randomUUID(), true, ownObservationId)).status).toBe(409)
+  const stale = await observe(observer.id)
+  expect(stale.status).toBe(201)
+  const staleId = (await stale.json()).observation.id as string
+  await db.mediaPublicObservation.update({ where: { id: staleId }, data: { observedAt: new Date(Date.now() - 11 * 60_000) } })
+  expect((await command(operator.id, 'publish', 1, crypto.randomUUID(), true, staleId)).status).toBe(409)
+  const fresh = await observe(observer.id)
+  expect(fresh.status).toBe(201)
+  const observationId = (await fresh.json()).observation.id as string
+  await db.mediaDestinationIntent.update({ where: { id: intent.id }, data: { generation: { increment: 1 } } })
+  expect((await command(operator.id, 'publish', 1, crypto.randomUUID(), true, observationId)).status).toBe(409)
+  await db.mediaDestinationIntent.update({ where: { id: intent.id }, data: { generation: 1 } })
+  const observedList = await observationsGet(new NextRequest(`http://localhost/api/v1/sessions/${session.id}/transmission/observations`,
+    { headers: { 'x-actor-id': operator.id } }), { params: Promise.resolve({ id: session.id }) })
+  expect((await observedList.json()).observations[0].id).toBe(observationId)
   const key = crypto.randomUUID()
-  const published = await command(operator.id, 'publish', 1, key)
+  const published = await command(operator.id, 'publish', 1, key, true, observationId)
   expect(published.status).toBe(200)
   expect((await published.json()).transmission.publicLink.url).toBe(publicUrl)
-  expect((await command(operator.id, 'publish', 1, key)).status).toBe(200)
+  expect((await command(operator.id, 'publish', 1, key, true, observationId)).status).toBe(200)
+  expect((await db.transmission.findUniqueOrThrow({ where: { id: transmission.id } })).publicObservationId).toBe(observationId)
   expect((await db.transmission.findUniqueOrThrow({ where: { id: transmission.id } })).version).toBe(2)
   expect((await (await live()).json()).transmissionLink.url).toBe(publicUrl)
   const historical = await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`), { params: Promise.resolve({ id: session.id }) })
   expect((await historical.json()).transmissionLink.url).toBe(publicUrl)
+  await db.transmission.update({ where: { id: transmission.id }, data: { publicObservationId: null } })
+  expect((await (await live()).json()).transmissionLink).toBeNull()
+  expect((await (await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`),
+    { params: Promise.resolve({ id: session.id }) })).json()).transmissionLink).toBeNull()
+  await db.transmission.update({ where: { id: transmission.id }, data: { publicObservationId: observationId } })
   // Queda da fonte altera o estado observado; a intenção e o link publicados
   // permanecem para recuperação, sem afirmar que a plataforma continua ao vivo.
   ready = false

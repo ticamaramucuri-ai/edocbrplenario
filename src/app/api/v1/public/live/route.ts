@@ -103,7 +103,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
             include: { parliamentarian: true },
           })
         : Promise.resolve(null),
-      db.transmission.findUnique({ where: { sessionId: selected.id }, select: { publicUrl: true, publicPublishedAt: true } }),
+      db.transmission.findUnique({ where: { sessionId: selected.id }, select: { publicUrl: true, publicPublishedAt: true, publicObservationId: true } }),
       db.sessionRecording.findUnique({ where: { sessionId: selected.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
     ])
 
@@ -151,7 +151,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       accentColor: tenant.accentColor,
       logoUrl: tenant.logoUrl,
     },
-    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt
+    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt && (!selected.official || transmission.publicObservationId)
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
       : null,
     localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > now)

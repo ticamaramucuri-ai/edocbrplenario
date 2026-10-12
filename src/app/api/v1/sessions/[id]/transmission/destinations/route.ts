@@ -43,10 +43,12 @@ async function view(tenantId: string, sessionId: string) {
         label: item.label,
         platform: item.platform,
         hasPublicUrl: Boolean(item.publicUrl),
+        publicUrl: item.publicUrl ?? null,
         enabled: actual?.enabled ?? null,
         state: actual?.state ?? 'unknown',
         outboundBytes: actual?.outboundBytes ?? null,
         desiredEnabled: intent?.desiredEnabled ?? false,
+        generation: intent?.generation ?? null,
         syncStatus: intent?.syncStatus === 'applied' && actual && actual.enabled !== intent.desiredEnabled
           ? 'pending'
           : intent?.syncStatus ?? 'unmanaged',

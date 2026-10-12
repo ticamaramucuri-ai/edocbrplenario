@@ -191,18 +191,31 @@ ativo → 409 `MEDIA_DESTINATIONS_ACTIVE`. Destino inexistente retorna
 Um lease por caminho serializa alterações de destinos distintos entre workers;
 contenção prolongada aparece como `MEDIA_PATH_BUSY` e recebe retry.
 
+### GET/POST `/api/v1/sessions/:id/transmission/observations`
+GET exige `media.read` e lista as últimas 20 conferências da página pública da
+sessão, sem credencial RTMPS. POST exige `media.manage` e body
+`{ destinationId, videoOk: true, audioOk: true, evidenceNote }` (10–500 caracteres).
+O servidor grava a URL pública configurada, a geração do destino, identidade e
+horário da declaração, somente com sinal local pronto e encaminhamento aplicado.
+A declaração é humana: a API não acessa nem verifica automaticamente a página social.
+
 ### POST `/api/v1/sessions/:id/transmission/public-link`
 Permissão `media.manage`. Body `{ action: 'publish'|'withdraw', version,
-idempotencyKey, destinationId?, platformConfirmed? }`. `publish` exige
+idempotencyKey, destinationId?, platformConfirmed?, observationId? }`. `publish` exige
 `destinationId`, `platformConfirmed: true`, URL HTTPS pública configurada para
 o destino da Câmara, fonte pronta, acompanhamento `monitoring`, intenção
 aplicada e MediaMTX em `forwarding`. A confirmação da plataforma é humana;
-o sistema não a infere do transporte RTMPS. `withdraw` remove o link do portal.
+o sistema não a infere do transporte RTMPS. Em sessão oficial, exige também
+`observationId` de outra identidade, da mesma Câmara/sessão/destino/URL/geração,
+com vídeo e áudio declarados nos dez minutos anteriores. `withdraw` remove o
+link do portal e o vínculo à observação.
 Ambas as ações usam versão e idempotência, com auditoria e outbox transacionais.
 Erros: `MEDIA_PUBLIC_CONFIRMATION_REQUIRED`, `MEDIA_PUBLIC_URL_MISSING`,
 `MEDIA_PUBLIC_NOT_READY`, `MEDIA_PUBLIC_LINK_MISSING`, `CONFLICT_VERSION`.
 O GET público `/api/v1/public/live` inclui `transmissionLink` somente após
-publicação explícita, sem expor URL de ingestão ou stream key. O detalhe
+publicação explícita, sem expor URL de ingestão ou stream key. Em sessão oficial,
+um link legado sem observação vinculada fica oculto até nova conferência e
+publicação. O detalhe
 `/api/v1/public/sessions/:id` mantém o link para consulta histórica enquanto
 ele permanecer publicado.
 
