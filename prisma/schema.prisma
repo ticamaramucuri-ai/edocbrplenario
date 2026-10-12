@@ -151,6 +151,13 @@ model Publication {
   revokedAt        DateTime?
   revokedReason    String?
   verificationCode String    @default("")
+  reviewHash       String?   // SHA-256 de título, conteúdo e sessão vinculada
+  reviewedById     String?
+  reviewedByName   String?
+  reviewedAt       DateTime?
+  reviewReference  String?
+  publishedContentSha256 String?
+  activeAtaSessionKey String? @unique // sessão com ata publicada ativa; nulo para rascunho/revogação
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

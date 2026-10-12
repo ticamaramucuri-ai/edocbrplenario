@@ -59,8 +59,10 @@ export const GET = apiHandler(async (req, ctx, _correlationId) => {
       kind: 'ata_sessao',
       status: 'published',
       sessionId: session.id,
+      activeAtaSessionKey: session.id,
     },
-  })
+  }) ?? await db.publication.findFirst({ where: { tenantId: tenant.id, kind: 'ata_sessao',
+    status: 'published', sessionId: session.id }, orderBy: { publishedAt: 'desc' } })
   if (!publication) throw notFound('Ata desta sessão ainda não publicada.')
 
   const signatures = await db.documentSignature.findMany({
@@ -69,18 +71,22 @@ export const GET = apiHandler(async (req, ctx, _correlationId) => {
   })
 
   const docHash = computeDocHash(publication.contentMd)
+  const contentSha256Valid = publication.publishedContentSha256 === docHash
 
   const view: PublicAtaView = {
     sessionLabel: sessionLabel(session),
+    publicationId: publication.id,
+    verificationCode: publication.verificationCode,
     publishedAt: publication.publishedAt ? publication.publishedAt.toISOString() : null,
     contentMd: publication.contentMd,
     docHash,
+    contentSha256Valid,
     signatures: signatures.map((s) => ({
       signatoryName: s.signatoryName,
       signedAt: s.signedAt.toISOString(),
       signatureCode: s.signatureCode,
     })),
-    chainValid: verifySignatureChain(tenant.id, docHash, signatures),
+    chainValid: contentSha256Valid && verifySignatureChain(tenant.id, docHash, signatures),
   }
 
   return Response.json(view)

@@ -26,7 +26,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     throw notFound('Sessão não encontrada neste tenant.')
   }
 
-  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision, transmission, recording] = await Promise.all([
+  const [agenda, attendance, votings, speeches, parliamentarians, agendaRevision, transmission, recording, ata] = await Promise.all([
     session.agendaPublished
       ? db.agendaItem.findMany({ where: { sessionId: session.id }, orderBy: { order: 'asc' } })
       : Promise.resolve([]),
@@ -47,7 +47,12 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
     }),
     db.sessionAgendaRevision.findFirst({ where: { tenantId: tenant.id, sessionId: session.id }, orderBy: { revision: 'desc' } }),
     db.transmission.findUnique({ where: { sessionId: session.id }, select: { publicUrl: true, publicPublishedAt: true } }),
-    db.sessionRecording.findUnique({ where: { sessionId: session.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
+    db.sessionRecording.findUnique({ where: { sessionId: session.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true, replaySha256: true, manifestSha256: true } }),
+    db.publication.findFirst({ where: { tenantId: tenant.id, kind: 'ata_sessao', status: 'published', activeAtaSessionKey: session.id },
+      select: { id: true, publishedAt: true, publishedContentSha256: true, verificationCode: true } })
+      .then((active) => active ?? db.publication.findFirst({ where: { tenantId: tenant.id, kind: 'ata_sessao',
+        status: 'published', sessionId: session.id }, orderBy: { publishedAt: 'desc' },
+        select: { id: true, publishedAt: true, publishedContentSha256: true, verificationCode: true } })),
   ])
 
   const partyById = new Map(parliamentarians.map((p) => [p.id, p.party]))
@@ -68,8 +73,11 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
       : null,
     localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > new Date())
-      ? { durationSeconds: recording.durationSeconds, publishedAt: recording.publishedAt.toISOString(), expiresAt: recording.expiresAt?.toISOString() ?? null }
+      ? { durationSeconds: recording.durationSeconds, publishedAt: recording.publishedAt.toISOString(), expiresAt: recording.expiresAt?.toISOString() ?? null,
+          replaySha256: recording.replaySha256, manifestSha256: recording.manifestSha256 }
       : null,
+    ata: ata ? { publicationId: ata.id, publishedAt: ata.publishedAt?.toISOString() ?? null,
+      contentSha256: ata.publishedContentSha256, verificationCode: ata.verificationCode } : null,
     agenda: agenda.map(toPublicAgendaItem),
     agendaRevision: agendaRevision ? { number: agendaRevision.revision, publishedAt: agendaRevision.createdAt.toISOString(), justification: agendaRevision.justification, noticeSha256: agendaRevision.noticeSha256 } : null,
     // Presença consolidada final: apenas quando a sessão foi encerrada.

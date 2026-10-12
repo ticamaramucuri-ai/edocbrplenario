@@ -19,6 +19,7 @@
  * Problem Details + Retry-After. Código normalizado (trim + uppercase).
  */
 import { db } from '@/lib/db'
+import { computeDocHash } from '@/lib/server/document-signatures'
 import { apiHandler, clientIp, DomainError } from '@/lib/server/errors'
 import {
   hitRateLimit,
@@ -84,6 +85,9 @@ export const GET = apiHandler(async (req: Request, _ctx, correlationId) => {
     tenantName: publication.tenant.name,
     publishedAt: publication.publishedAt?.toISOString() ?? null,
     revokedAt: publication.revokedAt?.toISOString() ?? null,
-    status: publication.status === 'revoked' ? 'revogada' : 'valida',
+    status: publication.status === 'revoked' ? 'revogada'
+      : !publication.publishedContentSha256 ? 'sem_hash'
+        : computeDocHash(publication.contentMd) !== publication.publishedContentSha256 ? 'integridade_invalida' : 'valida',
+    contentSha256: publication.publishedContentSha256,
   })
 })

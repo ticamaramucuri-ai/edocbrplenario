@@ -76,6 +76,9 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
   requirePermission(actor, 'publication.write')
   const tenantId = await resolveTenantScope(req as NextRequest, actor)
   const body = createSchema.parse(await req.json())
+  if (body.kind === 'ata_sessao' && !body.sessionId) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Sessão obrigatória', 'Ata de sessão deve estar vinculada a uma sessão desta Câmara.')
+  }
   const year = new Date().getFullYear()
 
   // Vínculos opcionais precisam existir e pertencer ao escopo do ator.
@@ -84,12 +87,14 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
     session = await db.session.findUnique({ where: { id: body.sessionId } })
     if (!session) throw notFound('Sessão vinculada não encontrada.')
     assertTenantScope(actor, session.tenantId)
+    if (session.tenantId !== tenantId) throw notFound('Sessão vinculada não encontrada nesta Câmara.')
   }
   let matter: LegislativeMatter | null = null
   if (body.matterId) {
     matter = await db.legislativeMatter.findUnique({ where: { id: body.matterId } })
     if (!matter) throw notFound('Matéria vinculada não encontrada.')
     assertTenantScope(actor, matter.tenantId)
+    if (matter.tenantId !== tenantId) throw notFound('Matéria vinculada não encontrada nesta Câmara.')
   }
 
   // Fase 14: origem opcional em modelo de documento — precisa existir, ser do

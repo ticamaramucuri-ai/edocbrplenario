@@ -894,7 +894,8 @@ function SessionDetailSheet({
               </span>
             </div>
             {session.transmissionLink && <a href={session.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium underline" style={{ color: primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão desta sessão</a>}
-            {session.localReplay && <section aria-label="Replay local da sessão" className="space-y-2"><p className="font-medium">Replay local</p><video controls preload="metadata" className="w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(sessionId)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label="Replay desta sessão" /></section>}
+            {session.localReplay && <section aria-label="Replay local da sessão" className="space-y-2"><p className="font-medium">Replay local</p><video controls preload="metadata" className="w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(sessionId)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label="Replay desta sessão" /><p className="break-all text-[10px] text-zinc-500">SHA-256 do vídeo: {session.localReplay.replaySha256}</p></section>}
+            {session.ata && <p className="break-all text-xs text-zinc-600">Ata publicada nº {session.ata.verificationCode} · SHA-256 do texto: {session.ata.contentSha256 ?? 'não registrado'}</p>}
 
             {/* Pauta publicada */}
             <section>
@@ -1311,6 +1312,14 @@ type VerifyResultRow = PublicVerifyResult & { revokedAt?: string | null }
 
 /** Selo resultante da verificação — cor + ÍCONE + texto (nunca só cor). */
 function VerifySeal({ result }: { result: VerifyResultRow }) {
+  if (result.status === 'integridade_invalida' || result.status === 'sem_hash') {
+    return <div role="alert" className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-rose-900">
+      <p className="flex items-center gap-1.5 font-bold"><AlertTriangle className="size-4" aria-hidden />
+        {result.status === 'sem_hash' ? 'Integridade não comprovada' : 'Integridade inválida'}</p>
+      <p className="mt-1 text-sm">{result.title} · {result.tenantName}</p>
+      <p className="mt-1 text-xs">O código identifica uma publicação, mas o conteúdo não possui hash publicado verificável ou diverge dele. Procure a Câmara antes de usar este documento.</p>
+    </div>
+  }
   if (result.status === 'valida') {
     return (
       <div

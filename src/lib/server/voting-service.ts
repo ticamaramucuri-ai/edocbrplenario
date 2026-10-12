@@ -48,6 +48,9 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
   const source = args.source ?? 'operator'
 
   const voting = await loadVoting(actor, votingId)
+  if (voting.session.official && voting.mode === 'secreto') {
+    throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado até revisão independente do sigilo.')
+  }
   if (voting.status !== 'open') {
     throw new DomainError(
       'VOTING_NOT_OPEN',
@@ -69,6 +72,9 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
 
   return withTransaction(async (tx) => {
     const currentVoting = await tx.voting.findUniqueOrThrow({ where: { id: voting.id }, include: { session: true } })
+    if (currentVoting.session.official && currentVoting.mode === 'secreto') {
+      throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado.')
+    }
     if (currentVoting.status !== 'open' || !['open', 'resumed'].includes(currentVoting.session.status)) {
       throw new DomainError('VOTING_NOT_OPEN', 409, 'Votação indisponível',
         'A votação e a sessão precisam estar abertas para registrar votos.')

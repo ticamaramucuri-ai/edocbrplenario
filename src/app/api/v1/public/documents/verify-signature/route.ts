@@ -85,6 +85,7 @@ export const GET = apiHandler(async (req: Request, _ctx, correlationId) => {
     !!publication &&
     publication.status === 'published' &&
     publication.tenantId === signature.tenantId &&
+    publication.publishedContentSha256 === signature.docHash &&
     computeDocHash(publication.contentMd) === signature.docHash
 
   return Response.json({

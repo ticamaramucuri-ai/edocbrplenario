@@ -89,6 +89,10 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   const body = bodySchema.parse(await req.json())
 
   const session = await loadSession(actor, id)
+  if (session.official && body.mode === 'secreto') {
+    throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível',
+      'Voto secreto oficial está desabilitado até que a escolha seja armazenada sem vínculo com a identidade do parlamentar e passe por revisão independente.')
+  }
   if (!['open', 'suspended', 'resumed'].includes(session.status)) {
     throw new DomainError(
       'SESSION_INVALID_TRANSITION',
@@ -130,6 +134,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
   const voting = await withTransaction(async (tx) => {
     const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    if (currentSession.official && body.mode === 'secreto') {
+      throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado.')
+    }
     if (!['open', 'suspended', 'resumed'].includes(currentSession.status)) {
       throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Sessão indisponível', 'A sessão mudou de estado. Recarregue antes de criar a votação.')
     }

@@ -82,8 +82,10 @@ export const GET = apiHandler(async (req, ctx, _correlationId) => {
         kind: 'ata_sessao',
         status: 'published',
         sessionId: session.id,
+        activeAtaSessionKey: session.id,
       },
-    }),
+    }).then((active) => active ?? db.publication.findFirst({ where: { tenantId: session.tenantId,
+      kind: 'ata_sessao', status: 'published', sessionId: session.id }, orderBy: { publishedAt: 'desc' } })),
     currentAttendance(db, session.id, session.tenantId),
   ])
 
@@ -121,9 +123,9 @@ export const GET = apiHandler(async (req, ctx, _correlationId) => {
       }),
     signatures: docSignatures.map(toView),
     chainValid:
-      publication && currentDocHash
+      publication && currentDocHash && publication.publishedContentSha256 === currentDocHash
         ? verifySignatureChain(session.tenantId, currentDocHash, docSignatures)
-        : true,
+        : !publication,
   }
 
   return Response.json(view)

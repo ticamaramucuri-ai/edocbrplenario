@@ -23,6 +23,14 @@ limit dos endpoints públicos.
 
 `GET /api/v1/votings/:id/symbolic-tally` lista as revisões da contagem. `POST` com `{action:"propose",version,sim,nao,abstencoes}` ou `{action:"propose",version,customCounts}` cria revisão quando a votação simbólica oficial está aberta/pausada. Secretaria/operador ou administração propõem; `POST` com `{action:"confirm",version,revisionId}` exige Presidência ou administração em **outra identidade**. Ambas as ações incrementam a versão da votação, auditam e notificam a Mesa sem divulgar a contagem parcial no evento público. Após confirmação, `POST /votings/:id/transition` com `{action:"close",version}` obtém a contagem persistida; números avulsos no fechamento são rejeitados. Revisão confirmada não pode ser substituída pela mesma rota.
 
+## Adições das etapas 050–051 — sigilo e ata
+
+Voto `secreto` em sessão `official=true` retorna 409 `VOTING_INVALID_TRANSITION` na criação, abertura, retomada, fechamento e lançamento de voto. O bloqueio vale também para registros legados e para o App do Parlamentar. Não existe protocolo de voto offline nesta versão.
+
+`POST /api/v1/publications` com `kind:"ata_sessao"` exige `sessionId` da mesma Câmara. `GET /api/v1/publications/:id` inclui `currentReviewHash` (SHA-256 de `[title,contentMd,sessionId]`) e metadados da revisão. `PATCH /api/v1/publications/:id` com `{action:"review",expectedHash,reference}` exige rascunho de ata, texto não vazio e sessão encerrada; grava revisor, referência e hash. `action:"edit"` invalida a revisão. `action:"publish"` exige hash vigente e ator diferente do revisor; grava `publishedContentSha256` do Markdown e reserva uma única ata publicada ativa por sessão. `action:"revoke"` libera a sessão para novo ato numerado, sem apagar o anterior.
+
+`GET /api/v1/public/sessions/:id` inclui `ata` (ID da publicação, hash e código) e, quando disponível, SHA-256 do replay e do manifesto. `GET /api/v1/public/documents/ata/:sessionId` inclui `publicationId`, `verificationCode`, `contentSha256Valid` e `chainValid`; hash ausente ou divergente torna a integridade inválida e impede nova assinatura. Publicações antigas sem hash não são marcadas retroativamente como verificadas.
+
 ## Convenções gerais
 
 - **Ator**: rotas internas usam sessão autenticada; `x-actor-id` só funciona no modo

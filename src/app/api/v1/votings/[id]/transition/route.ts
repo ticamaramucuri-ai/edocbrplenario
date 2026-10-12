@@ -96,6 +96,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
   const result = await withTransaction(async (tx) => {
     const current = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
+    if (session.official && current.mode === 'secreto' && ['open', 'resume', 'close'].includes(body.action)) {
+      throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado até revisão independente do sigilo.')
+    }
     if (current.version !== body.version || current.status !== voting.status) {
       throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A votação mudou. Recarregue antes de executar a ação.')
     }

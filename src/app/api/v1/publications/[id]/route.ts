@@ -23,10 +23,12 @@ import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import {
   assertPublicationTransition,
+  publicationReviewHash,
   publicationNumberLabel,
   toPublicationDetailView,
   toPublicationView,
 } from '@/lib/server/publications'
+import { computeDocHash } from '@/lib/server/document-signatures'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +46,8 @@ export const GET = apiHandler(async (req: Request, ctx, _correlationId) => {
 
 const patchSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('publish') }),
+  z.object({ action: z.literal('review'), expectedHash: z.string().regex(/^[a-f0-9]{64}$/),
+    reference: z.string().trim().min(5).max(200) }),
   z.object({
     action: z.literal('revoke'),
     reason: z
@@ -87,13 +91,67 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
   }
 
   const publication = await withTransaction(async (tx) => {
+    const current = await tx.publication.findUniqueOrThrow({ where: { id, tenantId } })
+    if (body.action === 'review') {
+      if (current.kind !== 'ata_sessao' || current.status !== 'draft' || !current.sessionId) {
+        throw new DomainError('PUBLICATION_INVALID_TRANSITION', 409, 'Revisão indisponível', 'Somente rascunho de ata vinculado à sessão pode ser revisado.')
+      }
+      const session = await tx.session.findFirst({ where: { id: current.sessionId, tenantId } })
+      if (!session || session.status !== 'closed') {
+        throw new DomainError('SESSION_PRECONDITION', 409, 'Sessão não encerrada', 'Encerre a sessão antes de revisar sua ata.')
+      }
+      if (current.contentMd.trim().length < 20) {
+        throw new DomainError('VALIDATION_ERROR', 422, 'Ata incompleta', 'A ata precisa de conteúdo antes da revisão.')
+      }
+      const hash = publicationReviewHash(current)
+      if (hash !== body.expectedHash) {
+        throw new DomainError('CONFLICT_VERSION', 409, 'Texto alterado', 'O texto da ata mudou. Abra novamente e confira o conteúdo antes de revisar.')
+      }
+      if (current.reviewHash) {
+        if (current.reviewHash === hash && current.reviewedById === actor.id && current.reviewReference === body.reference) return current
+        throw new DomainError('PUBLICATION_INVALID_TRANSITION', 409, 'Ata já revisada', 'Edite o rascunho para iniciar uma nova revisão.')
+      }
+      const reviewedAt = new Date()
+      const changed = await tx.publication.updateMany({ where: { id, tenantId, status: 'draft', reviewHash: null,
+        title: current.title, contentMd: current.contentMd, sessionId: current.sessionId },
+        data: { reviewHash: hash, reviewedById: actor.id, reviewedByName: actor.name, reviewedAt, reviewReference: body.reference } })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Rascunho alterado', 'Recarregue a ata.')
+      await writeAudit(tx, { tenantId, actor, action: 'ata.reviewed', aggregateType: 'publication', aggregateId: id,
+        summary: `Ata nº ${publicationNumberLabel(current.number, current.year)} revisada por ${actor.name}.`,
+        after: { reviewHash: hash, sessionId: current.sessionId, reference: body.reference },
+        correlationId, ip })
+      return tx.publication.findUniqueOrThrow({ where: { id } })
+    }
     if (body.action === 'publish') {
       assertPublicationTransition(current.status, 'published')
+      if (current.kind === 'ata_sessao') {
+        if (!current.sessionId || !current.reviewHash || !current.reviewedById ||
+            current.reviewHash !== publicationReviewHash(current)) {
+          throw new DomainError('PUBLICATION_INVALID_TRANSITION', 409, 'Ata sem revisão vigente',
+            'Revise o texto atual da ata antes de publicá-la.')
+        }
+        if (current.reviewedById === actor.id) {
+          throw new DomainError('FORBIDDEN_ROLE', 403, 'Publicação independente', 'Outra pessoa deve autorizar a publicação da ata revisada.')
+        }
+        const session = await tx.session.findFirst({ where: { id: current.sessionId, tenantId } })
+        if (!session || session.status !== 'closed') {
+          throw new DomainError('SESSION_PRECONDITION', 409, 'Sessão não encerrada', 'A ata só pode ser publicada após o encerramento da sessão.')
+        }
+        const activeAta = await tx.publication.findFirst({ where: {
+          tenantId, kind: 'ata_sessao', status: 'published', sessionId: current.sessionId,
+        }, select: { id: true } })
+        if (activeAta && activeAta.id !== current.id) {
+          throw new DomainError('PUBLICATION_INVALID_TRANSITION', 409, 'Ata já publicada', 'Revogue a ata vigente antes de publicar um novo ato de correção.')
+        }
+      }
       const publishedAt = new Date()
-      const updated = await tx.publication.update({
-        where: { id: current.id },
-        data: { status: 'published', publishedAt },
-      })
+      const publishedContentSha256 = computeDocHash(current.contentMd)
+      const changed = await tx.publication.updateMany({ where: { id: current.id, tenantId, status: 'draft',
+        title: current.title, contentMd: current.contentMd, reviewHash: current.reviewHash },
+        data: { status: 'published', publishedAt, publishedContentSha256,
+          activeAtaSessionKey: current.kind === 'ata_sessao' ? current.sessionId : null } })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Rascunho alterado', 'Recarregue a publicação.')
+      const updated = await tx.publication.findUniqueOrThrow({ where: { id: current.id } })
       await writeAudit(tx, {
         tenantId,
         actor,
@@ -102,7 +160,8 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
         aggregateId: current.id,
         summary: `Publicação nº ${publicationNumberLabel(current.number, current.year)} publicada no diário eletrônico: ${current.title.slice(0, 60)}.`,
         before: { status: current.status },
-        after: { status: 'published', publishedAt: publishedAt.toISOString() },
+        after: { status: 'published', publishedAt: publishedAt.toISOString(), publishedContentSha256,
+          reviewHash: current.reviewHash, reviewedById: current.reviewedById, sessionId: current.sessionId },
         correlationId,
         ip,
       })
@@ -136,10 +195,12 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
     if (body.action === 'revoke') {
       assertPublicationTransition(current.status, 'revoked')
       const revokedAt = new Date()
-      const updated = await tx.publication.update({
-        where: { id: current.id },
-        data: { status: 'revoked', revokedAt, revokedReason: body.reason },
+      const changed = await tx.publication.updateMany({
+        where: { id: current.id, tenantId, status: 'published' },
+        data: { status: 'revoked', revokedAt, revokedReason: body.reason, activeAtaSessionKey: null },
       })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Publicação alterada', 'Recarregue a publicação.')
+      const updated = await tx.publication.findUniqueOrThrow({ where: { id: current.id } })
       await writeAudit(tx, {
         tenantId,
         actor,
@@ -189,10 +250,14 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
     }
     const title = body.title ?? current.title
     const contentMd = body.contentMd ?? current.contentMd
-    const updated = await tx.publication.update({
-      where: { id: current.id },
-      data: { title, contentMd },
+    const changed = await tx.publication.updateMany({
+      where: { id: current.id, tenantId, status: 'draft', title: current.title, contentMd: current.contentMd,
+        reviewHash: current.reviewHash },
+      data: { title, contentMd, reviewHash: null, reviewedById: null, reviewedByName: null,
+        reviewedAt: null, reviewReference: null },
     })
+    if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Rascunho alterado', 'Recarregue a publicação.')
+    const updated = await tx.publication.findUniqueOrThrow({ where: { id: current.id } })
     await writeAudit(tx, {
       tenantId,
       actor,

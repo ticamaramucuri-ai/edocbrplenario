@@ -173,9 +173,13 @@ type PublicationRow = {
   revokedReason: string | null
   verificationCode: string | null
   createdAt: string
+  reviewHash: string | null
+  reviewedByName: string | null
+  reviewedAt: string | null
+  publishedContentSha256: string | null
 }
 
-type PublicationDetail = PublicationRow & { contentMd: string }
+type PublicationDetail = PublicationRow & { contentMd: string; currentReviewHash: string; reviewReference: string | null }
 
 /** Modelo de documento ativo (opções do dialog de criação — Fase 14). */
 type TemplateOptionRow = {
@@ -545,7 +549,7 @@ function PublicationFormDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="pub-session">Sessão vinculada (opcional)</Label>
+              <Label htmlFor="pub-session">Sessão vinculada {kind === 'ata_sessao' ? '(obrigatória)' : '(opcional)'}</Label>
               <Select value={sessionId} onValueChange={handleSessionChange} disabled={!!editing}>
                 <SelectTrigger id="pub-session" aria-label="Sessão vinculada">
                   <SelectValue placeholder="Sem vínculo" />
@@ -637,7 +641,7 @@ function PublicationFormDialog({
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !titleValid}>
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !titleValid || (!editing && kind === 'ata_sessao' && sessionId === 'none')}>
             {save.isPending && <RefreshCw className="animate-spin" />}
             {editing ? 'Salvar rascunho' : 'Criar rascunho'}
           </Button>
@@ -838,6 +842,20 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
   const [viewTarget, setViewTarget] = useState<PublicationRow | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<PublicationRow | null>(null)
   const [publishTarget, setPublishTarget] = useState<PublicationRow | null>(null)
+  const [reviewTarget, setReviewTarget] = useState<PublicationRow | null>(null)
+  const [reviewReference, setReviewReference] = useState('')
+  const reviewDetailQ = useQuery({ queryKey: ['publication-detail', reviewTarget?.id],
+    queryFn: () => apiFetch<{ publication: PublicationDetail }>(`/api/v1/publications/${reviewTarget!.id}`),
+    enabled: !!reviewTarget })
+  const review = useMutation({
+    mutationFn: (vars: { id: string; expectedHash: string; reference: string }) =>
+      apiFetch<{ publication: PublicationRow }>(`/api/v1/publications/${vars.id}`, { method: 'PATCH',
+        body: JSON.stringify({ action: 'review', expectedHash: vars.expectedHash, reference: vars.reference }) }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['publications'] });
+      if (reviewTarget) void qc.invalidateQueries({ queryKey: ['publication-detail', reviewTarget.id] });
+      setReviewTarget(null); setReviewReference(''); toast.success('Ata revisada; outra pessoa poderá publicá-la.') },
+    onError: (err) => toast.error('Falha na revisão', { description: problemMessage(err) }),
+  })
 
   const filtersKey = JSON.stringify({ statusFilter, kindFilter, yearInput, search })
   const publicationsQ = useQuery({
@@ -997,6 +1015,7 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
                   </TableCell>
                   <TableCell>
                     <PublicationStatusBadge status={p.status} />
+                    {p.kind === 'ata_sessao' && p.reviewHash && p.status === 'draft' && <Badge variant="outline" className="ml-1">Revisada</Badge>}
                   </TableCell>
                   <TableCell className="hidden text-sm text-muted-foreground md:table-cell">
                     {fmtDate(p.publishedAt)}
@@ -1018,6 +1037,9 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
                         </DropdownMenuItem>
                         {canWrite && p.status === 'draft' && (
                           <>
+                            {p.kind === 'ata_sessao' && <DropdownMenuItem onClick={() => { setReviewReference(''); setReviewTarget(p) }}>
+                              <ShieldCheck /> Revisar ata
+                            </DropdownMenuItem>}
                             <DropdownMenuItem onClick={() => setPublishTarget(p)}>
                               <Megaphone /> Publicar
                             </DropdownMenuItem>
@@ -1052,6 +1074,28 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
       {viewTarget && (
         <ViewPublicationDialog publication={viewTarget} onClose={() => setViewTarget(null)} />
       )}
+      <Dialog open={!!reviewTarget} onOpenChange={(open) => { if (!open) setReviewTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader><DialogTitle>Revisar ata {reviewTarget?.numberLabel}</DialogTitle>
+            <DialogDescription>Confira o texto completo e a sessão vinculada. O hash congela esta revisão; outra pessoa deverá publicar.</DialogDescription>
+          </DialogHeader>
+          {reviewDetailQ.data?.publication ? <div className="space-y-3 text-sm">
+            <p><strong>{reviewDetailQ.data.publication.title}</strong> · sessão {reviewDetailQ.data.publication.sessionId ?? 'não vinculada'}</p>
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded border p-3 font-sans">{reviewDetailQ.data.publication.contentMd}</pre>
+            <p className="break-all font-mono text-xs">Hash da revisão: {reviewDetailQ.data.publication.currentReviewHash}</p>
+            {reviewDetailQ.data.publication.reviewHash && <p>Revisada por {reviewDetailQ.data.publication.reviewedByName}. Edite o rascunho para iniciar nova revisão.</p>}
+            <div className="grid gap-1"><Label htmlFor="ata-review-reference">Referência da conferência</Label>
+              <Input id="ata-review-reference" value={reviewReference} onChange={(e) => setReviewReference(e.target.value)}
+                placeholder="Ex.: conferência interna 2026/001" maxLength={200} /></div>
+          </div> : <Skeleton className="h-24 w-full" />}
+          <DialogFooter><Button variant="outline" onClick={() => setReviewTarget(null)}>Cancelar</Button>
+            <Button disabled={review.isPending || reviewReference.trim().length < 5 || !reviewDetailQ.data?.publication || !!reviewDetailQ.data.publication.reviewHash}
+              onClick={() => { const detail = reviewDetailQ.data?.publication; if (reviewTarget && detail) review.mutate({
+                id: reviewTarget.id, expectedHash: detail.currentReviewHash, reference: reviewReference.trim() }) }}>
+              Confirmar revisão
+            </Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       {revokeTarget && (
         <RevokePublicationDialog
           publication={revokeTarget}
@@ -1071,6 +1115,8 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
               <strong className="text-foreground">{publishTarget?.title}</strong> será publicada no
               diário eletrônico com número e código de verificação definitivos. A partir daí o
               conteúdo fica imutável — apenas a revogação (com motivo) é possível.
+              {publishTarget?.kind === 'ata_sessao' && <span className="block mt-2">Ata de sessão: exige revisão vigente por outra pessoa e sessão encerrada.
+                {publishTarget.reviewedByName ? ` Revisada por ${publishTarget.reviewedByName}.` : ' Ainda não revisada.'}</span>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

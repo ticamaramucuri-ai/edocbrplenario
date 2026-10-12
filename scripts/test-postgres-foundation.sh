@@ -39,6 +39,7 @@ for model, fields, indexes in [
     ('SessionAgendaRevision', ['documentManifestJson'], []),
     ('AttendanceEvent', ['commandId'], []),
     ('Voting', ['symbolicTallies'], []),
+    ('Publication', ['reviewHash', 'reviewedById', 'reviewedByName', 'reviewedAt', 'reviewReference', 'publishedContentSha256', 'activeAtaSessionKey'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),
@@ -168,6 +169,8 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/session-journey.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/attendance-commands.test.ts tests/symbolic-tally-official.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
+  bun test tests/official-closure.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/session-readiness.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

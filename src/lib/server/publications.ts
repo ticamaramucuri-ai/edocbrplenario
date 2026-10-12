@@ -11,7 +11,7 @@
  *
  * Views públicas NUNCA incluem authorEmail (uso interno legitimado apenas).
  */
-import { randomInt } from 'crypto'
+import { createHash, randomInt } from 'crypto'
 import type { HearingQuestion, Publication, PublicHearing } from '@prisma/client'
 import { DomainError } from './errors'
 
@@ -73,6 +73,11 @@ export function generateVerificationCode(length = 8): string {
   return code
 }
 
+/** Versão revisada inclui título, texto e vínculo da sessão, em ordem fixa. */
+export function publicationReviewHash(p: Pick<Publication, 'title' | 'contentMd' | 'sessionId'>): string {
+  return createHash('sha256').update(JSON.stringify([p.title, p.contentMd, p.sessionId]), 'utf8').digest('hex')
+}
+
 /** View interna (lista) — SEM contentMd (detalhe usa toPublicationDetailView). */
 export function toPublicationView(p: Publication) {
   return {
@@ -91,13 +96,18 @@ export function toPublicationView(p: Publication) {
     revokedAt: p.revokedAt?.toISOString() ?? null,
     revokedReason: p.revokedReason ?? null,
     verificationCode: p.verificationCode || null,
+    reviewHash: p.reviewHash ?? null,
+    reviewedByName: p.reviewedByName ?? null,
+    reviewedAt: p.reviewedAt?.toISOString() ?? null,
+    publishedContentSha256: p.publishedContentSha256 ?? null,
     createdAt: p.createdAt.toISOString(),
   }
 }
 
 /** View interna de detalhe — inclui o texto integral (contentMd). */
 export function toPublicationDetailView(p: Publication) {
-  return { ...toPublicationView(p), contentMd: p.contentMd }
+  return { ...toPublicationView(p), contentMd: p.contentMd, reviewReference: p.reviewReference ?? null,
+    currentReviewHash: publicationReviewHash(p) }
 }
 
 /** View pública de LISTA — sem contentMd e sem código de verificação. */
@@ -125,6 +135,8 @@ export function toPublicPublicationDetailView(p: Publication) {
     verificationCode: p.verificationCode || null,
     revokedReason: p.revokedReason ?? null,
     createdAt: p.createdAt.toISOString(),
+    sessionId: p.sessionId ?? null,
+    publishedContentSha256: p.publishedContentSha256 ?? null,
   }
 }
 

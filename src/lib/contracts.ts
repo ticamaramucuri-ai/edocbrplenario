@@ -1029,7 +1029,8 @@ export type PublicSessionSummary = {
 export type PublicSessionDetail = {
   session: PublicSessionSummary
   transmissionLink: { url: string; publishedAt: string } | null
-  localReplay: { durationSeconds: number; publishedAt: string; expiresAt: string | null } | null
+  localReplay: { durationSeconds: number; publishedAt: string; expiresAt: string | null; replaySha256: string; manifestSha256: string } | null
+  ata: { publicationId: string; publishedAt: string | null; contentSha256: string | null; verificationCode: string } | null
   agenda: Array<Pick<AgendaItemView, 'id' | 'order' | 'section' | 'title' | 'status' | 'resultSummary'>>
   agendaRevision: { number: number; publishedAt: string; justification: string | null; noticeSha256: string | null } | null
   attendance: {
@@ -1621,7 +1622,8 @@ export type PublicVerifyResult = {
   title: string | null
   tenantName: string | null
   publishedAt: string | null
-  status: 'valida' | 'revogada' | 'nao_encontrada'
+  status: 'valida' | 'revogada' | 'nao_encontrada' | 'sem_hash' | 'integridade_invalida'
+  contentSha256?: string | null
 }
 
 export const SUBSCRIPTION_TARGET_LABEL: Record<SubscriptionTargetKind, string> = {
@@ -1851,9 +1853,12 @@ export type AtaSignaturesView = {
 /** Ata pública com assinaturas (GET /public/documents/ata/:sessionId). */
 export type PublicAtaView = {
   sessionLabel: string
+  publicationId: string
+  verificationCode: string
   publishedAt: string | null
   contentMd: string
   docHash: string
+  contentSha256Valid: boolean
   signatures: Array<{ signatoryName: string; signedAt: string; signatureCode: string }>
   chainValid: boolean
 }

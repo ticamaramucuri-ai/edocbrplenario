@@ -76,7 +76,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
   }, iniciou-se ${sessionLabel(session)} (${SESSION_TYPE_LABEL[session.type as 'ordinaria'] ?? session.type}), com ${attendance.quorum.present} vereador(es) presente(s) de ${attendance.quorum.total} membros (mínimo regimental: ${settings.quorumMinimum}).`
 
   const closing = session.closedAt
-    ? `Nada mais havendo a tratar, o(a) Presidente declarou encerrados os trabalhos às ${session.closedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}, lavrando-se a presente ata, que foi lida e aprovada.`
+    ? `Nada mais havendo a tratar, o(a) Presidente declarou encerrados os trabalhos às ${session.closedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}. Esta minuta depende de revisão e publicação próprias; o encerramento da sessão não comprova leitura nem aprovação da ata.`
     : 'Sessão ainda não encerrada — minuta parcial com os dados persistidos até o momento.'
 
   const ata: AtaReportView = {

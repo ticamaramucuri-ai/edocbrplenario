@@ -57,8 +57,9 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
       kind: 'ata_sessao',
       status: 'published',
       sessionId: { not: null },
+      activeAtaSessionKey: { not: null },
     },
-    select: { id: true, contentMd: true, sessionId: true },
+    select: { id: true, contentMd: true, sessionId: true, publishedContentSha256: true },
   })
   const closedSessions = await db.session.findMany({
     where: {
@@ -79,6 +80,9 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
       'Sem ata para assinar',
       'Não há ata de sessão encerrada publicada no diário eletrônico deste tenant. A assinatura eletrônica fica disponível após a publicação da ata.'
     )
+  }
+  if (publication.publishedContentSha256 !== computeDocHash(publication.contentMd)) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Ata sem integridade', 'O conteúdo publicado não confere com o hash registrado. A assinatura foi bloqueada.')
   }
 
   // Presença registrada = último AttendanceEvent do parlamentar na sessão.

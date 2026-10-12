@@ -176,6 +176,7 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
         open={!!votingItem}
         onOpenChange={(open) => !open && setVotingItem(null)}
         sessionId={data.session.id}
+        official={data.session.official}
         invalidate={invalidate}
         onCreated={onGoToVoting}
       />
@@ -351,6 +352,7 @@ function VotingSetupDialog({
   open,
   onOpenChange,
   sessionId,
+  official,
   invalidate,
   onCreated,
 }: {
@@ -358,6 +360,7 @@ function VotingSetupDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   sessionId: string
+  official: boolean
   invalidate: () => void
   onCreated: () => void
 }) {
@@ -469,7 +472,7 @@ function VotingSetupDialog({
           <fieldset className="grid gap-2">
             <legend className="text-sm font-medium">Modo de votação</legend>
             <RadioGroup value={mode} onValueChange={(v) => setMode(v as VotingMode)} className="grid gap-2">
-              {(Object.keys(VOTING_MODE_LABEL) as VotingMode[]).map((m) => (
+              {(Object.keys(VOTING_MODE_LABEL) as VotingMode[]).filter((m) => !official || m !== 'secreto').map((m) => (
                 <Label
                   key={m}
                   htmlFor={`mode-${m}`}
@@ -483,6 +486,7 @@ function VotingSetupDialog({
                 </Label>
               ))}
             </RadioGroup>
+            {official && <p className="text-xs text-muted-foreground">Voto secreto oficial indisponível até revisão independente da garantia de sigilo.</p>}
           </fieldset>
 
           <div className="grid gap-2 sm:grid-cols-2">

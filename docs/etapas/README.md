@@ -55,6 +55,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [047 — Preparação formal da sessão](047-preparacao-formal-sessao.md) | Incremento técnico concluído | PDFs versionados, manifesto na convocação e declaração manual de entrega por revisão | Canal institucional com comprovante técnico, assinatura e aceite |
 | [048 — Condução e presença](048-conducao-presenca.md) | Incremento técnico concluído | Comando idempotente, origem controlada e escopo da Câmara | Dispositivo, acessibilidade e ensaio presencial |
 | [049 — Votação oficial](049-votacao-oficial.md) | Incremento técnico concluído | Proposta e confirmação independente da contagem simbólica oficial | Matriz regimental e ensaio concorrente multi-instância |
+| [050 — Sigilo e continuidade excepcional](050-sigilo-continuidade-excepcional.md) | Proteção técnica concluída | Voto secreto oficial bloqueado inclusive em registros legados | Redesenho criptográfico e decisão sobre contingência offline |
+| [051 — Ata e transparência](051-ata-transparencia.md) | Incremento técnico concluído | Revisão com hash, publicação por outra pessoa, retificação por novo ato e vínculo público à sessão e replay | Aceite institucional do texto, assinaturas e retenção |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
