@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { POST as subscribe } from '@/app/api/v1/public/subscriptions/route'
 import { processMailBatch, subscriptionTokenHash } from '@/lib/server/mail-delivery'
+import { GET as queueGet, POST as queuePost } from '@/app/api/v1/mail-deliveries/route'
 
 afterAll(async () => { await db.$disconnect() })
 
@@ -52,4 +53,35 @@ test('confirmação entra na fila sem vazar token; worker envia, tenta novamente
   await Promise.all([processMailBatch(db, async () => { sends++ }, 'http://localhost:3000'),
     processMailBatch(db, async () => { sends++ }, 'http://localhost:3000')])
   expect(sends).toBe(1)
+})
+
+test('gestão da fila isola Câmaras, retoma apenas entrega vigente e audita sem token', async () => {
+  const suffix = crypto.randomUUID()
+  const tenant = await db.tenant.create({ data: { slug: `mail-admin-${suffix}`, name: 'Câmara A', city: 'Teste', uf: 'BA' } })
+  const other = await db.tenant.create({ data: { slug: `mail-other-${suffix}`, name: 'Câmara B', city: 'Teste', uf: 'BA' } })
+  const admin = await db.user.create({ data: { tenantId: tenant.id, name: 'Admin A', email: `admin-a-${suffix}@example.invalid`, role: 'tenant_admin' } })
+  const foreign = await db.user.create({ data: { tenantId: other.id, name: 'Admin B', email: `admin-b-${suffix}@example.invalid`, role: 'tenant_admin' } })
+  const token = crypto.randomUUID()
+  const subscription = await db.citizenSubscription.create({ data: { tenantId: tenant.id, email: `citizen-${suffix}@example.invalid`, targetKind: 'session', targetId: 'ensaio', token } })
+  const dead = await db.mailDelivery.create({ data: { tenantId: tenant.id, subscriptionId: subscription.id, tokenHash: subscriptionTokenHash(token), status: 'dead', attempts: 5, lastErrorCode: 'MAIL_DELIVERY_FAILED' } })
+  const read = (actorId: string) => queueGet(new NextRequest('http://localhost/api/v1/mail-deliveries', { headers: { 'x-actor-id': actorId } }), { params: Promise.resolve({}) })
+  const post = (actorId: string, id: string) => queuePost(new NextRequest('http://localhost/api/v1/mail-deliveries', { method: 'POST', headers: { 'content-type': 'application/json', 'x-actor-id': actorId }, body: JSON.stringify({ id }) }), { params: Promise.resolve({}) })
+  const own = await read(admin.id)
+  expect(own.status).toBe(200)
+  const payload = await own.json()
+  expect(payload.stats.dead).toBe(1)
+  expect(payload.deliveries[0].id).toBe(dead.id)
+  expect(JSON.stringify(payload)).not.toContain(token)
+  expect(JSON.stringify(payload)).not.toContain(subscription.email)
+  expect((await (await read(foreign.id)).json()).stats.dead).toBe(0)
+  expect((await post(foreign.id, dead.id)).status).toBe(404)
+  expect((await post(admin.id, dead.id)).status).toBe(200)
+  expect((await post(admin.id, dead.id)).status).toBe(409)
+  expect((await db.mailDelivery.findUniqueOrThrow({ where: { id: dead.id } })).status).toBe('pending')
+  const audits = await db.auditEvent.findMany({ where: { tenantId: tenant.id, action: 'mail_delivery.requeued', aggregateId: dead.id } })
+  expect(audits).toHaveLength(1)
+  expect(JSON.stringify(audits)).not.toContain(token)
+  const obsolete = await db.mailDelivery.create({ data: { tenantId: tenant.id, subscriptionId: subscription.id, tokenHash: subscriptionTokenHash('old-token'), status: 'dead', attempts: 5 } })
+  expect((await post(admin.id, obsolete.id)).status).toBe(409)
+  expect((await db.mailDelivery.findUniqueOrThrow({ where: { id: obsolete.id } })).status).toBe('dead')
 })

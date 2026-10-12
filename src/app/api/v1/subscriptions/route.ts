@@ -31,6 +31,7 @@ import type {
   SubscriptionTargetKind,
 } from '@/lib/contracts'
 import { batchTargetLabels, toCitizenSubscriptionView } from '@/lib/server/subscriptions'
+import { demoModeEnabled } from '@/lib/server/demo-mode'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +49,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     ...toCitizenSubscriptionView(s, labels.get(`${s.targetKind}:${s.targetId}`) ?? null),
     // Token exposto APENAS para pendentes ativas (copiar link de confirmação
     // no sandbox); confirmadas/revogadas não precisam e não recebem.
-    confirmToken: !s.confirmedAt && !s.revokedAt ? s.token : null,
+    confirmToken: demoModeEnabled() && !s.confirmedAt && !s.revokedAt ? s.token : null,
   }))
 
   // Pendentes primeiro (mais antiga primeiro) → confirmadas (confirmação

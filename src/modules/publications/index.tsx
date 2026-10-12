@@ -1878,6 +1878,13 @@ type SubscriptionsResponse = {
   stats: SubscriptionStats
 }
 
+type MailQueueResponse = {
+  configured: boolean
+  stats: { pending: number; sent: number; canceled: number; dead: number }
+  deliveries: Array<{ id: string; subscriptionId: string; status: string; attempts: number;
+    nextAttemptAt: string | null; lastErrorCode: string | null; createdAt: string }>
+}
+
 function SubscriptionStatusBadge({ row }: { row: SubscriptionRow }) {
   if (row.revokedAt)
     return (
@@ -1907,8 +1914,20 @@ function SubscriptionsTab() {
     queryKey: ['citizen-subscriptions'],
     queryFn: () => apiFetch<SubscriptionsResponse>('/api/v1/subscriptions'),
   })
+  const mailQ = useQuery({
+    queryKey: ['mail-deliveries'],
+    queryFn: () => apiFetch<MailQueueResponse>('/api/v1/mail-deliveries'),
+  })
   const rows = subsQ.data?.subscriptions ?? []
   const stats = subsQ.data?.stats
+
+  const requeue = useMutation({
+    mutationFn: (id: string) => apiFetch<{ ok: boolean }>('/api/v1/mail-deliveries', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }),
+    }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['mail-deliveries'] }); toast.success('Entrega recolocada na fila') },
+    onError: (err) => toast.error('Não foi possível retomar a entrega', { description: problemMessage(err) }),
+  })
 
   const revoke = useMutation({
     mutationFn: (id: string) =>
@@ -1952,6 +1971,33 @@ function SubscriptionsTab() {
           (double opt-in). Assinaturas pendentes aguardam o clique no link de confirmação; o envio exige SMTP institucional ativo.
           revogação é auditada e não apaga o histórico (LGPD).
         </p>
+
+        <Card className="py-4">
+          <CardContent className="space-y-2 px-4 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong>Correio de confirmação</strong>
+              <Button size="sm" variant="outline" onClick={() => void mailQ.refetch()} aria-label="Atualizar fila de e-mails">
+                <RefreshCw className="size-3.5" /> Atualizar
+              </Button>
+            </div>
+            {mailQ.isError ? <p className="text-destructive">{problemMessage(mailQ.error)}</p> : mailQ.data ? (
+              <>
+                <p className="text-muted-foreground">
+                  {mailQ.data.configured ? 'SMTP configurado' : 'SMTP ainda não configurado'} · {mailQ.data.stats.pending} pendentes · {mailQ.data.stats.sent} enviados · {mailQ.data.stats.dead} esgotados · {mailQ.data.stats.canceled} cancelados
+                </p>
+                {mailQ.data.stats.dead > 0 && <p className="text-amber-700 dark:text-amber-300">Entregas esgotadas exigem verificação do transporte antes de retomar. Reprocessar não confirma a assinatura automaticamente.</p>}
+                {mailQ.data.deliveries.filter((delivery) => delivery.status === 'dead').map((delivery) => {
+                  const subscriber = rows.find((row) => row.id === delivery.subscriptionId)
+                  return <div key={delivery.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                    <span>{subscriber?.email ?? 'Assinatura não encontrada'} · {delivery.attempts} tentativas · {delivery.lastErrorCode ?? 'falha de entrega'}</span>
+                    <Button size="sm" variant="outline" disabled={requeue.isPending || !mailQ.data.configured || !subscriber || !!subscriber.confirmedAt || !!subscriber.revokedAt}
+                      onClick={() => requeue.mutate(delivery.id)}>Retomar entrega</Button>
+                  </div>
+                })}
+              </>
+            ) : <p className="text-muted-foreground">Consultando fila…</p>}
+          </CardContent>
+        </Card>
 
         {/* Stats */}
         {stats ? (
