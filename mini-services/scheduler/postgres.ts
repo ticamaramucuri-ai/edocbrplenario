@@ -14,7 +14,7 @@ const scheduler = createPostgresScheduler(db, async (url) => {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(2000), cache: 'no-store' })
     await response.text().catch(() => '')
-    return true
+    return response.ok
   } catch { return false }
 })
 

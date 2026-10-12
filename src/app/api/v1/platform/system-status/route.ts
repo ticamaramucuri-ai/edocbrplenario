@@ -88,8 +88,8 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     lastAudit,
     subscriptionsPastDue,
   ] = await Promise.all([
-    checkService('realtime', 'Tempo real (socket.io)', 'http://localhost:3003/health'),
-    checkService('webhooks', 'Entregas de webhook', 'http://localhost:3004/health'),
+    checkService('realtime', 'Tempo real (socket.io)', process.env.REALTIME_HEALTH_URL || 'http://localhost:3003/health'),
+    checkService('webhooks', 'Entregas de webhook', process.env.WEBHOOKS_HEALTH_URL || 'http://localhost:3004/health'),
     mailConfigured ? checkService('mail', 'Worker de correio (processo)', process.env.MAIL_WORKER_HEALTH_URL || 'http://127.0.0.1:3006/health') : Promise.resolve(null),
     fileSizeBytes(join(dbDir, 'custom.db')),
     fileSizeBytes(join(dbDir, 'custom.db-wal')),

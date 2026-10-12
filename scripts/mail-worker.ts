@@ -27,7 +27,9 @@ const send = async ({ to, subject, text }: { to: string; subject: string; text: 
 }
 const healthPort = Number(process.env.MAIL_WORKER_HEALTH_PORT || 3006)
 if (!Number.isInteger(healthPort) || healthPort < 1 || healthPort > 65535) throw new Error('MAIL_WORKER_HEALTH_PORT inválida.')
-const health = Bun.serve({ hostname: '127.0.0.1', port: healthPort, fetch(req) {
+const healthHost = process.env.MAIL_WORKER_HEALTH_HOST || '127.0.0.1'
+if (!['127.0.0.1', '0.0.0.0'].includes(healthHost)) throw new Error('MAIL_WORKER_HEALTH_HOST inválido.')
+const health = Bun.serve({ hostname: healthHost, port: healthPort, fetch(req) {
   return new Response(new URL(req.url).pathname === '/health' ? 'ok' : 'not found', {
     status: new URL(req.url).pathname === '/health' ? 200 : 404,
   })
