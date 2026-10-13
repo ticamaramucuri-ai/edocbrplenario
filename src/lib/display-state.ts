@@ -6,6 +6,7 @@ export type DisplayStateView = {
   version: number
   mode: DisplayMode
   manualProfile: DisplayProfile | null
+  frozenFrameSha256: string | null
 }
 
 export type DisplayAction = 'freeze' | 'unfreeze' | 'clear' | 'publish' | 'profile'
@@ -21,7 +22,7 @@ export function displayStateChange(action: DisplayAction, profile?: DisplayProfi
   return { mode: 'live' as const }
 }
 
-export function parseDisplayState(row: { sessionId: string; version: number; mode: string; manualProfile: string | null } | null): DisplayStateView | null {
+export function parseDisplayState(row: { sessionId: string; version: number; mode: string; manualProfile: string | null; frozenFrameSha256?: string | null } | null): DisplayStateView | null {
   if (!row) return null
   const modes = new Set<DisplayMode>(['live', 'frozen', 'cleared'])
   const profiles = new Set<DisplayProfile>(['boas_vindas', 'presenca', 'pauta', 'votacao', 'discurso', 'encerramento'])
@@ -30,6 +31,7 @@ export function parseDisplayState(row: { sessionId: string; version: number; mod
     version: row.version,
     mode: modes.has(row.mode as DisplayMode) ? row.mode as DisplayMode : 'live',
     manualProfile: row.manualProfile && profiles.has(row.manualProfile as DisplayProfile) ? row.manualProfile as DisplayProfile : null,
+    frozenFrameSha256: row.mode === 'frozen' ? row.frozenFrameSha256 ?? null : null,
   }
 }
 

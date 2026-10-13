@@ -389,6 +389,8 @@ export const api = {
   // Relatórios / portal / tenant
   sessionReport: (sessionId: string) => request<ReportView>(`/reports/session/${sessionId}`),
   publicLive: (tenantSlug: string) => request<PublicLiveViewExt>(`/public/live?tenant=${encodeURIComponent(tenantSlug)}`),
+  publicDisplayFrame: (tenantSlug: string, sessionId: string, version: number) =>
+    request<{ sessionId: string; version: number; sha256: string; frame: PublicLiveViewExt }>(`/public/display-frame?tenant=${encodeURIComponent(tenantSlug)}&sessionId=${encodeURIComponent(sessionId)}&version=${version}`),
   updateTenant: (id: string, data: { name?: string; city?: string; uf?: string; primaryColor?: string; accentColor?: string; settings?: Record<string, unknown> }) =>
     request<{ tenant: TenantView }>(`/tenants/${id}`, {
       method: 'PATCH',

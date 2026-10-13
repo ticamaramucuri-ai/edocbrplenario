@@ -14,6 +14,9 @@ import { loadSession } from '@/lib/server/loaders'
 import { emitOutbox } from '@/lib/server/outbox'
 import { displayStateChange } from '@/lib/display-state'
 import { parseDisplayState } from '@/lib/display-state'
+import { buildPublicLiveView } from '@/lib/server/public-live'
+import { DomainError } from '@/lib/server/errors'
+import { createHash } from 'crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,10 +47,29 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
 
   const state = await withTransaction(async (tx) => {
     const change = displayStateChange(body.action, body.profile)
+    let frozenFrameJson: string | null = null
+    let frozenFrameSha256: string | null = null
+    if (body.action === 'freeze') {
+      const tenant = await tx.tenant.findUniqueOrThrow({ where: { id: session.tenantId } })
+      const view = await buildPublicLiveView(tx, tenant)
+      if (view.session?.id !== session.id) {
+        throw new DomainError('SESSION_PRECONDITION', 422, 'Sessão não exibida', 'A sessão não é a sessão exibida no telão público.')
+      }
+      frozenFrameJson = JSON.stringify({ ...view, displayState: null })
+      if (Buffer.byteLength(frozenFrameJson, 'utf8') > 1_048_576) {
+        throw new DomainError('VALIDATION_ERROR', 422, 'Quadro excede o limite', 'O quadro público excede o limite de 1 MiB para congelamento.')
+      }
+      frozenFrameSha256 = createHash('sha256').update(frozenFrameJson).digest('hex')
+    }
+    const frame = {
+      frozenFrameJson,
+      frozenFrameSha256,
+      frozenAt: frozenFrameJson ? new Date() : null,
+    }
     const state = await tx.displayState.upsert({
       where: { sessionId: session.id },
-      create: { sessionId: session.id, tenantId: session.tenantId, ...change },
-      update: { ...change, version: { increment: 1 } },
+      create: { sessionId: session.id, tenantId: session.tenantId, ...change, ...frame },
+      update: { ...change, ...frame, version: { increment: 1 } },
     })
     const payload = {
       sessionId: session.id,

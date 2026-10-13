@@ -26,7 +26,7 @@ const view = {
 
 describe('snapshot do telão por Câmara', () => {
   test('ignora versão anterior ou repetida e aceita versão nova ou outra sessão', () => {
-    const state = { sessionId: 'sessao-a', version: 3, mode: 'frozen' as const, manualProfile: null }
+    const state = { sessionId: 'sessao-a', version: 3, mode: 'frozen' as const, manualProfile: null, frozenFrameSha256: null }
     expect(shouldAdoptDisplayState('sessao-a', 4, state)).toBe(false)
     expect(shouldAdoptDisplayState('sessao-a', 3, state)).toBe(false)
     expect(shouldAdoptDisplayState('sessao-a', 2, state)).toBe(true)

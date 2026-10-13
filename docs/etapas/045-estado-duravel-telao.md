@@ -18,6 +18,6 @@ O snapshot local agora registra sessão, modo e versão. Uma troca de Câmara n�
 
 ## Limites e próxima fase
 
-O banco guarda a **intenção visual**. Quando o telão já tem snapshot local da sessão, ele mantém o quadro retido ao recuperar o modo congelado. Em um navegador novo ou após perda do armazenamento local, o modo congelado é restaurado sobre a visão pública disponível no momento da consulta; não existe ainda um quadro imutável capturado pelo servidor no instante do comando. Para exigir reprodução idêntica entre dispositivos, a próxima fase deve produzir e versionar esse quadro no servidor, com limites de tamanho e política de retenção. Também falta ensaio em navegador real com dois nós, interrupção de rede e equipamento do plenário.
+O quadro imutável capturado no servidor foi implementado na [etapa seguinte](045-quadro-congelado-verificavel.md). Ainda falta ensaio em navegador real com dois nós, interrupção de rede e equipamento do plenário.
 
 As integrações Nextcloud e Alfresco permanecem reservadas às fases finais, após o piloto funcional do plenário.

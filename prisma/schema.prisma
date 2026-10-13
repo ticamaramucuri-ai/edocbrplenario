@@ -386,6 +386,9 @@ model DisplayState {
   version       Int      @default(1)
   mode          String   @default("live") // live|frozen|cleared
   manualProfile String?
+  frozenFrameJson   String?
+  frozenFrameSha256 String?
+  frozenAt          DateTime?
   updatedAt     DateTime @updatedAt
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)

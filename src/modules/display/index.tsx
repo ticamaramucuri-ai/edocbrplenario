@@ -65,7 +65,8 @@ export default function DisplayModule() {
       setSnapshotTenantId(tenantId)
       setHeldView(restored?.view ?? null)
       setManualProfile(restored?.manualProfile ?? null)
-      displayVersionRef.current = restored?.displayVersion ?? 0
+      // Revalida o quadro congelado no servidor até quando o cache local traz a mesma versão.
+      displayVersionRef.current = restored?.mode === 'frozen' ? 0 : restored?.displayVersion ?? 0
       displaySessionRef.current = restored?.sessionId ?? null
       setDisplayMode(restored?.mode ?? 'live')
       setDisplayFrozen(restored?.mode === 'frozen')
@@ -94,13 +95,26 @@ export default function DisplayModule() {
     const sessionId = data.session?.id ?? null
     if (state && state.sessionId === sessionId) {
       if (!shouldAdoptDisplayState(displaySessionRef.current, displayVersionRef.current, state)) return
-      queueMicrotask(() => {
+      queueMicrotask(async () => {
         if (cancelled) return
         if (!shouldAdoptDisplayState(displaySessionRef.current, displayVersionRef.current, state)) return
+        let frozenFrame: PublicLiveViewExt | null = null
+        if (state.mode === 'frozen' && state.frozenFrameSha256) {
+          if (!slug) return
+          try {
+            const response = await api.publicDisplayFrame(slug, sessionId, state.version)
+            if (response.sessionId !== sessionId || response.version !== state.version || response.sha256 !== state.frozenFrameSha256) return
+            frozenFrame = response.frame
+          } catch {
+            // Mantém a versão anterior e tenta de novo no próximo refetch.
+            return
+          }
+        }
+        if (cancelled || !shouldAdoptDisplayState(displaySessionRef.current, displayVersionRef.current, state)) return
         const sameSession = displaySessionRef.current === sessionId
         displaySessionRef.current = sessionId
         displayVersionRef.current = state.version
-        if (state.mode === 'frozen') setHeldView((prev) => sameSession && displayMode === 'frozen' && prev ? prev : (liveRef.current ?? data))
+        if (state.mode === 'frozen') setHeldView((prev) => frozenFrame ?? (sameSession && displayMode === 'frozen' && prev ? prev : (liveRef.current ?? data)))
         if (state.mode === 'cleared') setHeldView(clearedView(liveRef.current ?? data))
         setDisplayMode(state.mode)
         setManualProfile(state.manualProfile)
@@ -118,13 +132,16 @@ export default function DisplayModule() {
       })
     }
     return () => { cancelled = true }
-  }, [data, tenantId, snapshotTenantId, displayMode, manualProfile, setDisplayFrozen])
+  }, [data, tenantId, slug, snapshotTenantId, displayMode, manualProfile, setDisplayFrozen])
 
   // Visão efetiva: congelado/limpo → snapshot retido; senão → dados ao vivo
   // (com fallback ao snapshot restaurado até o primeiro fetch).
   const safeHeldView = snapshotTenantId === tenantId ? heldView : null
   const safeManualProfile = snapshotTenantId === tenantId ? manualProfile : null
-  const view = displayMode === 'frozen' || displayMode === 'cleared' ? safeHeldView : (data ?? safeHeldView)
+  const pendingFrozen = data?.displayState?.mode === 'frozen' && displayMode !== 'frozen'
+  const view = pendingFrozen
+    ? (safeHeldView?.session?.id === data?.session?.id ? safeHeldView : null)
+    : displayMode === 'frozen' || displayMode === 'cleared' ? safeHeldView : (data ?? safeHeldView)
 
   // Persiste o snapshot para reconstrução após reinício.
   useEffect(() => {
@@ -253,7 +270,7 @@ export default function DisplayModule() {
         </div>
       </header>
 
-      {displayMode === 'frozen' && (
+      {(displayMode === 'frozen' || pendingFrozen) && (
         <div
           role="status"
           className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/30 bg-amber-500/15 px-4 py-2 text-center text-sm font-bold uppercase tracking-widest text-amber-300"
