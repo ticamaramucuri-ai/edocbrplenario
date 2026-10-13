@@ -72,12 +72,14 @@ export default function PlenaryModule() {
         'speech.state_changed': refresh,
         'transmission.state_changed': refresh,
         'display.command': (event: RealtimeEvent) => {
+          if (event.sessionId && sessionId && event.sessionId !== sessionId) return
           const payload = event.payload as { action?: string }
           if (payload?.action === 'freeze') setDisplayFrozen(true)
           if (payload?.action === 'unfreeze') setDisplayFrozen(false)
+          if (sessionId) void queryClient.invalidateQueries({ queryKey: ['display-state', sessionId] })
         },
       }
-    }, [invalidate, sessionId, setDisplayFrozen])
+    }, [invalidate, sessionId, setDisplayFrozen, queryClient])
   )
 
   if (!sessionId) return <SessionPicker />

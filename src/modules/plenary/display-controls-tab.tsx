@@ -3,10 +3,10 @@
 /**
  * Tab Telão (controles da mesa) — preview do estado atual do telão e
  * comandos: abrir, congelar/liberar, limpar e publicação manual de perfis.
- * Os comandos chegam ao telão via evento realtime `display.command`.
+ * A API persiste o estado; `display.command` avisa os telões para reler a versão.
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Eraser, MonitorPlay, Pin, PinOff, Radio, Snowflake } from 'lucide-react'
 
@@ -31,12 +31,21 @@ const COMMAND_SUCCESS: Record<string, (payload: DisplayCommandPayload) => string
 export function DisplayControlsTab({ data, invalidate }: Props) {
   const canCommand = useApp((s) => s.can('display.command'))
   const setModule = useApp((s) => s.setModule)
-  const frozen = useApp((s) => s.displayFrozen)
+  const queryClient = useQueryClient()
+  const fallbackFrozen = useApp((s) => s.displayFrozen)
+  const { data: display } = useQuery({
+    queryKey: ['display-state', data.session.id],
+    queryFn: () => api.displayState(data.session.id),
+    enabled: canCommand,
+    refetchInterval: 10_000,
+  })
+  const frozen = display ? display.state?.mode === 'frozen' : fallbackFrozen
 
   const cmd = useMutation({
     mutationFn: (payload: DisplayCommandPayload) => api.displayCommand(data.session.id, payload),
     onSuccess: (_r, payload) => {
       invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['display-state', data.session.id] })
       toast.success((COMMAND_SUCCESS[payload.action] ?? (() => 'Comando enviado'))(payload))
     },
   })
@@ -84,7 +93,7 @@ export function DisplayControlsTab({ data, invalidate }: Props) {
           <CardTitle className="text-base">Comandos</CardTitle>
           <CardDescription>
             {canCommand
-              ? 'Os comandos são entregues ao telão em tempo real (evento display.command).'
+              ? 'O estado fica salvo por sessão e é atualizado no telão em tempo real.'
               : 'Seu perfil não tem permissão para comandar o telão (display.command).'}
           </CardDescription>
         </CardHeader>

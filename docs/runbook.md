@@ -244,7 +244,7 @@ Verificação pós-restauração: health checks (§1) + `GET /api/v1/audit?verif
    (`mini-services/realtime/checkpoint.json`). Em PostgreSQL, confira os eventos
    `pending`; falha de emissão mantém o evento pendente para nova tentativa.
 4. Clientes refazem subscribe automaticamente (reconexão com backoff no hook). Ao confirmar a assinatura, a interface interna relê suas consultas ativas e o telão relê `public/live`; aguarde a atualização e compare com a API se houver dúvida.
-5. Se o telão perdeu um comando manual de congelamento, limpeza ou perfil durante a queda, reaplique-o pela mesa. Esses comandos ainda não têm estado durável; veja a [etapa de recomposição](etapas/045-recomposicao-cliente-reconexao.md).
+5. Após reconexão, confira a versão e o modo em `GET /api/v1/display/command?sessionId=...` com credencial de operador e compare com o telão. O modo/perfil é persistido e lido em `public/live`. Se o congelamento ocorrer enquanto o telão estiver desconectado, um navegador sem snapshot local usa a visão pública atual; veja a [etapa do estado durável](etapas/045-estado-duravel-telao.md).
 
 ### 6.5 SQLITE_BUSY / timeout de escrita
 

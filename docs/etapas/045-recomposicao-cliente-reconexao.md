@@ -21,6 +21,6 @@ Esta verificação cobre a lógica local e a compilação. Ainda falta um ensaio
 
 ## Limites e próxima etapa
 
-`display.command` ainda é um comando efêmero no navegador. Se a mesa congelar, limpar ou selecionar um perfil enquanto o telão estiver desconectado, o retorno da consulta pública reconstrói os fatos da sessão, mas não recupera a intenção visual manual que foi perdida. A próxima etapa técnica é persistir o estado de apresentação por Câmara/sessão, expô-lo ao telão em uma API autorizada e aplicar versões monotônicas para que comando antigo não sobrescreva o novo. Em seguida, repetir a falha entre nós e verificar tela interna, telão e votos com observação externa.
+O estado visual versionado foi implementado na [etapa seguinte](045-estado-duravel-telao.md). Permanece pendente capturar no servidor um quadro imutável no instante de congelamento e repetir a falha entre nós com observação externa da tela, da mesa e dos votos.
 
 Não há mudança de integração com Nextcloud ou Alfresco; seguem reservados às fases 054–056 após o piloto do plenário.

@@ -35,9 +35,10 @@ source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flag
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MediaPublicObservation \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MailDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'\nmodel DisplayState \{.*?\n\}\n', '\n', source, flags=re.S)
 for model, fields, indexes in [
-    ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries'], []),
-    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries'], []),
+    ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries', 'displayStates'], []),
+    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
     ('SessionAgendaRevision', ['documentManifestJson'], []),
     ('AttendanceEvent', ['commandId'], []),
     ('Voting', ['symbolicTallies'], []),
@@ -177,6 +178,8 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/official-closure.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/media-public-link.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
+  bun test tests/display-state.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/mail-delivery.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

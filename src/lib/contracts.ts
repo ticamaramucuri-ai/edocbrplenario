@@ -442,6 +442,7 @@ export type VotingBasisReportView = {
 }
 
 export type PublicLiveView = {
+  displayState: import('./display-state').DisplayStateView | null
   tenant: { name: string; city: string; uf: string; primaryColor: string; accentColor: string; logoUrl: string | null }
   session: {
     id: string
@@ -544,6 +545,7 @@ export type DisplayCommandPayload = {
   action: 'freeze' | 'unfreeze' | 'clear' | 'publish' | 'profile'
   profile?: 'boas_vindas' | 'presenca' | 'pauta' | 'votacao' | 'discurso' | 'encerramento'
 }
+export type DisplayStateView = import('./display-state').DisplayStateView
 
 // ─── Helpers de rótulos (pt-BR) ────────────────────────────────────────────
 

@@ -18,6 +18,8 @@
 
 `migrations/0013_mail_delivery.sql` adiciona a fila de confirmação por e-mail. Cada item aponta para a assinatura e guarda apenas o hash do token vigente; o worker relê o token antes de enviar e cancela itens revogados ou substituídos.
 
+`migrations/0014_display_state.sql` guarda por sessão o modo e perfil do telão com versão crescente. O evento `display.command` é gravado na mesma transação; após reconexão, o telão consulta a versão corrente em `public/live`.
+
 O executor `scripts/postgres-migrate.py` registra histórico e checksum e usa bloqueio consultivo. Defina `POSTGRES_MIGRATION_URL` em um gerenciador de segredos/ambiente e execute `bun run db:postgres:status` ou `bun run db:postgres:migrate`. Para remover somente os índices 0002, use `bun run db:postgres:rollback-indexes`. Falha de migração fica registrada e exige reparo explícito; não edite SQL já aplicado. Nunca aplique 0001 sobre banco com tabelas da aplicação.
 
 A cópia de dados é feita por `POSTGRES_COPY_URL` e `bun run db:postgres:copy --source /caminho/da/replica.db`. O destino precisa estar migrado e vazio; a origem é lida via snapshot. Leia os limites na [etapa 037](../../docs/etapas/037-executor-copia-postgres.md) antes de usar em uma implantação. O SQLite do piloto não foi migrado.

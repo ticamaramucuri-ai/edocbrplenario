@@ -141,8 +141,10 @@ def copy(source: Path, env: dict[str, str]) -> None:
                 raise RuntimeError(f'tabelas divergentes: SQLite={len(source_tables)}, PostgreSQL={len(target_tables)}')
             if query(env, "SELECT to_regclass('public._edocbr_schema_migration') IS NOT NULL") != 't':
                 raise RuntimeError('execute as migrações PostgreSQL antes da cópia')
-            if query(env, "SELECT count(*) FROM \"_edocbr_schema_migration\" WHERE status='applied'") != '13':
-                raise RuntimeError('migrações 0001 a 0013 devem estar aplicadas')
+            expected_versions = {file.stem for file in (Path(__file__).resolve().parent.parent / 'prisma/postgres/migrations').glob('*.sql')}
+            applied_versions = set(query(env, "SELECT version FROM \"_edocbr_schema_migration\" WHERE status='applied'").splitlines())
+            if applied_versions != expected_versions:
+                raise RuntimeError('todas as migrações PostgreSQL versionadas devem estar aplicadas')
             edges = [tuple(line.split('|', 1)) for line in query(env, '''SELECT c.relname, p.relname
               FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid
               JOIN pg_class p ON p.oid=k.confrelid WHERE k.contype='f' AND k.connamespace='public'::regnamespace''').splitlines()]

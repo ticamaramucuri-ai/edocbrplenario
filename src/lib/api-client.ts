@@ -20,6 +20,7 @@ import type {
   VotingView,
   VoteRow,
   DisplayCommandPayload,
+  DisplayStateView,
   SessionType,
   VotingMode,
   VotingRule,
@@ -396,10 +397,11 @@ export const api = {
 
   // Telão
   displayCommand: (sessionId: string, payload: DisplayCommandPayload) =>
-    request<{ ok: boolean }>('/display/command', {
+    request<{ ok: boolean; displayVersion: number }>('/display/command', {
       method: 'POST',
       body: JSON.stringify({ sessionId, ...payload }),
     }),
+  displayState: (sessionId: string) => request<{ state: DisplayStateView | null }>(`/display/command?sessionId=${encodeURIComponent(sessionId)}`),
 
   // ─── Fase 5: Estrutura institucional ──────────────────────────────────────
   listLegislatures: () => request<{ legislatures: LegislatureView[] }>('/legislatures'),

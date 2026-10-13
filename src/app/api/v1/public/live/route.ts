@@ -15,6 +15,7 @@ import { SESSION_STATUS_LABEL, type PublicLiveView, type SessionStatus, type Vot
 import { currentAttendance, tenantSettings } from '@/lib/server/domain'
 import { sessionLabel, parseNominalDetail, parseResultCounts } from '@/lib/server/serializers'
 import { defaultTenant } from '@/lib/server/default-tenant'
+import { parseDisplayState } from '@/lib/display-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,12 +71,13 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
       currentVoting: null,
       lastResults: [],
       speakingNow: null,
+      displayState: null,
     }
     return Response.json(empty)
   }
 
   const isLive = Boolean(live)
-  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking, transmission, recording] =
+  const [agenda, attendance, parliamentarians, currentVotingRaw, closedVotings, speaking, transmission, recording, displayState] =
     await Promise.all([
       selected.agendaPublished
         ? db.agendaItem.findMany({ where: { sessionId: selected.id }, orderBy: { order: 'asc' } })
@@ -105,6 +107,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
         : Promise.resolve(null),
       db.transmission.findUnique({ where: { sessionId: selected.id }, select: { publicUrl: true, publicPublishedAt: true, publicObservationId: true } }),
       db.sessionRecording.findUnique({ where: { sessionId: selected.id }, select: { status: true, durationSeconds: true, publishedAt: true, expiresAt: true } }),
+      db.displayState.findUnique({ where: { sessionId: selected.id }, select: { sessionId: true, version: true, mode: true, manualProfile: true } }),
     ])
 
   const memberById = new Map(parliamentarians.map((p) => [p.id, p]))
@@ -143,6 +146,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
   }
 
   const view: PublicLiveView = {
+    displayState: parseDisplayState(displayState),
     tenant: {
       name: tenant.name,
       city: tenant.city,

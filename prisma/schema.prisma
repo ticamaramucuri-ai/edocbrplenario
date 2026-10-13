@@ -66,6 +66,7 @@ model Tenant {
   documentSignatures DocumentSignature[] // Onda 5/F22
   transmissions   Transmission[]
   sessionRecordings SessionRecording[]
+  displayStates    DisplayState[]
   officialConfigurationRevisions OfficialConfigurationRevision[]
 }
 
@@ -372,9 +373,25 @@ model Session {
   speeches         Speech[]
   transmission     Transmission?
   recording         SessionRecording?
+  displayState      DisplayState?
 
   @@unique([tenantId, number, year])
   @@index([tenantId, status])
+}
+
+// Estado visual autoritativo por sessão; a outbox apenas sinaliza mudanças.
+model DisplayState {
+  sessionId     String   @id
+  tenantId      String
+  version       Int      @default(1)
+  mode          String   @default("live") // live|frozen|cleared
+  manualProfile String?
+  updatedAt     DateTime @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, updatedAt])
 }
 
 // Numeração anual alocada atomicamente por Câmara, sem depender de MAX(number).

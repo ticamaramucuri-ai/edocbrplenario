@@ -9,7 +9,7 @@
  * Snapshot do último estado por Câmara em localStorage para reconstrução após reinício.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Landmark, Pin, X } from 'lucide-react'
 
@@ -22,6 +22,7 @@ import { DISPLAY_PROFILE_LABEL, ProfileView, type DisplayProfile } from './profi
 import { fmtClock, useNow } from './tick'
 import { TenantCrest } from '@/components/brand/brand-logo'
 import { readDisplaySnapshot, writeDisplaySnapshot } from './snapshot'
+import { shouldAdoptDisplayState, type DisplayMode } from '@/lib/display-state'
 
 /** Remove os dados da sessão mantendo identidade do tenant (comando clear). */
 function clearedView(view: PublicLiveViewExt | null): PublicLiveViewExt | null {
@@ -36,10 +37,9 @@ function clearedView(view: PublicLiveViewExt | null): PublicLiveViewExt | null {
     currentVoting: null,
     lastResults: [],
     speakingNow: null,
+    displayState: view.displayState,
   }
 }
-
-type CommandPayload = { action?: string; profile?: DisplayProfile }
 
 export default function DisplayModule() {
   const setModule = useApp((s) => s.setModule)
@@ -51,8 +51,9 @@ export default function DisplayModule() {
   const [snapshotTenantId, setSnapshotTenantId] = useState<string | null>(null)
   const [heldView, setHeldView] = useState<PublicLiveViewExt | null>(null)
   const [manualProfile, setManualProfile] = useState<DisplayProfile | null>(null)
-  const [frozen, setFrozen] = useState(false)
-  const [cleared, setCleared] = useState(false)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('live')
+  const displayVersionRef = useRef(0)
+  const displaySessionRef = useRef<string | null>(null)
 
   const now = useNow(1000)
 
@@ -64,9 +65,10 @@ export default function DisplayModule() {
       setSnapshotTenantId(tenantId)
       setHeldView(restored?.view ?? null)
       setManualProfile(restored?.manualProfile ?? null)
-      setFrozen(false)
-      setCleared(false)
-      setDisplayFrozen(false)
+      displayVersionRef.current = restored?.displayVersion ?? 0
+      displaySessionRef.current = restored?.sessionId ?? null
+      setDisplayMode(restored?.mode ?? 'live')
+      setDisplayFrozen(restored?.mode === 'frozen')
     })
     return () => { cancelled = true }
   }, [tenantId, setDisplayFrozen])
@@ -85,21 +87,57 @@ export default function DisplayModule() {
     liveRef.current = data ?? liveRef.current
   }, [data])
 
+  useEffect(() => {
+    if (!data || !tenantId || snapshotTenantId !== tenantId) return
+    let cancelled = false
+    const state = data.displayState
+    const sessionId = data.session?.id ?? null
+    if (state && state.sessionId === sessionId) {
+      if (!shouldAdoptDisplayState(displaySessionRef.current, displayVersionRef.current, state)) return
+      queueMicrotask(() => {
+        if (cancelled) return
+        if (!shouldAdoptDisplayState(displaySessionRef.current, displayVersionRef.current, state)) return
+        const sameSession = displaySessionRef.current === sessionId
+        displaySessionRef.current = sessionId
+        displayVersionRef.current = state.version
+        if (state.mode === 'frozen') setHeldView((prev) => sameSession && displayMode === 'frozen' && prev ? prev : (liveRef.current ?? data))
+        if (state.mode === 'cleared') setHeldView(clearedView(liveRef.current ?? data))
+        setDisplayMode(state.mode)
+        setManualProfile(state.manualProfile)
+        setDisplayFrozen(state.mode === 'frozen')
+      })
+    } else if (displaySessionRef.current !== sessionId || displayVersionRef.current > 0 || displayMode !== 'live' || manualProfile !== null) {
+      queueMicrotask(() => {
+        if (cancelled) return
+        displaySessionRef.current = sessionId
+        displayVersionRef.current = 0
+        setDisplayMode('live')
+        setHeldView(null)
+        setManualProfile(null)
+        setDisplayFrozen(false)
+      })
+    }
+    return () => { cancelled = true }
+  }, [data, tenantId, snapshotTenantId, displayMode, manualProfile, setDisplayFrozen])
+
   // Visão efetiva: congelado/limpo → snapshot retido; senão → dados ao vivo
   // (com fallback ao snapshot restaurado até o primeiro fetch).
   const safeHeldView = snapshotTenantId === tenantId ? heldView : null
   const safeManualProfile = snapshotTenantId === tenantId ? manualProfile : null
-  const view = frozen || cleared ? safeHeldView : (data ?? safeHeldView)
+  const view = displayMode === 'frozen' || displayMode === 'cleared' ? safeHeldView : (data ?? safeHeldView)
 
   // Persiste o snapshot para reconstrução após reinício.
   useEffect(() => {
     if (!tenantId || snapshotTenantId !== tenantId) return
     try {
-      writeDisplaySnapshot(localStorage, { tenantId, view, manualProfile: safeManualProfile })
+      writeDisplaySnapshot(localStorage, {
+        tenantId, view, manualProfile: safeManualProfile,
+        sessionId: displaySessionRef.current, displayVersion: displayVersionRef.current, mode: displayMode,
+      })
     } catch {
       // localStorage indisponível — o telão reconstrói pelo primeiro fetch
     }
-  }, [tenantId, snapshotTenantId, view, safeManualProfile])
+  }, [tenantId, snapshotTenantId, view, safeManualProfile, displayMode])
 
   // ESC sai do telão de volta à mesa.
   useEffect(() => {
@@ -110,41 +148,7 @@ export default function DisplayModule() {
     return () => window.removeEventListener('keydown', onKey)
   }, [setModule])
 
-  const applyCommand = useCallback(
-    (payload: CommandPayload) => {
-      if (payload?.action === 'freeze') {
-        // Congela o telão no estado atual (último dado ao vivo ou retido).
-        setHeldView((prev) => liveRef.current ?? prev)
-        setFrozen(true)
-        setCleared(false)
-        setDisplayFrozen(true)
-        return
-      }
-      if (payload?.action === 'unfreeze') {
-        setFrozen(false)
-        setCleared(false)
-        setDisplayFrozen(false)
-        return
-      }
-      if (payload?.action === 'clear') {
-        setHeldView((prev) => clearedView(liveRef.current ?? prev))
-        setFrozen(false)
-        setDisplayFrozen(false)
-        setCleared(true)
-        setManualProfile('boas_vindas')
-        return
-      }
-      if (payload?.action === 'profile' && payload.profile) {
-        setFrozen(false)
-        setDisplayFrozen(false)
-        setCleared(false)
-        setManualProfile(payload.profile)
-      }
-    },
-    [setDisplayFrozen]
-  )
-
-  // Socket público: eventos → refetch com debounce; display.command → controle.
+  // Socket público: eventos → refetch. A API versionada é a fonte do estado visual.
   useEffect(() => {
     if (!tenantId) return
     const socket = connectPublicSocket(tenantId)
@@ -169,7 +173,7 @@ export default function DisplayModule() {
       if (seen.size > 800) seen = new Set(Array.from(seen).slice(-400))
 
       if (eventType === 'display.command') {
-        applyCommand(event.payload as CommandPayload)
+        scheduleRefetch()
         return
       }
       scheduleRefetch()
@@ -179,7 +183,7 @@ export default function DisplayModule() {
       if (timer) clearTimeout(timer)
       socket.disconnect()
     }
-  }, [tenantId, slug, queryClient, applyCommand])
+  }, [tenantId, slug, queryClient])
 
   // ─── Perfil ativo: manual (comando da mesa) ou automático ───────────────
   const autoProfile = useMemo<DisplayProfile>(() => {
@@ -249,7 +253,7 @@ export default function DisplayModule() {
         </div>
       </header>
 
-      {frozen && (
+      {displayMode === 'frozen' && (
         <div
           role="status"
           className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/30 bg-amber-500/15 px-4 py-2 text-center text-sm font-bold uppercase tracking-widest text-amber-300"
@@ -262,9 +266,9 @@ export default function DisplayModule() {
         <ProfileView profile={profile} view={view} primary={primary} accent={accent} now={now} />
       </main>
 
-      {manualProfile && (
+      {safeManualProfile && (
         <p className="pointer-events-none fixed bottom-3 right-3 rounded-full border border-amber-500/40 bg-zinc-950/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-amber-400/90">
-          Perfil fixado: {DISPLAY_PROFILE_LABEL[manualProfile]}
+          Perfil fixado: {DISPLAY_PROFILE_LABEL[safeManualProfile]}
         </p>
       )}
     </div>

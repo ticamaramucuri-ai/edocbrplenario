@@ -11,6 +11,7 @@
     "test:media:smoke": "bash scripts/media-smoke.sh",
     "media:prepare-smoke": "bash scripts/prepare-media-smoke.sh",
     "test:security": "bun test tests/realtime-auth.test.ts tests/demo-mode.test.ts",
+    "test:display:state": "bash scripts/test-display-state.sh",
     "test:media:domain": "bun test tests/media-status.test.ts tests/media-control.test.ts",
     "test:media:integration": "bash scripts/test-media-reconciliation.sh",
     "test:media:public-link": "bash scripts/test-media-public-link.sh",
