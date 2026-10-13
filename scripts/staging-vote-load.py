@@ -138,6 +138,7 @@ if (vote_count != rounds * members or receipt_count != vote_count or vote_audit_
     raise RuntimeError('Votos, recibos ou auditoria divergentes após a carga.')
 ordered = sorted(vote_times)
 print(json.dumps({'ok': True, 'synthetic': True, 'official': False, 'rounds': rounds,
+                  'sessionId': session_id,
                   'concurrentVoters': members, 'votes': vote_count, 'receipts': receipt_count,
                   'sessionAuditEvents': audit_count, 'voteAuditEvents': vote_audit_count,
                   'voteOutboxEvents': vote_event_count, 'idempotentReplayPerRound': True,

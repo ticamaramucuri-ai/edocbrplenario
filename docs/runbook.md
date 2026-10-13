@@ -67,6 +67,12 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   ele só opera quando a base contém exclusivamente `staging-example` e religa o
   realtime após a falha. O observador roda no mesmo host: em operação oficial,
   configurar sondagem e notificação em infraestrutura separada.
+- Para carga conjunta de votação, portal e replay na mesma base fictícia, execute
+  `python3 scripts/staging-media-drill.py` e depois
+  `python3 scripts/staging-mixed-load.py --seconds 40 --runs 3 --readers 4`.
+  O segundo comando verifica hashes de cada leitura do replay e a publicação dos
+  eventos das sessões que criou. Limites e resultados estão na
+  [etapa 045 de carga mista](etapas/045-carga-mista-voto-portal-replay.md).
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,
