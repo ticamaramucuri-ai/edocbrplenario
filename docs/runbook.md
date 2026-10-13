@@ -243,7 +243,8 @@ Verificação pós-restauração: health checks (§1) + `GET /api/v1/audit?verif
 3. Em SQLite, o serviço é somente leitura e usa checkpoint próprio
    (`mini-services/realtime/checkpoint.json`). Em PostgreSQL, confira os eventos
    `pending`; falha de emissão mantém o evento pendente para nova tentativa.
-4. Clientes refazem subscribe automaticamente (reconexão com backoff no hook).
+4. Clientes refazem subscribe automaticamente (reconexão com backoff no hook). Ao confirmar a assinatura, a interface interna relê suas consultas ativas e o telão relê `public/live`; aguarde a atualização e compare com a API se houver dúvida.
+5. Se o telão perdeu um comando manual de congelamento, limpeza ou perfil durante a queda, reaplique-o pela mesa. Esses comandos ainda não têm estado durável; veja a [etapa de recomposição](etapas/045-recomposicao-cliente-reconexao.md).
 
 ### 6.5 SQLITE_BUSY / timeout de escrita
 

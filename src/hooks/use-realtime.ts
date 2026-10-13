@@ -8,6 +8,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { io, type Socket } from 'socket.io-client'
 import type { RealtimeEvent, RealtimeEventType } from '@/lib/contracts'
 import { useApp } from '@/lib/store'
@@ -24,7 +25,7 @@ const socketState: { socket: Socket | null; tenantId: string | null; actorId: st
   seen: new Set(),
 }
 
-function ensureSocket(tenantId: string, actorId: string): Socket {
+function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClient): Socket {
   if (socketState.socket && socketState.tenantId === tenantId && socketState.actorId === actorId) return socketState.socket
 
   socketState.socket?.disconnect()
@@ -66,6 +67,9 @@ function ensureSocket(tenantId: string, actorId: string): Socket {
   socket.on('subscribed', (subscription: { tenantId?: string; scope?: string }) => {
     if (subscription.tenantId === tenantId && subscription.scope === 'internal') {
       useApp.getState().setConnection('online')
+      // O outbox sinaliza mudanças, mas pode haver lacuna durante uma queda.
+      // Releia as consultas ativas sempre que a sala for restabelecida.
+      void queryClient.invalidateQueries({ refetchType: 'active' })
     }
   })
   socket.on('subscribe_error', () => {
@@ -101,6 +105,7 @@ function ensureSocket(tenantId: string, actorId: string): Socket {
 }
 
 export function useRealtime(handlers: HandlerMap) {
+  const queryClient = useQueryClient()
   const tenantId = useApp((s) => s.bootstrap?.tenant.id ?? null)
   const actorId = useApp((s) => s.actorId)
   const idRef = useRef<string>(`h${Math.random().toString(36).slice(2)}`)
@@ -110,7 +115,7 @@ export function useRealtime(handlers: HandlerMap) {
 
   useEffect(() => {
     if (!tenantId || !actorId) return
-    const socket = ensureSocket(tenantId, actorId)
+    const socket = ensureSocket(tenantId, actorId, queryClient)
     socketState.refCount += 1
 
     return () => {
@@ -124,7 +129,7 @@ export function useRealtime(handlers: HandlerMap) {
         socketState.refCount = 0
       }
     }
-  }, [tenantId, actorId])
+  }, [tenantId, actorId, queryClient])
 }
 
 /** Assinatura pública (portal/telão) — instância independente */

@@ -6,7 +6,7 @@
  * Dados: api.publicLive (refetch 10s) + socket público (connectPublicSocket)
  * com dedup por eventId e refetch com debounce de 300ms.
  * Comandos da mesa (display.command): freeze / unfreeze / clear / profile.
- * Snapshot do último estado em localStorage para reconstrução após reinício.
+ * Snapshot do último estado por Câmara em localStorage para reconstrução após reinício.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -21,25 +21,7 @@ import type { RealtimeEvent } from '@/lib/contracts'
 import { DISPLAY_PROFILE_LABEL, ProfileView, type DisplayProfile } from './profiles'
 import { fmtClock, useNow } from './tick'
 import { TenantCrest } from '@/components/brand/brand-logo'
-
-const SNAPSHOT_KEY = 'legis.display.snapshot'
-
-type Snapshot = { view: PublicLiveViewExt | null; manualProfile: DisplayProfile | null }
-
-function loadSnapshot(): Snapshot {
-  if (typeof window === 'undefined') return { view: null, manualProfile: null }
-  try {
-    const raw = localStorage.getItem(SNAPSHOT_KEY)
-    if (!raw) return { view: null, manualProfile: null }
-    const parsed = JSON.parse(raw) as Partial<Snapshot>
-    return {
-      view: parsed.view ?? null,
-      manualProfile: parsed.manualProfile ?? null,
-    }
-  } catch {
-    return { view: null, manualProfile: null }
-  }
-}
+import { readDisplaySnapshot, writeDisplaySnapshot } from './snapshot'
 
 /** Remove os dados da sessão mantendo identidade do tenant (comando clear). */
 function clearedView(view: PublicLiveViewExt | null): PublicLiveViewExt | null {
@@ -66,16 +48,31 @@ export default function DisplayModule() {
   const tenantId = useApp((s) => s.bootstrap?.tenant.id ?? null)
 
   const queryClient = useQueryClient()
-  const [snapshot] = useState<Snapshot>(() => loadSnapshot())
-  const [heldView, setHeldView] = useState<PublicLiveViewExt | null>(snapshot.view)
-  const [manualProfile, setManualProfile] = useState<DisplayProfile | null>(snapshot.manualProfile)
+  const [snapshotTenantId, setSnapshotTenantId] = useState<string | null>(null)
+  const [heldView, setHeldView] = useState<PublicLiveViewExt | null>(null)
+  const [manualProfile, setManualProfile] = useState<DisplayProfile | null>(null)
   const [frozen, setFrozen] = useState(false)
   const [cleared, setCleared] = useState(false)
 
   const now = useNow(1000)
 
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      const restored = tenantId ? readDisplaySnapshot(localStorage, tenantId) : null
+      setSnapshotTenantId(tenantId)
+      setHeldView(restored?.view ?? null)
+      setManualProfile(restored?.manualProfile ?? null)
+      setFrozen(false)
+      setCleared(false)
+      setDisplayFrozen(false)
+    })
+    return () => { cancelled = true }
+  }, [tenantId, setDisplayFrozen])
+
   const { data } = useQuery({
-    queryKey: ['public-live'],
+    queryKey: ['public-live', slug],
     queryFn: () => api.publicLive(slug ?? ''),
     enabled: !!slug,
     refetchInterval: 10_000,
@@ -83,22 +80,26 @@ export default function DisplayModule() {
 
   // Último dado ao vivo para capturar no congelamento/limpeza (refs só em callbacks/efeitos).
   const liveRef = useRef<PublicLiveViewExt | null>(null)
+  useEffect(() => { liveRef.current = null }, [tenantId])
   useEffect(() => {
     liveRef.current = data ?? liveRef.current
   }, [data])
 
   // Visão efetiva: congelado/limpo → snapshot retido; senão → dados ao vivo
   // (com fallback ao snapshot restaurado até o primeiro fetch).
-  const view = frozen || cleared ? heldView : (data ?? heldView)
+  const safeHeldView = snapshotTenantId === tenantId ? heldView : null
+  const safeManualProfile = snapshotTenantId === tenantId ? manualProfile : null
+  const view = frozen || cleared ? safeHeldView : (data ?? safeHeldView)
 
   // Persiste o snapshot para reconstrução após reinício.
   useEffect(() => {
+    if (!tenantId || snapshotTenantId !== tenantId) return
     try {
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ view, manualProfile }))
+      writeDisplaySnapshot(localStorage, { tenantId, view, manualProfile: safeManualProfile })
     } catch {
       // localStorage indisponível — o telão reconstrói pelo primeiro fetch
     }
-  }, [view, manualProfile])
+  }, [tenantId, snapshotTenantId, view, safeManualProfile])
 
   // ESC sai do telão de volta à mesa.
   useEffect(() => {
@@ -153,9 +154,13 @@ export default function DisplayModule() {
     const scheduleRefetch = () => {
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
-        void queryClient.invalidateQueries({ queryKey: ['public-live'] })
+        void queryClient.invalidateQueries({ queryKey: ['public-live', slug] })
       }, 300)
     }
+
+    socket.on('subscribed', (subscription: { tenantId?: string; scope?: string }) => {
+      if (subscription.tenantId === tenantId && subscription.scope === 'public') scheduleRefetch()
+    })
 
     socket.onAny((eventType: string, event: RealtimeEvent) => {
       if (!event || typeof event !== 'object' || !('eventId' in event)) return
@@ -174,7 +179,7 @@ export default function DisplayModule() {
       if (timer) clearTimeout(timer)
       socket.disconnect()
     }
-  }, [tenantId, queryClient, applyCommand])
+  }, [tenantId, slug, queryClient, applyCommand])
 
   // ─── Perfil ativo: manual (comando da mesa) ou automático ───────────────
   const autoProfile = useMemo<DisplayProfile>(() => {
@@ -187,7 +192,7 @@ export default function DisplayModule() {
     return 'pauta'
   }, [view])
 
-  const profile = manualProfile ?? autoProfile
+  const profile = safeManualProfile ?? autoProfile
   const primary = view?.tenant.primaryColor ?? '#062f63'
   const accent = view?.tenant.accentColor ?? '#d9a441'
   const session = view?.session ?? null
