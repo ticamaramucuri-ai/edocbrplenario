@@ -53,18 +53,53 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   realtime:
     image: edocbr-plenario-staging:local
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       REALTIME_DATABASE_PROVIDER: postgresql
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
+      REALTIME_REDIS_URL: redis://redis:6379
     ports:
       - "127.0.0.1:${STAGE_REALTIME_PORT:-3103}:3003"
+    command: ["bun", "mini-services/realtime/index.ts"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  realtime_peer:
+    image: edocbr-plenario-staging:local
+    profiles: [fanout-lab]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      REALTIME_DATABASE_PROVIDER: postgresql
+      REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
+      REALTIME_REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:${STAGE_REALTIME_PEER_PORT:-3104}:3003"
     command: ["bun", "mini-services/realtime/index.ts"]
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

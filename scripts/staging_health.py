@@ -14,7 +14,7 @@ URLS = {
     'realtime': f"http://127.0.0.1:{values.get('STAGE_REALTIME_PORT', '3103')}/health",
     'mailpit': f"http://127.0.0.1:{values.get('STAGE_MAILPIT_PORT', '3125')}/api/v1/messages",
 }
-EXPECTED_SERVICES = {'postgres', 'app', 'realtime', 'webhooks', 'scheduler', 'mail_worker', 'mailpit'}
+EXPECTED_SERVICES = {'postgres', 'redis', 'app', 'realtime', 'webhooks', 'scheduler', 'mail_worker', 'mailpit'}
 
 
 def verify_synthetic_scope():

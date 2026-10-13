@@ -30,8 +30,10 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   `DATABASE_URL` na API.
 - Para ensaio PostgreSQL do realtime, defina `REALTIME_DATABASE_PROVIDER=postgresql`
   e `DATABASE_URL` PostgreSQL, após gerar o cliente Prisma para esse provedor.
-  Leases impedem disputa pela mesma linha, mas mantenha apenas um nó Socket.IO
-  ativo até haver fanout entre nós; veja a [etapa 045](etapas/045-fundacao-operacional-saas.md).
+  Leases impedem disputa pela mesma linha. Sem `REALTIME_REDIS_URL`, mantenha
+  apenas um nó Socket.IO ativo; com Redis Streams privado, o fanout em dois nós
+  tem [prova sintética](etapas/045-fanout-realtime-dois-nos.md), ainda sem aceite
+  distribuído institucional.
 - Para ensaio PostgreSQL dos webhooks, defina `WEBHOOKS_DATABASE_PROVIDER=postgresql`
   e `DATABASE_URL` PostgreSQL com cliente Prisma correspondente. Execute um
   trabalhador por banco pode ter réplicas com claim/lease; o receptor deve
@@ -79,6 +81,14 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   `python3 scripts/staging-live-mixed-drill.py`. O ensaio exige a base exclusiva
   `staging-example` e não utiliza canais sociais; veja a
   [evidência e os limites](etapas/045-transmissao-carga-conjunta.md).
+- Para fanout Socket.IO em mais de um nó PostgreSQL, configure
+  `REALTIME_REDIS_URL` para um Redis Streams privado e protegido. Na homologação
+  sintética, suba `redis` e `realtime` e execute
+  `bun scripts/staging-realtime-fanout.ts`; o segundo nó é iniciado e parado pelo
+  ensaio. Health 503 nesse modo indica que a publicação distribuída está suspensa
+  e a outbox deve permanecer pendente. Consulte [a prova e seus limites](etapas/045-fanout-realtime-dois-nos.md)
+  antes de habilitar réplicas fora do laboratório. O Redis do Compose não tem
+  persistência, autenticação nem exposição de porta: ele não é configuração de produção.
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

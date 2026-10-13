@@ -21,6 +21,8 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Server, type Socket } from 'socket.io'
+import { createAdapter } from '@socket.io/redis-streams-adapter'
+import Redis from 'ioredis'
 import { Database } from 'bun:sqlite'
 import { PrismaClient } from '@prisma/client'
 import { readFileSync, writeFileSync } from 'fs'
@@ -37,6 +39,8 @@ if (process.env.REALTIME_DATABASE_PROVIDER && process.env.REALTIME_DATABASE_PROV
   throw new Error('REALTIME_DATABASE_PROVIDER deve ser postgresql ou vazio (SQLite)')
 }
 const USE_POSTGRES = process.env.REALTIME_DATABASE_PROVIDER === 'postgresql'
+const REDIS_URL = process.env.REALTIME_REDIS_URL?.trim() || null
+if (REDIS_URL && !USE_POSTGRES) throw new Error('REALTIME_REDIS_URL exige PostgreSQL')
 if (USE_POSTGRES && !/^postgres(ql)?:\/\//.test(process.env.DATABASE_URL ?? '')) {
   throw new Error('REALTIME_DATABASE_PROVIDER=postgresql exige DATABASE_URL PostgreSQL')
 }
@@ -202,6 +206,8 @@ const io = new Server(httpServer, {
   pingTimeout: 60000,
   pingInterval: 25000,
 })
+const redis = REDIS_URL ? new Redis(REDIS_URL, { lazyConnect: true, maxRetriesPerRequest: 1 }) : null
+redis?.on('error', (error) => log('warn', 'redis de fanout indisponível', { error: error.message }))
 
 /**
  * Health check HTTP (`GET /health` → 200 {"ok":true}).
@@ -220,11 +226,13 @@ httpServer.removeAllListeners('request')
 httpServer.on('request', (req: IncomingMessage, res: ServerResponse) => {
   const pathname = (req.url ?? '').split('?')[0] ?? '/'
   if (pathname === '/health' || pathname.startsWith('/health/')) {
-    res.writeHead(200, { 'Content-Type': 'application/json' })
+    const fanoutReady = !redis || redis.status === 'ready'
+    res.writeHead(fanoutReady ? 200 : 503, { 'Content-Type': 'application/json' })
     res.end(
       JSON.stringify({
-        ok: true,
+        ok: fanoutReady,
         service: 'legis-realtime',
+        fanout: redis ? (fanoutReady ? 'ready' : 'unavailable') : 'local',
         port: PORT,
         uptimeSeconds: Math.round(process.uptime()),
       }),
@@ -319,6 +327,7 @@ function roomHasClients(room: string): boolean {
 
 /** Publica um lote; SQLite usa checkpoint, PostgreSQL usa status pendente. */
 async function publishPendingBatch(): Promise<void> {
+  if (redis && redis.status !== 'ready') return
   if (pgDb) {
     try {
       const rows = await publishPostgresOutboxBatch(pgDb, (row) => emitOutboxRow(row), POLL_BATCH_LIMIT)
@@ -386,17 +395,30 @@ async function pollLoop(): Promise<void> {
 
 // ─── Início + graceful shutdown ─────────────────────────────────────────────
 
-httpServer.listen(PORT, () => {
-  log('info', 'serviço de tempo real iniciado', {
-    port: PORT,
-    provider: USE_POSTGRES ? 'postgresql' : 'sqlite',
-    ...(USE_POSTGRES ? {} : { dbPath: DB_PATH }),
-    pollIntervalMs: POLL_INTERVAL_MS,
-    batchLimit: POLL_BATCH_LIMIT,
+async function start(): Promise<void> {
+  if (redis) {
+    await redis.connect()
+    io.adapter(createAdapter(redis, { streamName: 'edocbr:realtime:events',
+      channelPrefix: 'edocbr:realtime', sessionKeyPrefix: 'edocbr:realtime:session:',
+      maxLen: 100_000 }))
+  }
+  httpServer.listen(PORT, () => {
+    log('info', 'serviço de tempo real iniciado', {
+      port: PORT,
+      provider: USE_POSTGRES ? 'postgresql' : 'sqlite',
+      fanout: redis ? 'redis-streams' : 'local',
+      ...(USE_POSTGRES ? {} : { dbPath: DB_PATH }),
+      pollIntervalMs: POLL_INTERVAL_MS,
+      batchLimit: POLL_BATCH_LIMIT,
+    })
   })
-})
+  void pollLoop()
+}
 
-void pollLoop()
+void start().catch((error) => {
+  log('error', 'falha ao iniciar tempo real', { error: String(error) })
+  process.exit(1)
+})
 
 let shuttingDown = false
 
@@ -419,6 +441,7 @@ async function shutdown(signal: string): Promise<void> {
   try {
     db?.close()
     await pgDb?.$disconnect()
+    redis?.disconnect()
   } catch {
     /* banco já fechado */
   }

@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-13",
+  "environment": "same-host synthetic PostgreSQL and Redis staging-example",
+  "adapter": "@socket.io/redis-streams-adapter@0.3.0",
+  "nodes": 2,
+  "subscribers": 4,
+  "internalSubscribers": 2,
+  "publicSubscribers": 2,
+  "sameEventReceivedByAll": true,
+  "isolatedPublicPayload": true,
+  "outboxPublished": true,
+  "redisOutageHeldOutbox": true,
+  "redisRecoveryDeliveredToAll": true,
+  "officialDistributedSlaMeasured": false
+}
