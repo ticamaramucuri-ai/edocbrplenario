@@ -22,5 +22,5 @@
   },
   "sqliteCutoverPerformed": false,
   "officialDataUsed": false,
-  "notYetVerified": ["database-referenced-media-restore", "representative-load-recovery", "institutional-smtp", "official-social-streaming"]
+  "notYetVerified": ["representative-load-recovery", "institutional-smtp", "official-social-streaming"]
 }

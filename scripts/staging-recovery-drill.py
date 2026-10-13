@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Backup and restore the synthetic staging DB/assets into isolated targets."""
 import hashlib
+import argparse
 import json
 import os
 from pathlib import Path
@@ -41,7 +42,18 @@ def pg_env(values: dict[str, str], database='edocbr_stage') -> dict[str, str]:
             'PGDATABASE': database}
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--require-media', action='store_true', help='Exige ao menos um replay vinculado ao banco')
+    args = parser.parse_args()
     values = config()
     env = pg_env(values)
     slugs = run('psql', '-X', '-qAt', '-c', 'SELECT slug FROM "Tenant" ORDER BY slug',
@@ -99,7 +111,7 @@ def main() -> None:
             run('python3', 'scripts/backup-bundle.py', 'restore-files',
                 '--bundle', str(bundle), '--target', str(restored), capture=True)
             for name in ('images', 'recordings', 'replay'):
-                if hashlib.sha256((restored / name / marker).read_bytes()).hexdigest() != digest:
+                if file_sha256(restored / name / marker) != digest:
                     raise RuntimeError(f'Arquivo restaurado divergiu: {name}')
             run('createdb', restored_db, env=env)
             database_created = True
@@ -116,11 +128,38 @@ def main() -> None:
                               env=restored_env, capture=True)
             if tenant_count != '1' or int(draft_count) < 1:
                 raise RuntimeError('Banco restaurado não contém o tenant e a sessão sintéticos.')
+            media_rows = run('psql', '-X', '-qAt', '-c',
+                             'SELECT row_to_json(r) FROM (SELECT "tenantId", "sessionId", '
+                             '"manifestJson", "manifestSha256", "replaySha256", "replayBytes" '
+                             'FROM "SessionRecording") r', env=restored_env, capture=True)
+            recordings = [json.loads(line) for line in media_rows.splitlines() if line]
+            if args.require_media and not recordings:
+                raise RuntimeError('Banco restaurado não contém gravação referenciada.')
+            segments_checked = 0
+            for row in recordings:
+                manifest_json = row['manifestJson']
+                if hashlib.sha256(manifest_json.encode()).hexdigest() != row['manifestSha256']:
+                    raise RuntimeError('Hash do manifesto gravado no banco divergiu.')
+                manifest = json.loads(manifest_json)
+                if manifest.get('sessionId') != row['sessionId']:
+                    raise RuntimeError('Manifesto aponta para outra sessão.')
+                for segment in manifest['segments']:
+                    path = restored / 'recordings' / f"session-{row['sessionId']}" / segment['name']
+                    if not path.is_file() or path.stat().st_size != segment['bytes'] or \
+                            file_sha256(path) != segment['sha256']:
+                        raise RuntimeError(f'Segmento restaurado divergente: {segment["name"]}')
+                    segments_checked += 1
+                replay = restored / 'replay' / row['tenantId'] / row['sessionId'] / 'replay.mp4'
+                if not replay.is_file() or replay.stat().st_size != int(row['replayBytes']) or \
+                        file_sha256(replay) != row['replaySha256']:
+                    raise RuntimeError('Replay restaurado divergiu do banco.')
             result = {'ok': True, 'scope': 'synthetic-staging', 'bundleFiles': proof['files'],
                       'manifestSha256': proof['manifestSha256'], 'snapshotSeconds': snapshot_seconds,
                       'restoreAndVerifySeconds': round(time.monotonic() - started - snapshot_seconds, 3),
                       'restoredTenantCount': int(tenant_count), 'restoredDraftCount': int(draft_count),
                       'restoredVolumeMarkers': 3, 'activeDatabaseReplaced': False,
+                      'restoredRecordingsVerified': len(recordings),
+                      'restoredSegmentsVerified': segments_checked,
                       'officialRtoRpoMeasured': False}
     finally:
         try:

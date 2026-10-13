@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-13",
+  "scope": "synthetic-staging",
+  "media": {
+    "ok": true,
+    "sessionId": "stage-media-recovery",
+    "segmentCount": 2,
+    "segmentSha256": "173fe1827cb0ff1fc97abafa5cffb9f6bda9e7c487e867a71ff8c11b7374e0d5",
+    "replayBytes": 60802,
+    "replaySha256": "fb851da5f5fb4da2b005ebd1083b9b64740230f374b46707bb868a21919aade5",
+    "archiveIntegrity": "valid",
+    "publicRangeStatus": 206
+  },
+  "restoration": {
+    "ok": true,
+    "bundleFiles": 12,
+    "snapshotSeconds": 1.558,
+    "restoreAndVerifySeconds": 2.173,
+    "restoredRecordingsVerified": 1,
+    "restoredSegmentsVerified": 2,
+    "activeDatabaseReplaced": false
+  },
+  "databaseOutage": {
+    "ok": true,
+    "outageHttpStatus": 500,
+    "fromDatabaseStartToUsefulHttpSeconds": 14.588,
+    "syntheticReplayRetained": true,
+    "before": { "requests": 60, "concurrency": 8, "errors": 0, "p50Ms": 24.0, "p95Ms": 32.2 },
+    "after": { "requests": 60, "concurrency": 8, "errors": 0, "p50Ms": 21.4, "p95Ms": 50.6 }
+  },
+  "officialDataUsed": false,
+  "officialRtoRpoMeasured": false
+}
