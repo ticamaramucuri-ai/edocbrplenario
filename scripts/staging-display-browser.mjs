@@ -2,6 +2,7 @@
 import { randomBytes } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { chromium } from 'playwright'
+import AxeBuilder from '@axe-core/playwright'
 
 const root = new URL('..', import.meta.url).pathname
 const config = `${root}/deploy/staging/.env`
@@ -64,7 +65,30 @@ try {
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium',
     headless: true, args: ['--no-sandbox'] })
 
-  async function screen(realtimePort) {
+  const audits = []
+  async function audit(page, label) {
+    const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+    if (result.violations.length) {
+      throw new Error(`Acessibilidade ${label}: ${JSON.stringify(result.violations.map((violation) => ({
+        id: violation.id, impact: violation.impact, targets: violation.nodes.map((node) => node.target),
+      })))}`)
+    }
+    audits.push({ label, passedRules: result.passes.length, incompleteRules: result.incomplete.length })
+  }
+
+  const guest = await browser.newContext({ viewport: { width: 1280, height: 720 } })
+  const loginPage = await guest.newPage()
+  await loginPage.goto(base, { waitUntil: 'domcontentloaded' })
+  await loginPage.getByRole('dialog').waitFor()
+  await audit(loginPage, 'entrada clara')
+  await loginPage.evaluate(() => localStorage.setItem('theme', 'dark'))
+  await loginPage.reload({ waitUntil: 'domcontentloaded' })
+  await loginPage.getByRole('dialog').waitFor()
+  await until(() => loginPage.evaluate(() => document.documentElement.classList.contains('dark')), 'tema escuro aplicado')
+  await audit(loginPage, 'entrada escura')
+  await guest.close()
+
+  async function screen(realtimePort, activeModule = 'display') {
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } })
     const loginResponse = await context.request.post(`${base}/api/v1/auth/login`, {
       data: { email: 'stage-admin@example.invalid', password: values.STAGE_ADMIN_PASSWORD },
@@ -73,9 +97,9 @@ try {
     const login = await loginResponse.json()
     const actorId = login.actor?.id
     if (!actorId || login.actor.role !== 'tenant_admin') throw new Error('Ator sintético inválido.')
-    await context.addInitScript(({ actorId, mainPort, realtimePort }) => {
+    await context.addInitScript(({ actorId, mainPort, realtimePort, activeModule }) => {
       localStorage.setItem('legis.actorId', actorId)
-      localStorage.setItem('legis-app', JSON.stringify({ state: { actorId, activeModule: 'display', focusSessionId: null }, version: 0 }))
+      localStorage.setItem('legis-app', JSON.stringify({ state: { actorId, activeModule, focusSessionId: null }, version: 0 }))
       if (realtimePort !== mainPort) {
         const NativeWebSocket = window.WebSocket
         window.WebSocket = class extends NativeWebSocket {
@@ -84,15 +108,23 @@ try {
           }
         }
       }
-    }, { actorId, mainPort, realtimePort })
+    }, { actorId, mainPort, realtimePort, activeModule })
     const page = await context.newPage()
     const socketUrls = []
     page.on('websocket', (socket) => socketUrls.push(socket.url()))
     await page.goto(base, { waitUntil: 'domcontentloaded' })
-    await until(async () => (await page.locator('body').innerText()).includes(firstName), 'quadro inicial no navegador')
+    if (activeModule === 'display') {
+      await until(async () => (await page.locator('body').innerText()).includes(firstName), 'quadro inicial no navegador')
+    } else {
+      await page.locator('main').waitFor()
+    }
     await until(() => socketUrls.some((url) => url.includes(`:${realtimePort}/`)), 'WebSocket no nó escolhido')
     return { context, page, socketUrls }
   }
+
+  const dashboard = await screen(mainPort, 'dashboard')
+  await audit(dashboard.page, 'painel do operador')
+  await dashboard.context.close()
 
   // Force the welcome profile so the president name is observable on both screens.
   const operator = await browser.newContext()
@@ -110,6 +142,23 @@ try {
   await command('profile', 'boas_vindas')
   const first = await screen(mainPort)
   const second = await screen(peerPort)
+  await audit(first.page, 'telão de boas-vindas')
+  await command('profile', 'presenca')
+  try {
+    await until(async () => (await first.page.locator('body').innerText()).toLowerCase().includes('parlamentares presentes'), 'perfil de presença')
+  } catch (error) {
+    const state = await fetch(`${base}/api/v1/public/live?tenant=staging-example`).then((r) => r.json())
+    console.error(JSON.stringify({ phase: 'presenca', displayState: state.displayState,
+      body: (await first.page.locator('body').innerText()).slice(0, 1000) }))
+    throw error
+  }
+  await audit(first.page, 'telão de presença')
+  await command('profile', 'pauta')
+  await until(async () => (await first.page.locator('body').innerText()).toLowerCase().includes('ordem do dia'), 'perfil de pauta')
+  await audit(first.page, 'telão de pauta')
+  await command('profile', 'boas_vindas')
+  await until(async () => (await first.page.locator('body').innerText()).includes(firstName), 'boas-vindas restauradas')
+  await until(async () => (await second.page.locator('body').innerText()).includes(firstName), 'segunda tela em boas-vindas')
   await command('freeze')
   try {
     await until(async () => (await first.page.locator('body').innerText()).toLowerCase().includes('tela congelada'), 'congelamento da tela 1')
@@ -150,9 +199,19 @@ try {
       return text.includes(nextLabel) && !text.toLowerCase().includes('tela congelada') && !text.includes(firstName)
     }, 'troca da sessão em cada tela', 20000)
   }
+  await audit(first.page, 'telão de pauta após troca de sessão')
+  await late.page.keyboard.press('Tab')
+  const focused = await late.page.evaluate(() => document.activeElement?.getAttribute('aria-label'))
+  if (focused !== 'Sair do telão e voltar à mesa do plenário') {
+    throw new Error(`Saída do telão não recebeu foco por teclado: ${focused ?? 'sem foco'}`)
+  }
+  await late.page.keyboard.press('Enter')
+  await until(async () => (await late.page.getByRole('button', { name: 'Sair do telão e voltar à mesa do plenário' }).count()) === 0,
+    'saída do telão por teclado')
   console.log(JSON.stringify({ ok: true, synthetic: true, tenant: 'staging-example', screens: 3,
     realtimeNodes: 2, frozenFrameAfterMutation: true, offlineReconnect: true,
-    lateScreenRestored: true, sessionSwitchClearedOldFrame: true }))
+    lateScreenRestored: true, sessionSwitchClearedOldFrame: true,
+    keyboardExit: true, accessibilityAudits: audits }))
   await operator.close()
 } finally {
   if (browser) await browser.close()

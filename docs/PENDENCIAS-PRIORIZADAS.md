@@ -2,6 +2,8 @@
 
 Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). “Responsável” indica o papel que deve fechar a prova; nomes e aceites institucionais só serão preenchidos com a Câmara.
 
+Revisão de 13/10/2026: o [plano corrente](PLANO-ATUALIZADO-2026-10-13.md) distingue incrementos técnicos concluídos de homologação pendente. O telão tem ensaio sintético em três navegadores e dois nós; a fase 045 continua aberta até prova operacional fora do host e aceite das metas. Acessibilidade automatizada iniciou pela entrada, painel e telão; o leitor de tela humano e equipamento real continuam na fase 053.
+
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |

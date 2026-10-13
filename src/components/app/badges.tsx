@@ -221,7 +221,7 @@ export function PartyBadge({ party, bloc }: { party: string; bloc?: string | nul
   )
 }
 
-export function ConnectionBadge({ state }: { state: 'connecting' | 'online' | 'reconnecting' | 'offline' }) {
+export function ConnectionBadge({ state, className }: { state: 'connecting' | 'online' | 'reconnecting' | 'offline'; className?: string }) {
   const map = {
     online: { label: 'Tempo real', dot: 'bg-emerald-500', pulse: true },
     connecting: { label: 'Conectando…', dot: 'bg-amber-500', pulse: true },
@@ -229,7 +229,7 @@ export function ConnectionBadge({ state }: { state: 'connecting' | 'online' | 'r
     offline: { label: 'Offline', dot: 'bg-rose-500', pulse: false },
   }[state]
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground" role="status" aria-label={`Status de conexão: ${map.label}`}>
+    <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground', className)} role="status" aria-label={`Status de conexão: ${map.label}`}>
       <span className={cn('relative flex size-2', map.pulse && 'animate-pulse')}>
         <span className={cn('absolute inline-flex size-full rounded-full opacity-60', map.dot)} />
       </span>

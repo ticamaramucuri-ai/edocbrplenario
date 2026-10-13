@@ -17,20 +17,22 @@ Onda 6**. Piloto **v0.13.0** (26 módulos).
 > sessões ou dados oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
 > continuam disponíveis exclusivamente para demonstração.
 
-O [diagnóstico de conclusão](docs/DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) orienta as
-próximas fases. A [etapa 045](docs/etapas/045-fundacao-operacional-saas.md) está em
-andamento: os workers PostgreSQL e o rate limit compartilhado já passaram em ensaio
-isolado; o corte da base, correio e recuperação institucional permanecem pendentes.
+O [plano atualizado](docs/PLANO-ATUALIZADO-2026-10-13.md) separa o desenvolvimento
+técnico do aceite institucional e ordena as próximas fases. A
+[etapa 045](docs/etapas/045-fundacao-operacional-saas.md) permanece aberta:
+PostgreSQL, workers, SMTP de laboratório, fanout e recuperação sintética passaram
+em ensaios locais; implantação, correio e recuperação institucionais continuam pendentes.
 
 ---
 
 ## Destaques
 
 - **Sessão ponta a ponta**: pauta publicada → check-in → quórum em tempo real →
-  votação nominal/simbólica/secreta com **idempotência de voto** e resultado
+  votação nominal/simbólica com **idempotência de voto** e resultado
   determinístico → discursos com cronômetro → espelho com código de verificação.
-- **Tempo real com outbox transacional**: nenhuma ação crítica perde evento; telão se
-  reconstrói por snapshot; salas separadas para escopo interno e público.
+- **Tempo real com outbox transacional**: eventos ficam persistidos para retomada;
+  telão se reconstrói por snapshot; salas separadas para escopo interno e público.
+  A entrega distribuída ainda depende da homologação operacional.
 - **Auditoria à prova de adulteração**: trilha append-only com cadeia de hash
   verificável a um clique.
 - **Multiempresa de verdade**: onboarding de Câmaras, planos com entitlements (a IA é

@@ -130,7 +130,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex-1 space-y-4 overflow-y-auto custom-scroll px-2 pb-4">
         {groups.map((group) => (
           <div key={group}>
-            <p className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/45">
+            <p className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">
               {group}
             </p>
             <ul className="space-y-0.5">
@@ -178,7 +178,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="border-t border-sidebar-border px-4 py-3">
-        <ConnectionBadge state={connection} />
+        <ConnectionBadge state={connection} className="text-sidebar-foreground/80" />
       </div>
     </nav>
   )

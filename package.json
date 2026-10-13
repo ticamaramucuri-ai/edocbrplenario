@@ -128,6 +128,7 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@tailwindcss/postcss": "^4",
     "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",

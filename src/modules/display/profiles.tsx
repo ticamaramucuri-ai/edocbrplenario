@@ -76,7 +76,7 @@ export function ProfileView({ profile, view, primary, accent, now }: ProfileProp
     case 'presenca':
       return <PresenceProfile view={view} primary={primary} />
     case 'pauta':
-      return <AgendaProfile view={view} primary={primary} accent={accent} now={now} />
+      return <AgendaProfile view={view} accent={accent} now={now} />
     case 'votacao':
       return <VotingProfile view={view} primary={primary} accent={accent} />
     case 'discurso':
@@ -224,12 +224,10 @@ function agendaStatusVisual(status: AgendaEntry['status']): { label: string; cls
 
 function AgendaProfile({
   view,
-  primary,
   accent,
   now,
 }: {
   view: PublicLiveViewExt | null
-  primary: string
   accent: string
   now: number
 }) {
@@ -316,9 +314,9 @@ function AgendaProfile({
         </div>
       ))}
 
-      <footer className="mt-auto pt-2 text-center text-[clamp(0.8rem,1.4vw,1rem)] text-zinc-600">
+      <footer className="mt-auto pt-2 text-center text-[clamp(0.8rem,1.4vw,1rem)] text-zinc-400">
         {view?.tenant.name ?? ''} — pauta da sessão{session ? ` ${session.label}` : ''}
-        <span className="mx-2" style={{ color: primary }}>·</span>
+        <span className="mx-2" style={{ color: accent }} aria-hidden>·</span>
         {agenda.filter((i) => i.status === 'aprovado').length} aprovado(s)
       </footer>
     </section>

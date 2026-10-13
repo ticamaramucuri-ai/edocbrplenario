@@ -8,4 +8,6 @@ O ensaio de capacidade `bun run test:session:capacity` registrou 21 votos concor
 
 Na interface local, a aba Transmissão expôs os estados e ações na árvore de acessibilidade; os cartões usam títulos `h2` para navegação por seções. As setas esquerda/direita alternaram por teclado entre Telão e Transmissão, e os avisos permaneceram em texto, sem depender só de cor. A leitura com tecnologia assistiva e a navegação completa em equipamento da Câmara ainda exigem uma pessoa e dispositivo de homologação.
 
+Um incremento posterior adicionou [auditoria automática em Chromium e prova de saída do telão por teclado](045-auditoria-acessibilidade-navegador.md), com correção de contraste na barra lateral. A prova não substitui o leitor de tela humano.
+
 **Próxima entrega para encerrar a etapa:** testar teclado e leitor de tela em toda a jornada crítica, medir acesso HTTP/WebSocket com telões e vereadores reais, exercitar alertas com falhas prolongadas e registrar limites do ambiente dedicado. Manter os alertas operacionais visíveis sem consultar logs.
