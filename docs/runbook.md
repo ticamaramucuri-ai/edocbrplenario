@@ -73,6 +73,12 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
   O segundo comando verifica hashes de cada leitura do replay e a publicação dos
   eventos das sessões que criou. Limites e resultados estão na
   [etapa 045 de carga mista](etapas/045-carga-mista-voto-portal-replay.md).
+- Para repetir a prova conjunta de transmissão RTMPS local e carga do plenário,
+  prepare o MediaMTX com `bash scripts/prepare-media-smoke.sh`, confirme o replay
+  com `python3 scripts/staging-media-drill.py` e execute
+  `python3 scripts/staging-live-mixed-drill.py`. O ensaio exige a base exclusiva
+  `staging-example` e não utiliza canais sociais; veja a
+  [evidência e os limites](etapas/045-transmissao-carga-conjunta.md).
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,

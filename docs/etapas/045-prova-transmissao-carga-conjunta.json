@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-13",
+  "environment": "same-host synthetic staging-example",
+  "durationSeconds": 41.55,
+  "votes": 660,
+  "receipts": 660,
+  "publicReadRequests": 2672,
+  "publicReadErrors": 0,
+  "replaySha256": "fb851da5f5fb4da2b005ebd1083b9b64740230f374b46707bb868a21919aade5",
+  "media": {
+    "version": "v1.21.2",
+    "encoder": "FFmpeg synthetic H.264/AAC",
+    "localRtmpsDestinations": 2,
+    "originSegments": 11,
+    "firstReceiverSegments": 6,
+    "secondReceiverSegments": 7,
+    "sourceAndForwardRecoveryMs": 2014,
+    "firstReceiverRecoveryMs": 3949,
+    "secondReceiverSurvivedFirstFailure": true
+  },
+  "socialPlatformConfirmed": false,
+  "officialCapacityMeasured": false
+}
