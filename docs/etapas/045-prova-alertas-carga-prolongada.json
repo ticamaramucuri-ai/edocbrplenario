@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-13",
+  "environment": "local PostgreSQL staging; only staging-example",
+  "healthTransition": {
+    "initialState": "healthy",
+    "incidentObserved": true,
+    "finalState": "healthy",
+    "transitionCount": 4,
+    "detectionSeconds": 1.06,
+    "fromRestartToHealthySeconds": 12.57,
+    "appAvailableDuringRealtimeOutage": true
+  },
+  "sustainedVoting": {
+    "synthetic": true,
+    "runs": 8,
+    "durationSeconds": 90.43,
+    "writeSeconds": 75.52,
+    "healthSamples": 42,
+    "failedSamples": 0,
+    "votes": 1760,
+    "receipts": 1760,
+    "voteOutboxEvents": 1760,
+    "worstRunVoteP95Ms": 247.34
+  },
+  "realtimeOutageDuringWrites": {
+    "synthetic": true,
+    "votes": 220,
+    "receipts": 220,
+    "pendingDuringOutage": 30,
+    "publishedSessionEvents": 330,
+    "fromRestartToDrainSeconds": 8.06,
+    "appAvailableDuringOutage": true,
+    "officialRtoRpoMeasured": false
+  }
+}

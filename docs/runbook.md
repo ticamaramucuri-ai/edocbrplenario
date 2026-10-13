@@ -1,4 +1,4 @@
-# Runbook Operacional — Legis SaaS
+# Runbook Operacional — edocBR Plenário
 
 Procedimentos para operar o ambiente (sandbox/piloto). Público: equipe técnica da
 plataforma e da Câmara.
@@ -58,6 +58,15 @@ Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
 - O ensaio de build de produção, escrita e recuperação está na
   [etapa 041](etapas/041-homologacao-escrita-recuperacao-postgres.md); consulte o
   [checklist de corte](runbook-postgres-cutover.md) antes de preparar uma janela real.
+- Na stack PostgreSQL local `deploy/staging/compose.yaml`, use
+  `python3 scripts/staging-watch.py --seconds 300 --output tool-results/staging-watch.jsonl`
+  para registrar cada mudança de saúde fora dos contêineres. O processo termina
+  com erro se observar degradação. O log JSONL contém horários, estados e nomes
+  de serviços, sem senhas ou tokens. Para comprovar abertura e recuperação de
+  um alerta sem tocar uma Câmara real, use `python3 scripts/staging-watch-fault.py`;
+  ele só opera quando a base contém exclusivamente `staging-example` e religa o
+  realtime após a falha. O observador roda no mesmo host: em operação oficial,
+  configurar sondagem e notificação em infraestrutura separada.
 - O frontend obtém uma concessão de 120 segundos em `/api/v1/realtime/token`; o
   mini-serviço valida assinatura e tenant. A conexão interna se renova após vencimento.
 - Verificação local: `bun run test:security`; com API e realtime no ar, autentique-se,
