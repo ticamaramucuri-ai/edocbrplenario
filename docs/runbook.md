@@ -244,7 +244,7 @@ Verificação pós-restauração: health checks (§1) + `GET /api/v1/audit?verif
    (`mini-services/realtime/checkpoint.json`). Em PostgreSQL, confira os eventos
    `pending`; falha de emissão mantém o evento pendente para nova tentativa.
 4. Clientes refazem subscribe automaticamente (reconexão com backoff no hook). Ao confirmar a assinatura, a interface interna relê suas consultas ativas e o telão relê `public/live`; aguarde a atualização e compare com a API se houver dúvida.
-5. Após reconexão, confira a versão e o modo em `GET /api/v1/display/command?sessionId=...` com credencial de operador e compare com o telão. O modo/perfil é persistido e lido em `public/live`; o quadro congelado é recuperado pela rota pública versionada e verificado por SHA-256. Se retirar uma publicação ou link enquanto o telão estiver congelado, libere ou limpe o telão pela mesa. Veja a [etapa do quadro verificável](etapas/045-quadro-congelado-verificavel.md).
+5. Após reconexão, confira a versão e o modo em `GET /api/v1/display/command?sessionId=...` com credencial de operador e compare com o telão. O modo/perfil é persistido e lido em `public/live`; o quadro congelado é recuperado pela rota pública versionada e verificado por SHA-256. Se retirar uma publicação ou link enquanto o telão estiver congelado, libere ou limpe o telão pela mesa. Veja a [etapa do quadro verificável](etapas/045-quadro-congelado-verificavel.md) e o [ensaio com navegadores em dois nós](etapas/045-ensaio-navegador-duas-telas.md).
 
 ### 6.5 SQLITE_BUSY / timeout de escrita
 
