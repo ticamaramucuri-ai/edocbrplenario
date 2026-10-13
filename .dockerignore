@@ -7,6 +7,7 @@ node_modules
 !.env.example
 db/*.db*
 deploy/staging/.env
+deploy/staging/mail-lab
 recordings
 upload
 tool-results

@@ -1,5 +1,6 @@
 /** Worker SMTP; credenciais e URL pública são lidas do ambiente, nunca do banco. */
 import nodemailer from 'nodemailer'
+import { readFileSync } from 'node:fs'
 import { db } from '../src/lib/db'
 import { confirmationUrl, mailTransportConfigured, processMailBatch } from '../src/lib/server/mail-delivery'
 
@@ -14,6 +15,7 @@ const transporter = nodemailer.createTransport({
   port,
   secure: port === 465,
   requireTLS: port !== 465,
+  tls: process.env.SMTP_TLS_CA_FILE ? { ca: readFileSync(process.env.SMTP_TLS_CA_FILE) } : undefined,
   connectionTimeout: 20_000,
   greetingTimeout: 20_000,
   socketTimeout: 45_000,
@@ -35,12 +37,24 @@ const health = Bun.serve({ hostname: healthHost, port: healthPort, fetch(req) {
   })
 } })
 let running = true
-process.on('SIGTERM', () => { running = false })
-process.on('SIGINT', () => { running = false })
+let sleepTimer: ReturnType<typeof setTimeout> | undefined
+let wakeSleep: (() => void) | undefined
+const stop = () => {
+  running = false
+  if (sleepTimer) clearTimeout(sleepTimer)
+  wakeSleep?.()
+}
+process.on('SIGTERM', stop)
+process.on('SIGINT', stop)
 try {
   while (running) {
     await processMailBatch(db, send, baseUrl)
-    if (running) await Bun.sleep(5000)
+    if (running) await new Promise<void>((resolve) => {
+      wakeSleep = resolve
+      sleepTimer = setTimeout(resolve, 5000)
+    })
+    sleepTimer = undefined
+    wakeSleep = undefined
   }
 } finally {
   health.stop()

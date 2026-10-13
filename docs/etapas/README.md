@@ -51,6 +51,7 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [044 — Identidade partidária e arquivos](044-identidade-partidaria-arquivos.md) | Implementação local concluída | Emblema por partido/Câmara, volume configurável e inventário de imagens | Homologação de persistência e restore conjunto na 045 |
 
 | [045 — Fundação operacional SaaS](045-fundacao-operacional-saas.md) | Em andamento | Leases PostgreSQL e rate limit compartilhado com provas concorrentes | E-mail, fanout realtime, backup de arquivos, RTO/RPO e homologação persistente |
+| [045 — Correio, carga e pré-voo](045-correio-carga-prevoo.md) | Ensaio local sintético concluído | SMTP STARTTLS capturado, retentativa e 300 leituras sem erro | Ensaio prolongado e aceite institucional de Mucuri |
 | [046 — Configuração oficial por Câmara](046-configuracao-oficial-por-camara.md) | Incremento técnico concluído | Checklist, aprovação versionada e bloqueio de publicação oficial sem configuração vigente | Validação institucional das regras e composição de Mucuri |
 | [047 — Preparação formal da sessão](047-preparacao-formal-sessao.md) | Incremento técnico concluído | PDFs versionados, manifesto na convocação e declaração manual de entrega por revisão | Canal institucional com comprovante técnico, assinatura e aceite |
 | [048 — Condução e presença](048-conducao-presenca.md) | Incremento técnico concluído | Comando idempotente, origem controlada e escopo da Câmara | Dispositivo, acessibilidade e ensaio presencial |

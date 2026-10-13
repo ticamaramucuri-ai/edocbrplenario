@@ -109,6 +109,46 @@ services:
       timeout: 5s
       retries: 6
 
+  # Laboratório opt-in: somente endereços de exemplo, sem relay externo.
+  mailpit:
+    image: axllent/mailpit@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea
+    profiles: [mail-lab]
+    environment:
+      MP_SMTP_TLS_CERT: /certs/mailpit.crt
+      MP_SMTP_TLS_KEY: /certs/mailpit.key
+      MP_SMTP_REQUIRE_STARTTLS: "true"
+      MP_SMTP_ALLOWED_RECIPIENTS: "@example\\.invalid$"
+      MP_MAX_MESSAGES: "100"
+    volumes:
+      - ./mail-lab/certs:/certs:ro
+    ports:
+      - "127.0.0.1:${STAGE_MAILPIT_PORT:-3125}:8025"
+
+  mail_worker:
+    image: edocbr-plenario-staging:local
+    profiles: [mail-lab]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_FROM: laboratorio@edocbr.invalid
+      SMTP_TLS_CA_FILE: /certs/mailpit.crt
+      PUBLIC_BASE_URL: http://127.0.0.1:${STAGE_APP_PORT:-3100}
+      MAIL_WORKER_HEALTH_HOST: 0.0.0.0
+    volumes:
+      - ./mail-lab/certs:/certs:ro
+    command: ["bun", "scripts/mail-worker.ts"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3006/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
 volumes:
   postgres_data:
   parliamentarian_images:

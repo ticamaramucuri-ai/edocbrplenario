@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-13",
+  "environment": "PostgreSQL staging local; tenant staging-example",
+  "mail": {
+    "synthetic": true,
+    "starttls": true,
+    "captureCount": 2,
+    "firstDelivery": "sent",
+    "retryDelivery": "sent",
+    "retryAttempts": 2,
+    "externalDelivery": false
+  },
+  "readLoad": {
+    "synthetic": true,
+    "requests": 300,
+    "concurrency": 16,
+    "errors": 0,
+    "p50Ms": 30.455,
+    "p95Ms": 70.53,
+    "p99Ms": 80.52,
+    "elapsedSeconds": 0.753,
+    "throughputPerSecond": 398.4,
+    "routes": ["bootstrap", "public_sessions", "public_replay_range_206"]
+  },
+  "mucuriPreflight": {
+    "automaticReady": false,
+    "officialSessions": 0,
+    "blockedChecks": ["configuration_complete", "configuration_approved", "roles", "postgresql", "mail_transport", "media_destinations"],
+    "institutionalPilotApproved": false
+  }
+}

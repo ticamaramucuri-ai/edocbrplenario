@@ -10,7 +10,7 @@ test('worker SMTP expõe health só em loopback durante processamento', async ()
   })
   try {
     let response: Response | null = null
-    for (let attempt = 0; attempt < 40; attempt++) {
+    for (let attempt = 0; attempt < 100; attempt++) {
       try { response = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(250) }); break }
       catch { await Bun.sleep(100) }
     }

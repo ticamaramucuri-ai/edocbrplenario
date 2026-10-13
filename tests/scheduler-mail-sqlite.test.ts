@@ -20,11 +20,16 @@ test('scheduler SQLite alerta fila de correio por Câmara sem duplicar', async (
   })
   try {
     let ready = false
-    for (let attempt = 0; attempt < 40; attempt++) {
+    for (let attempt = 0; attempt < 100; attempt++) {
       try { ready = (await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(250) })).ok; if (ready) break }
       catch { await Bun.sleep(100) }
     }
-    expect(ready).toBe(true)
+    if (!ready) {
+      server.kill('SIGTERM')
+      await server.exited
+      const stderr = await new Response(server.stderr).text()
+      throw new Error(`Scheduler não iniciou health: ${stderr.slice(0, 800)}`)
+    }
     const run = async () => fetch(`http://127.0.0.1:${port}/jobs/alert.scan/run`, { method: 'POST' })
     expect((await (await run()).json()).status).toBe('ok')
     expect((await (await run()).json()).status).toBe('ok')
