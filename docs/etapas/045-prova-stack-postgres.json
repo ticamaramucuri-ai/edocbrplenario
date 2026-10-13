@@ -1,0 +1,26 @@
+{
+  "scope": "local-isolated-synthetic-staging",
+  "date": "2026-10-11",
+  "database": "postgresql-16",
+  "appliedMigrations": 13,
+  "servicesHealthy": ["postgres", "app", "realtime", "webhooks", "scheduler"],
+  "loopbackPorts": { "app": 3100, "realtime": 3103, "postgres": 55432 },
+  "http": {
+    "appRoot": 200,
+    "bootstrap": 200,
+    "publicSessions": 200,
+    "realtimeHealth": 200,
+    "existingSqliteApp": 200
+  },
+  "syntheticJourney": {
+    "tenant": "staging-example",
+    "passwordLogin": true,
+    "parliamentarianCreated": true,
+    "draftSessionCreated": true,
+    "draftHiddenFromPublic": true,
+    "appRestartPreservedRecords": true
+  },
+  "sqliteCutoverPerformed": false,
+  "officialDataUsed": false,
+  "notYetVerified": ["media-file-restore", "database-and-files-recovery", "worker-failure-drill", "institutional-smtp", "official-social-streaming"]
+}

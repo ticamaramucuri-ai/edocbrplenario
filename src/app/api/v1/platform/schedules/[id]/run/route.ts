@@ -29,7 +29,7 @@ import { toScheduledJobView } from '../../serialize'
 
 export const dynamic = 'force-dynamic'
 
-const SCHEDULER_BASE_URL = 'http://localhost:3005'
+const SCHEDULER_BASE_URL = process.env.SCHEDULER_BASE_URL || 'http://localhost:3005'
 const RUN_TIMEOUT_MS = 10_000
 
 type SchedulerRunResult = { status: string; note: string }

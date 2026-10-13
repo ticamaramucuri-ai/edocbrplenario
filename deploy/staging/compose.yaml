@@ -18,5 +18,99 @@ services:
       timeout: 3s
       retries: 12
 
+  app:
+    image: edocbr-plenario-staging:local
+    build:
+      context: ../..
+      dockerfile: deploy/staging/Dockerfile
+      args:
+        NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:${STAGE_REALTIME_PORT:-3103}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      PORT: 3000
+      DEFAULT_TENANT_SLUG: staging-example
+      REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
+      REALTIME_HEALTH_URL: http://realtime:3003/health
+      WEBHOOKS_HEALTH_URL: http://webhooks:3004/health
+      SCHEDULER_BASE_URL: http://scheduler:3005
+      PARLIAMENTARIAN_IMAGES_ROOT: /data/images
+      MEDIA_RECORDINGS_ROOT: /data/recordings
+      MEDIA_REPLAY_ROOT: /data/replay
+    ports:
+      - "127.0.0.1:${STAGE_APP_PORT:-3100}:3000"
+    volumes:
+      - parliamentarian_images:/data/images
+      - media_recordings:/data/recordings
+      - media_replay:/data/replay
+    command: ["sh", "-c", "chmod 700 /data/recordings /data/replay && exec bun .next/standalone/server.js"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/api/v1/bootstrap').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  realtime:
+    image: edocbr-plenario-staging:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      REALTIME_DATABASE_PROVIDER: postgresql
+      REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
+    ports:
+      - "127.0.0.1:${STAGE_REALTIME_PORT:-3103}:3003"
+    command: ["bun", "mini-services/realtime/index.ts"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  webhooks:
+    image: edocbr-plenario-staging:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      WEBHOOKS_DATABASE_PROVIDER: postgresql
+    command: ["bun", "mini-services/webhooks/index.ts"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3004/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  scheduler:
+    image: edocbr-plenario-staging:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      realtime:
+        condition: service_started
+      webhooks:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
+      REALTIME_HEALTH_URL: http://realtime:3003/health
+      WEBHOOKS_HEALTH_URL: http://webhooks:3004/health
+    command: ["bun", "mini-services/scheduler/postgres.ts"]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
 volumes:
   postgres_data:
+  parliamentarian_images:
+  media_recordings:
+  media_replay:

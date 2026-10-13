@@ -40,6 +40,14 @@ def private_config(create: bool) -> dict[str, str]:
     port = int(values['STAGE_DB_PORT'])
     if port < 1 or port > 65535:
         raise RuntimeError('STAGE_DB_PORT inválida.')
+    if create and not values.get('STAGE_REALTIME_SECRET'):
+        values['STAGE_REALTIME_SECRET'] = secrets.token_urlsafe(48)
+        with CONFIG.open('a') as stream:
+            stream.write(f"STAGE_REALTIME_SECRET={values['STAGE_REALTIME_SECRET']}\n")
+    if create and not values.get('STAGE_ADMIN_PASSWORD'):
+        values['STAGE_ADMIN_PASSWORD'] = secrets.token_urlsafe(24)
+        with CONFIG.open('a') as stream:
+            stream.write(f"STAGE_ADMIN_PASSWORD={values['STAGE_ADMIN_PASSWORD']}\n")
     return values
 
 
@@ -106,13 +114,37 @@ def restart_proof(config: dict[str, str]) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['up', 'status', 'restart-proof', 'stop'])
+    parser.add_argument('command', choices=['up', 'status', 'restart-proof', 'stop',
+                                            'stack-up', 'stack-status', 'stack-stop'])
     args = parser.parse_args()
     if args.command == 'up':
         config = private_config(create=True)
         compose('up', '-d', '--wait', 'postgres')
         migrate(config)
         result = status(config)
+    elif args.command == 'stack-up':
+        config = private_config(create=True)
+        compose('up', '-d', '--wait', 'postgres')
+        migrate(config)
+        compose('build', 'app')
+        compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler')
+        subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
+                        'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',
+                        '-e', 'STAGE_ADMIN_PASSWORD', 'app', 'bun', 'scripts/staging-seed.ts'],
+                       check=True, cwd=ROOT,
+                       env={**os.environ, 'STAGE_ADMIN_PASSWORD': config['STAGE_ADMIN_PASSWORD']})
+        result = {**status(config), 'stackStarted': True,
+                  'appUrl': f"http://127.0.0.1:{config.get('STAGE_APP_PORT', '3100')}/",
+                  'syntheticTenant': 'staging-example', 'adminEmail': 'stage-admin@example.invalid'}
+    elif args.command == 'stack-status':
+        config = private_config(create=False)
+        compose('ps')
+        result = {**status(config), 'stackInspected': True}
+    elif args.command == 'stack-stop':
+        private_config(create=False)
+        compose('stop', 'app', 'realtime', 'webhooks', 'scheduler')
+        result = {'scope': 'local-persistent-staging', 'servicesStopped': True,
+                  'postgresPreserved': True, 'volumesPreserved': True}
     elif args.command == 'stop':
         private_config(create=False)
         compose('stop', 'postgres')

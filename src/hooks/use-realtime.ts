@@ -28,7 +28,7 @@ function ensureSocket(tenantId: string, actorId: string): Socket {
   if (socketState.socket && socketState.tenantId === tenantId && socketState.actorId === actorId) return socketState.socket
 
   socketState.socket?.disconnect()
-  const socket = io('/?XTransformPort=3003', {
+  const socket = io(process.env.NEXT_PUBLIC_REALTIME_URL || '/?XTransformPort=3003', {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,
@@ -129,7 +129,7 @@ export function useRealtime(handlers: HandlerMap) {
 
 /** Assinatura pública (portal/telão) — instância independente */
 export function connectPublicSocket(tenantId: string): Socket {
-  const s = io('/?XTransformPort=3003', {
+  const s = io(process.env.NEXT_PUBLIC_REALTIME_URL || '/?XTransformPort=3003', {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

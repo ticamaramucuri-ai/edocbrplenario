@@ -1,0 +1,14 @@
+.git
+.next
+node_modules
+**/node_modules
+.env
+.env.*
+!.env.example
+db/*.db*
+deploy/staging/.env
+recordings
+upload
+tool-results
+*.log
+*.tsbuildinfo
