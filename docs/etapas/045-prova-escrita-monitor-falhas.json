@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-13",
+  "environment": "PostgreSQL staging local; tenant staging-example",
+  "writeLoad": {
+    "synthetic": true,
+    "official": false,
+    "rounds": 20,
+    "concurrentVoters": 11,
+    "votes": 220,
+    "receipts": 220,
+    "voteAuditEvents": 220,
+    "voteOutboxEvents": 220,
+    "idempotentReplayPerRound": true,
+    "voteP50Ms": 134.195,
+    "voteP95Ms": 221.65
+  },
+  "observer": {
+    "scope": "host outside containers, same computer",
+    "durationSeconds": 45.14,
+    "samples": 21,
+    "failedSamples": 0
+  },
+  "storageFault": {
+    "synthetic": true,
+    "missingFileHttpStatus": 409,
+    "recoveredHttpStatus": 206,
+    "sha256Unchanged": true,
+    "dbStatusUnchanged": true
+  },
+  "smtpNetworkFault": {
+    "synthetic": true,
+    "pendingAfterOutage": true,
+    "sentAfterRestart": true,
+    "attempts": 2,
+    "messagesPreservedAcrossRestart": 3,
+    "externalDelivery": false
+  }
+}

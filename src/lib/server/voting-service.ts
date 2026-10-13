@@ -178,33 +178,35 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
       })
     }
 
-    const internalPayload: Record<string, unknown> = {
-      votingId: voting.id,
-      sessionId: voting.sessionId,
-      parliamentarianId: parliamentarian.id,
-      name: parliamentarian.name,
-      party: parliamentarian.party,
-      registeredCount,
-      hidePartial: voting.hidePartial,
-    }
-    if (!secret) internalPayload.value = value
-    await emitOutbox(tx, {
-      tenantId: voting.session.tenantId,
-      eventType: 'vote.recorded',
-      aggregateId: voting.id,
-      sessionId: voting.sessionId,
-      aggregateVersion: voting.version,
-      correlationId,
-      origin: source === 'pwa' ? 'pwa' : 'operator',
-      internalPayload,
-      // Público SEMPRE sem valor/nome — apenas contagem
-      publicPayload: {
+    if (action) {
+      const internalPayload: Record<string, unknown> = {
         votingId: voting.id,
         sessionId: voting.sessionId,
+        parliamentarianId: parliamentarian.id,
+        name: parliamentarian.name,
+        party: parliamentarian.party,
         registeredCount,
         hidePartial: voting.hidePartial,
-      },
-    })
+      }
+      if (!secret) internalPayload.value = value
+      await emitOutbox(tx, {
+        tenantId: voting.session.tenantId,
+        eventType: 'vote.recorded',
+        aggregateId: voting.id,
+        sessionId: voting.sessionId,
+        aggregateVersion: voting.version,
+        correlationId,
+        origin: source === 'pwa' ? 'pwa' : 'operator',
+        internalPayload,
+        // Público SEMPRE sem valor/nome — apenas contagem
+        publicPayload: {
+          votingId: voting.id,
+          sessionId: voting.sessionId,
+          registeredCount,
+          hidePartial: voting.hidePartial,
+        },
+      })
+    }
 
     return { vote: vote as Vote & { parliamentarian: Parliamentarian }, registeredCount, voting }
   })

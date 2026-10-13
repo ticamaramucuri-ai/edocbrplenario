@@ -119,8 +119,10 @@ services:
       MP_SMTP_REQUIRE_STARTTLS: "true"
       MP_SMTP_ALLOWED_RECIPIENTS: "@example\\.invalid$"
       MP_MAX_MESSAGES: "100"
+      MP_DATABASE: /data/mailpit.db
     volumes:
       - ./mail-lab/certs:/certs:ro
+      - mailpit_data:/data
     ports:
       - "127.0.0.1:${STAGE_MAILPIT_PORT:-3125}:8025"
 
@@ -154,3 +156,4 @@ volumes:
   parliamentarian_images:
   media_recordings:
   media_replay:
+  mailpit_data:

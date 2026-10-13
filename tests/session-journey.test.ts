@@ -87,6 +87,7 @@ test('duas Câmaras: sessão completa continua após perda de mídia e correçã
   expect((await cast()).status).toBe(200)
   expect((await cast()).status).toBe(200)
   expect(await db.vote.count({ where: { votingId: nominalId } })).toBe(1)
+  expect(await db.outboxEvent.count({ where: { aggregateId: nominalId, eventType: 'vote.recorded' } })).toBe(1)
   expect((await voteAction(nominalId, 'close', 2)).status).toBe(200)
   expect((await voteAction(nominalId, 'close', 2)).status).toBe(409)
   expect((await voteAction(nominalId, 'annul', 3, { justification: 'Correção da questão apresentada' })).status).toBe(200)
