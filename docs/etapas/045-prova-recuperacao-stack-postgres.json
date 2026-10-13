@@ -1,0 +1,25 @@
+{
+  "scope": "synthetic-staging",
+  "backupRestore": {
+    "ok": true,
+    "bundleFiles": 9,
+    "manifestSha256": "cd330cadd0c1364a17b7b6d378b0d8a152005f5d361e27b868255637678815bf",
+    "snapshotSeconds": 1.854,
+    "restoreAndVerifySeconds": 2.158,
+    "restoredTenantCount": 1,
+    "restoredDraftCount": 1,
+    "restoredVolumeMarkers": 3,
+    "activeDatabaseReplaced": false
+  },
+  "workerFailure": {
+    "ok": true,
+    "realtimeStoppedWithPendingEvent": true,
+    "outboxPublishedAfterRestart": true,
+    "webhooksRestarted": true,
+    "schedulerRestarted": true,
+    "appRemainedAvailable": true,
+    "elapsedSeconds": 8.767
+  },
+  "officialRtoRpoMeasured": false,
+  "officialDataUsed": false
+}
