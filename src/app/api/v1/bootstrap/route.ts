@@ -61,8 +61,11 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     demoMode,
     actors: users.map(toActorView),
     // Mucuri está cadastrada sem usuários: sem este motivo a tela de entrada
-    // mostrava só os atores de plataforma e não explicava a ausência.
-    actorsEmptyReason: tenantUserCount === 0 ? 'tenant_sem_usuarios' : null,
+    // mostrava só os atores de plataforma e não explicava a ausência. Segue a
+    // mesma condição de counts e das sessões — chamador anônimo em produção não
+    // precisa saber que a Câmara está sem usuário ativo.
+    actorsEmptyReason:
+      (actor || demoMode) && tenantUserCount === 0 ? 'tenant_sem_usuarios' : null,
     counts: {
       parliamentarians: actor || demoMode ? parliamentarianCount : 0,
       matters: actor || demoMode ? matterCount : 0,

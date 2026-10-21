@@ -7,7 +7,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronRight, Download, FilePlus2, FileText, PanelRightOpen, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Download, FileCheck2, FilePlus2, FileText, PanelRightOpen, Stamp, X, XOctagon } from 'lucide-react'
 
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
@@ -44,14 +44,17 @@ const MATTER_TYPES = Object.keys(MATTER_TYPE_LABEL) as MatterType[]
 const MATTER_STATUSES = Object.keys(MATTER_STATUS_LABEL) as MatterStatus[]
 
 function MatterStatusBadge({ status }: { status: MatterStatus }) {
+  // Ícone, e não só o tom: aprovada e sancionada são ambas verdes, e à distância
+  // a cor sozinha não separa um desfecho em tramitação de um desfecho final.
   if (status === 'aprovado')
-    return <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Aprovada</Badge>
-  if (status === 'rejeitado') return <Badge className="bg-rose-600 text-white hover:bg-rose-600">Rejeitada</Badge>
+    return <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700"><FileCheck2 className="size-3" />Aprovada</Badge>
+  if (status === 'rejeitado')
+    return <Badge className="gap-1 bg-rose-600 text-white hover:bg-rose-600"><XOctagon className="size-3" />Rejeitada</Badge>
   // Fase 17 — desfechos finais: sanção (verde-escuro) e veto (vermelho/rust).
   if (status === 'sancionado')
-    return <Badge className="bg-emerald-800 text-white hover:bg-emerald-800">Sancionada</Badge>
+    return <Badge className="gap-1 bg-emerald-900 text-white hover:bg-emerald-900"><Stamp className="size-3" />Sancionada</Badge>
   if (status === 'vetado')
-    return <Badge className="bg-red-800 text-white hover:bg-red-800">Vetada</Badge>
+    return <Badge className="gap-1 bg-red-800 text-white hover:bg-red-800"><XOctagon className="size-3" />Vetada</Badge>
   return <Badge variant="outline">{MATTER_STATUS_LABEL[status]}</Badge>
 }
 

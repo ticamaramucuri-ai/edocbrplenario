@@ -1,0 +1,115 @@
+{
+  "atrasoEventoP50": 419.0,
+  "atrasoEventoP95": 671,
+  "atrasoQuadroCongelado": 71.62,
+  "congelamentos": [
+    {
+      "atrasoQuadroCongeladoMs": 59.33,
+      "hashEstavel": true,
+      "rodada": 1,
+      "versaoEstavel": true,
+      "votosRegistradosDurante": 13
+    },
+    {
+      "atrasoQuadroCongeladoMs": 71.62,
+      "hashEstavel": true,
+      "rodada": 2,
+      "versaoEstavel": true,
+      "votosRegistradosDurante": 13
+    },
+    {
+      "atrasoQuadroCongeladoMs": 58.48,
+      "hashEstavel": true,
+      "rodada": 3,
+      "versaoEstavel": true,
+      "votosRegistradosDurante": 13
+    },
+    {
+      "atrasoQuadroCongeladoMs": 59.32,
+      "hashEstavel": true,
+      "rodada": 4,
+      "versaoEstavel": true,
+      "votosRegistradosDurante": 13
+    },
+    {
+      "atrasoQuadroCongeladoMs": 55.49,
+      "hashEstavel": true,
+      "rodada": 5,
+      "versaoEstavel": true,
+      "votosRegistradosDurante": 13
+    }
+  ],
+  "data": "2026-10-21T16:53:30.253930+00:00",
+  "duracaoSegundos": 8.44,
+  "errosDeLeitura": 0,
+  "errosHttp": 0,
+  "eventosPerdidos": 0,
+  "eventosPublicosDaSessao": 134,
+  "leiturasDoPortal": 545,
+  "observadorErros": [],
+  "oficial": false,
+  "ok": true,
+  "perfil": {
+    "comandosDeTelaoPorRodada": [
+      "profile",
+      "freeze",
+      "unfreeze"
+    ],
+    "leitores": 8,
+    "nosDeTempoReal": 2,
+    "parlamentares": 13,
+    "quedaInduzida": false,
+    "rodadas": 5,
+    "teloes": 2
+  },
+  "porNo": [
+    {
+      "idsPerdidos": [],
+      "no": 0,
+      "perdidos": 0,
+      "recebidos": 134,
+      "url": "http://127.0.0.1:3103"
+    },
+    {
+      "idsPerdidos": [],
+      "no": 1,
+      "perdidos": 0,
+      "recebidos": 134,
+      "url": "http://127.0.0.1:3104"
+    }
+  ],
+  "rodadas": [
+    {
+      "resultado": "aprovado",
+      "rodada": 1,
+      "votacaoId": "cmvicpkyd00uhnt01nv9zvwzu"
+    },
+    {
+      "resultado": "aprovado",
+      "rodada": 2,
+      "votacaoId": "cmvicplil00y5nt01nu68dyw5"
+    },
+    {
+      "resultado": "aprovado",
+      "rodada": 3,
+      "votacaoId": "cmvicpm4m011tnt01dsuchowp"
+    },
+    {
+      "resultado": "aprovado",
+      "rodada": 4,
+      "votacaoId": "cmvicpmqa015hnt0171b78fuz"
+    },
+    {
+      "resultado": "aprovado",
+      "rodada": 5,
+      "votacaoId": "cmvicpnbv0195nt01sj2x8jra"
+    }
+  ],
+  "sessaoId": "cmvicpkc300q2nt018kytrab2",
+  "sintetico": true,
+  "tenant": "staging-example",
+  "votoP50Ms": 143.92,
+  "votoP95Ms": 222.69,
+  "votos": 65,
+  "votosEsperados": 65
+}

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { expect, test } from 'bun:test'
@@ -84,6 +84,22 @@ test('variável do ambiente vence o arquivo', () => {
   } finally {
     delete process.env.DATABASE_URL
     rmSync(diretorio, { recursive: true, force: true })
+  }
+})
+
+test('recusa symlink que aponta para a base de desenvolvimento', () => {
+  const diretorio = mkdtempSync(join(tmpdir(), 'edocbr-guarda-'))
+  const raiz = mkdtempSync(join(tmpdir(), 'edocbr-raiz-'))
+  try {
+    mkdirSync(join(raiz, 'db'))
+    const real = join(raiz, 'db', 'custom.db')
+    writeFileSync(real, '')
+    const atalho = join(diretorio, 'base.db')
+    symlinkSync(real, atalho)
+    expect(() => assertDisposableDatabase(`file:${atalho}`, raiz)).toThrow(/descartável/)
+  } finally {
+    rmSync(diretorio, { recursive: true, force: true })
+    rmSync(raiz, { recursive: true, force: true })
   }
 })
 

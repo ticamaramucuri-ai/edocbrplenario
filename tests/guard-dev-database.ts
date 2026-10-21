@@ -11,7 +11,7 @@
  * - como preload da suíte (`bunfig.toml`), que falha a execução inteira antes
  *   de qualquer teste tocar o Prisma.
  */
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, realpathSync } from 'fs'
 import { resolve, sep } from 'path'
 
 const VARIAVEL_ESCAPE = 'EDOCBR_ALLOW_DEV_DB'
@@ -35,6 +35,15 @@ function caminhosCandidatos(databaseUrl: string, repoRoot: string): string[] {
   return [resolve(repoRoot, 'prisma', caminho), resolve(repoRoot, caminho)]
 }
 
+/** Caminho com symlinks resolvidos; literal quando o arquivo ainda não existe. */
+function caminhoReal(caminho: string): string {
+  try {
+    return realpathSync(caminho)
+  } catch {
+    return caminho
+  }
+}
+
 /**
  * Lança quando a URL aponta para `db/` do repositório e o escape explícito não
  * está ligado. PostgreSQL de homologação e arquivos fora de `db/` passam.
@@ -42,8 +51,8 @@ function caminhosCandidatos(databaseUrl: string, repoRoot: string): string[] {
 export function assertDisposableDatabase(databaseUrl: string, repoRoot: string): void {
   if (process.env[VARIAVEL_ESCAPE] === '1') return
 
-  const protegido = resolve(repoRoot, 'db')
-  for (const candidato of caminhosCandidatos(databaseUrl, repoRoot)) {
+  const protegido = caminhoReal(resolve(repoRoot, 'db'))
+  for (const candidato of caminhosCandidatos(databaseUrl, repoRoot).map(caminhoReal)) {
     if (candidato === protegido || candidato.startsWith(protegido + sep)) {
       throw new Error(
         `DATABASE_URL aponta para a base de desenvolvimento do repositório (${candidato}). ` +

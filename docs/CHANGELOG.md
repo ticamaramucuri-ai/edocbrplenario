@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Carga concorrente de jornada, telão e portal: 13 parlamentares votando, dois telões em nós distintos de tempo real, oito leitores do portal e congelamento durante a votação aberta. Observado: atraso de evento p50 419 ms / p95 671 ms, quadro congelado em 71,62 ms, zero evento perdido em 134 e zero erro HTTP; o detector de perda foi provado com queda induzida (31 eventos perdidos).
 - Revisão em contexto novo do branch inteiro, com correção dos achados: backup do `--apply` chamado sem os argumentos obrigatórios, URL não-`file:` caindo na base de desenvolvimento, remoção alcançando Câmara desconhecida, guarda inerte em `bun test <arquivo>`, variável de tempo real inválida derrubando a tela, vigia não rearmado, rótulo quebrando a topbar, `--keep 0` apagando todo backup e auditoria de acessibilidade com a porta de desenvolvimento como alvo padrão.
 - Limpeza dos 15 tenants sintéticos aplicada na base de desenvolvimento, com backup verificável e integridade conferida.
 - Registrado que o projeto não tem VPS: desenvolvimento local, sem passo de deploy.
