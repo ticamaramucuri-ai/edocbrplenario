@@ -241,7 +241,7 @@ model User {
   role              String // platform_owner|platform_support|tenant_admin|legislative_admin|session_operator|media_operator|presiding_officer|parliamentarian|auditor
   jobTitle          String?
   parliamentarianId String?        @unique
-  passwordHash      String? // Fase 9: scrypt (atores demo continuam sem senha)
+  passwordHash      String? // Fase 9: scrypt. O seed dá senha a todo usuário de demonstração; nulo só em usuário criado sem credencial.
   mfaSecret         String? // Onda 5/F22: segredo TOTP base32 — removido ao desabilitar; nunca retornado após enable
   mfaEnabled        Boolean        @default(false) // Onda 5/F22
   active            Boolean        @default(true)

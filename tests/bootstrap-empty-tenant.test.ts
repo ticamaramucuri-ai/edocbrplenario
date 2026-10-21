@@ -46,6 +46,25 @@ test('tenant com usuário não traz motivo', async () => {
   expect(corpo.actorsEmptyReason).toBeNull()
 })
 
+test('chamador anônimo sem modo demonstração não recebe o motivo', async () => {
+  const sufixo = crypto.randomUUID()
+  await db.tenant.create({
+    data: { slug: `producao-${sufixo}`, name: 'Câmara Sem Usuários', city: 'Teste', uf: 'BA' },
+  })
+
+  const anterior = process.env.LEGIS_DEMO_MODE
+  delete process.env.LEGIS_DEMO_MODE
+  try {
+    const corpo = await (await get(`producao-${sufixo}`)).json()
+    expect(corpo.demoMode).toBe(false)
+    expect(corpo.actors).toEqual([])
+    expect(corpo.actorsEmptyReason).toBeNull()
+  } finally {
+    if (anterior === undefined) delete process.env.LEGIS_DEMO_MODE
+    else process.env.LEGIS_DEMO_MODE = anterior
+  }
+})
+
 test('ator de plataforma na lista não apaga o motivo do tenant vazio', async () => {
   const sufixo = crypto.randomUUID()
   await db.tenant.create({
