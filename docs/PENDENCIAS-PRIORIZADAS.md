@@ -12,7 +12,7 @@ Revisão de 20/10/2026: a trilha A do [plano de continuidade](PLANO-CONTINUIDADE
 | Média | 045 | Dados da VPS para a seção Deploy do `CLAUDE.md` (host, usuário, pasta, reinício, health check) | Responsável pela infraestrutura | Seção sem campos `A DEFINIR` e um deploy verificado pelo health check |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
-| Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |
+| Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara — formulários prontos em [`aceite/`](aceite/README.md), aguardando preenchimento e assinatura | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |
 | Alta | 047 | Convocação com prova de entrega/ciência e documentos versionados | Secretaria legislativa | Jornada e comprovantes de envio revisados |
 | Alta | 048–049 | Quórum por ato, identificação e apuração nominal/simbólica | Mesa e secretaria | Sessões simuladas, conferência humana e testes concorrentes |
 | Bloqueante para modalidade | 050 | Sigilo real do voto secreto e continuidade offline | Segurança e Mesa | Revisão independente; modalidade desabilitada até aceite |

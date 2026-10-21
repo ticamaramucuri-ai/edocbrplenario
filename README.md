@@ -171,6 +171,9 @@ entrar:
 
 ## Documentação (índice)
 
+O pacote de validação institucional — cinco formulários para a Câmara preencher escolhendo — está em
+[`docs/aceite/README.md`](docs/aceite/README.md). Nenhum dado oficial é cadastrado antes da assinatura.
+
 | Documento | Conteúdo |
 |---|---|
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Plano de continuidade: mapa de funcionalidades/menus/páginas, fases 5–20 entregues, **Onda 5 entregue (§12), Onda 6 planejada (§14) e fases 043–057 no diagnóstico** |

@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Pacote de validação institucional: cinco formulários de aceite (matriz regimental, composição da legislatura, canal de convocação, casos de presença/votação e ata/publicação) derivados dos campos que o código já exige, para a Câmara preencher escolhendo.
 - Acessibilidade de presença, votação (três estados), telão em 1920×1080 e 3840×2160 e app do parlamentar em 390×844, com gate axe sem violação `critical`/`serious` e percurso por teclado de check-in a apuração.
 - Contraste corrigido: selos `emerald-600`/`amber-600` com texto branco, texto das cores vivas do sonner no tema claro e texto secundário do telão.
 - Guarda de banco como preload da suíte: teste com `DATABASE_URL` apontando para `db/` falha antes do primeiro caso.
