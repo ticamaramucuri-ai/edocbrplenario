@@ -18,6 +18,10 @@ plataforma e da Câmara.
 
 Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
 
+A stack de homologação em contêiner, seus volumes duráveis, segredos e limites estão em
+[`deploy/staging/README.md`](../deploy/staging/README.md). Ela roda na máquina de
+desenvolvimento e **não** é homologação fora do host.
+
 ### Duas formas de subir o ambiente
 
 O navegador precisa alcançar o serviço de tempo real. Há dois arranjos, e o
