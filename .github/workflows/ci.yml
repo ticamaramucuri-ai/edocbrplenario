@@ -48,6 +48,8 @@ jobs:
       - run: bun run test:media:public-link
       - run: bun run test:media:archive
       - run: bun run build
+      - run: bunx playwright install chromium
+      - run: bun run test:a11y:plenario
 
   postgres-foundation:
     runs-on: ubuntu-latest

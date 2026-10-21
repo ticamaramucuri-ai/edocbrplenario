@@ -290,7 +290,7 @@ function npsGroup(score: number): 'promoter' | 'neutral' | 'detractor' {
 const NPS_BUTTON_TONE: Record<'promoter' | 'neutral' | 'detractor', { base: string; selected: string }> = {
   promoter: {
     base: 'border-emerald-600/40 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-600/10 dark:text-emerald-400',
-    selected: 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-600',
+    selected: 'border-emerald-600 bg-emerald-700 text-white hover:bg-emerald-700',
   },
   neutral: {
     base: 'border-muted-foreground/30 text-foreground hover:bg-accent',
@@ -298,7 +298,7 @@ const NPS_BUTTON_TONE: Record<'promoter' | 'neutral' | 'detractor', { base: stri
   },
   detractor: {
     base: 'border-amber-600/40 text-amber-700 hover:border-amber-600 hover:bg-amber-600/10 dark:text-amber-400',
-    selected: 'border-amber-600 bg-amber-600 text-white hover:bg-amber-600',
+    selected: 'border-amber-600 bg-amber-700 text-white hover:bg-amber-700',
   },
 }
 

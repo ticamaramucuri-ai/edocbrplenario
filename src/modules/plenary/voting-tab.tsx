@@ -509,13 +509,13 @@ function VotingGrid({
                   <div className="shrink-0">
                     {voted ? (
                       hideValues ? (
-                        <Badge className="bg-emerald-600 text-white">
+                        <Badge className="bg-emerald-700 text-white">
                           <Check /> {voting.mode === 'secreto' ? 'Voto registrado' : 'Registrado'}
                         </Badge>
                       ) : row?.value ? (
                         <ValueBadge value={row.value} options={options} />
                       ) : (
-                        <Badge className="bg-emerald-600 text-white">
+                        <Badge className="bg-emerald-700 text-white">
                           <Check /> Registrado
                         </Badge>
                       )

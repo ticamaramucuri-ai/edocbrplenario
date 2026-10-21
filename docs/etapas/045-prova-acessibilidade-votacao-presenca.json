@@ -1,0 +1,98 @@
+{
+  "ok": true,
+  "sintetico": true,
+  "data": "2026-10-21T13:19:47.890Z",
+  "tenant": "camara-vila-nova",
+  "navegador": "/usr/bin/chromium",
+  "operador": "session_operator",
+  "telas": 8,
+  "sequenciaDeFoco": [
+    {
+      "passo": "check-in",
+      "foco": "Registrar check-in — Antônio Ferraz"
+    },
+    {
+      "passo": "abrir votação",
+      "foco": "Abrir votação"
+    },
+    {
+      "passo": "votar",
+      "foco": "Registrar voto Sim de Antônio Ferraz"
+    },
+    {
+      "passo": "encerrar votação",
+      "foco": "Encerrar votação"
+    },
+    {
+      "passo": "confirmar apuração",
+      "foco": "Encerrar e apurar"
+    }
+  ],
+  "auditorias": [
+    {
+      "tela": "presença — check-in aberto, quórum insuficiente",
+      "viewport": "1366×768",
+      "regrasAprovadas": 29,
+      "regrasInconclusivas": 3,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "presença — quórum alcançado",
+      "viewport": "1366×768",
+      "regrasAprovadas": 29,
+      "regrasInconclusivas": 3,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "votação aberta com parcial visível",
+      "viewport": "1366×768",
+      "regrasAprovadas": 29,
+      "regrasInconclusivas": 3,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "votação encerrada com resultado",
+      "viewport": "1366×768",
+      "regrasAprovadas": 31,
+      "regrasInconclusivas": 3,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "votação aberta com parcial oculto",
+      "viewport": "1366×768",
+      "regrasAprovadas": 29,
+      "regrasInconclusivas": 3,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "telão em viewport de TV",
+      "viewport": "1920×1080",
+      "regrasAprovadas": 21,
+      "regrasInconclusivas": 1,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "telão em viewport de TV",
+      "viewport": "3840×2160",
+      "regrasAprovadas": 21,
+      "regrasInconclusivas": 1,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    },
+    {
+      "tela": "app do parlamentar",
+      "viewport": "390×844",
+      "regrasAprovadas": 25,
+      "regrasInconclusivas": 1,
+      "violacoesImpeditivas": [],
+      "violacoesMenores": []
+    }
+  ],
+  "instancia": "descartável (SQLite temporário + build de produção em porta própria)"
+}

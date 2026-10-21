@@ -45,7 +45,7 @@ const MATTER_STATUSES = Object.keys(MATTER_STATUS_LABEL) as MatterStatus[]
 
 function MatterStatusBadge({ status }: { status: MatterStatus }) {
   if (status === 'aprovado')
-    return <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Aprovada</Badge>
+    return <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Aprovada</Badge>
   if (status === 'rejeitado') return <Badge className="bg-rose-600 text-white hover:bg-rose-600">Rejeitada</Badge>
   // Fase 17 — desfechos finais: sanção (verde-escuro) e veto (vermelho/rust).
   if (status === 'sancionado')
@@ -410,7 +410,7 @@ export default function MattersModule() {
                         </TableCell>
                         <TableCell>
                           {m.regime === 'urgencia' ? (
-                            <Badge className="bg-amber-600 text-white hover:bg-amber-600">Urgência</Badge>
+                            <Badge className="bg-amber-700 text-white hover:bg-amber-700">Urgência</Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">Ordinário</span>
                           )}

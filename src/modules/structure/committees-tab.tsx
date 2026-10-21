@@ -391,7 +391,7 @@ function CommitteeDetailSheet({
 function MeetingStatusBadge({ status }: { status: string }) {
   if (status === 'realizada')
     return (
-      <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+      <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700">
         <CheckCircle2 className="size-3" /> {COMMITTEE_MEETING_STATUS_LABEL.realizada}
       </Badge>
     )

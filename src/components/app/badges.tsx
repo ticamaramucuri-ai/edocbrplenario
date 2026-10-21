@@ -127,7 +127,7 @@ export function AgendaStatusBadge({ status }: { status: AgendaItemStatus }) {
 export function VoteValueBadge({ value }: { value: VoteValueOrEmpty }) {
   if (value === 'sim')
     return (
-      <Badge className={cn(base, 'bg-emerald-600 hover:bg-emerald-600 text-white')}>
+      <Badge className={cn(base, 'bg-emerald-700 hover:bg-emerald-700 text-white')}>
         <CheckCircle2 /> Sim
       </Badge>
     )
@@ -139,7 +139,7 @@ export function VoteValueBadge({ value }: { value: VoteValueOrEmpty }) {
     )
   if (value === 'abstencao')
     return (
-      <Badge className={cn(base, 'bg-amber-600 hover:bg-amber-600 text-white')}>
+      <Badge className={cn(base, 'bg-amber-700 hover:bg-amber-700 text-white')}>
         <MinusCircle /> {VOTE_VALUE_LABEL.abstencao}
       </Badge>
     )
@@ -154,7 +154,7 @@ export function ResultBadge({ result }: { result: string | null }) {
   if (!result) return <span className="text-muted-foreground">—</span>
   if (result === 'aprovado')
     return (
-      <Badge className={cn(base, 'bg-emerald-600 hover:bg-emerald-600 text-white')}>
+      <Badge className={cn(base, 'bg-emerald-700 hover:bg-emerald-700 text-white')}>
         <CheckCircle2 /> {RESULT_STATUS_LABEL.aprovado}
       </Badge>
     )
@@ -166,7 +166,7 @@ export function ResultBadge({ result }: { result: string | null }) {
     )
   if (result === 'empate')
     return (
-      <Badge className={cn(base, 'bg-amber-600 hover:bg-amber-600 text-white')}>
+      <Badge className={cn(base, 'bg-amber-700 hover:bg-amber-700 text-white')}>
         <Equal /> {RESULT_STATUS_LABEL.empate}
       </Badge>
     )
@@ -195,7 +195,9 @@ export function PresenceBadge({ status }: { status: AttendanceStatus }) {
   return (
     <Badge
       variant={variant}
-      className={cn(base, status === 'presente' && 'bg-emerald-600 hover:bg-emerald-600 text-white')}
+      // emerald-600 com texto branco dá 3,77:1 — abaixo do 4,5:1 exigido para texto
+      // pequeno (axe `color-contrast`, impacto serious). emerald-700 dá 5,48:1.
+      className={cn(base, status === 'presente' && 'bg-emerald-700 hover:bg-emerald-700 text-white')}
     >
       {icon}
       {ATTENDANCE_STATUS_LABEL[status]}

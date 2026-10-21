@@ -19,4 +19,5 @@ Revisão de 20/10/2026: a trilha A do [plano de continuidade](PLANO-CONTINUIDADE
 | Alta | 051 | Ata, assinaturas, portal e retificação por novo ato | Jurídico/secretaria | Documentos e publicação aprovados |
 | Alta | 052 | Redes sociais com canal institucional, imagem/áudio observados externamente | Audiovisual da Câmara | Sessão privada, falha/retorno, gravação e replay íntegros |
 | Alta | 053 | Piloto Mucuri, acessibilidade e treinamento | Câmara e operação SaaS | Termos de aceite técnico, legislativo e audiovisual |
+| Alta | 048–049 | Carga concorrente de jornada, telão e portal com dois nós de tempo real (tarefa 12 da trilha C) | Engenharia de plataforma | Atrasos p50/p95, eventos perdidos e quadro congelado medidos sob votação e leitura simultâneas |
 | Final | 054–056 | Nextcloud/Alfresco: leitura, reconciliação e escrita autorizada | TI institucional e engenharia | Identidades externas, versões/hashes, retry e reversão ensaiados |

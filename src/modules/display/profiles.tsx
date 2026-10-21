@@ -150,7 +150,7 @@ function PresenceProfile({ view, primary }: { view: PublicLiveViewExt | null; pr
         </h1>
         <p className="font-mono text-[clamp(2.5rem,7vw,5.5rem)] font-bold leading-none tabular-nums">
           <span className={ok ? 'text-emerald-400' : 'text-amber-400'}>{present}</span>
-          <span className="text-zinc-500">/{total}</span>
+          <span className="text-zinc-400">/{total}</span>
         </p>
       </header>
 
@@ -188,7 +188,7 @@ function PresenceProfile({ view, primary }: { view: PublicLiveViewExt | null; pr
           </div>
         ))}
         {members.length === 0 && (
-          <p className="col-span-full py-8 text-center text-[clamp(1rem,2vw,1.5rem)] text-zinc-500">
+          <p className="col-span-full py-8 text-center text-[clamp(1rem,2vw,1.5rem)] text-zinc-400">
             Nenhum parlamentar presente ainda.
           </p>
         )}
@@ -214,9 +214,9 @@ function agendaStatusVisual(status: AgendaEntry['status']): { label: string; cls
     case 'em_leitura':
       return { label: 'Em leitura', cls: 'text-zinc-300', icon: <ScrollText className="size-[1.1em]" /> }
     case 'retirado':
-      return { label: 'Retirado', cls: 'text-zinc-500', icon: <X className="size-[1.1em]" /> }
+      return { label: 'Retirado', cls: 'text-zinc-400', icon: <X className="size-[1.1em]" /> }
     case 'adiado':
-      return { label: 'Adiado', cls: 'text-zinc-500', icon: <CalendarClock className="size-[1.1em]" /> }
+      return { label: 'Adiado', cls: 'text-zinc-400', icon: <CalendarClock className="size-[1.1em]" /> }
     default:
       return null
   }
@@ -259,14 +259,14 @@ function AgendaProfile({
       </header>
 
       {agenda.length === 0 && (
-        <p className="py-10 text-center text-[clamp(1rem,2vw,1.5rem)] text-zinc-500">
+        <p className="py-10 text-center text-[clamp(1rem,2vw,1.5rem)] text-zinc-400">
           Pauta ainda não publicada.
         </p>
       )}
 
       {sections.map((sec) => (
         <div key={sec.label} className="flex flex-col gap-2">
-          <p className="text-[clamp(0.8rem,1.4vw,1rem)] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-[clamp(0.8rem,1.4vw,1rem)] font-bold uppercase tracking-[0.2em] text-zinc-400">
             {sec.label}
           </p>
           <ul className="grid gap-2 xl:grid-cols-2">
@@ -397,13 +397,13 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
         <div className="w-full max-w-2xl">
           <p className="mb-2 font-mono text-[clamp(1.8rem,4.5vw,3.5rem)] font-bold tabular-nums">
             {current.registeredCount}
-            <span className="text-zinc-500"> / {present} </span>
+            <span className="text-zinc-400"> / {present} </span>
             <span className="text-[clamp(1rem,2vw,1.5rem)] font-medium text-zinc-400">votos registrados</span>
           </p>
           <div className="h-4 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={current.registeredCount} aria-valuemin={0} aria-valuemax={present} aria-label={`${current.registeredCount} de ${present} votos registrados`}>
             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: primary }} />
           </div>
-          <p className="mt-3 text-[clamp(0.85rem,1.5vw,1.1rem)] text-zinc-500">
+          <p className="mt-3 text-[clamp(0.85rem,1.5vw,1.1rem)] text-zinc-400">
             {current.hidePartial
               ? 'Resultados parciais ocultos por decisão da mesa'
               : 'Resultados parciais não são exibidos no painel público'}
@@ -436,7 +436,7 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
   if (!result) {
     return (
       <section className="flex flex-1 items-center justify-center p-8" aria-label="Votação indisponível">
-        <p className="text-[clamp(1rem,2vw,1.5rem)] text-zinc-500">Nenhuma votação disponível.</p>
+        <p className="text-[clamp(1rem,2vw,1.5rem)] text-zinc-400">Nenhuma votação disponível.</p>
       </section>
     )
   }
@@ -469,7 +469,7 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
               cls={CUSTOM_COUNT_TONES[i % CUSTOM_COUNT_TONES.length]}
             />
           ))}
-          <BigCount label="Não registraram" value={counts.naoRegistraram} cls="text-zinc-500" />
+          <BigCount label="Não registraram" value={counts.naoRegistraram} cls="text-zinc-400" />
         </div>
       ) : counts ? (
         <div className="grid w-full max-w-4xl grid-cols-3 gap-3 sm:gap-6">
@@ -481,7 +481,7 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
 
       {result.nominalDetail && result.nominalDetail.length > 0 ? (
         <div className="w-full max-w-5xl">
-          <p className="mb-3 text-[clamp(0.8rem,1.4vw,1rem)] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <p className="mb-3 text-[clamp(0.8rem,1.4vw,1rem)] font-bold uppercase tracking-[0.2em] text-zinc-400">
             Votação nominal
           </p>
           <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -489,7 +489,7 @@ function VotingProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
               <li key={d.name} className="flex items-center justify-between gap-3 border-b border-white/5 py-1.5">
                 <span className="flex min-w-0 items-center gap-2 truncate text-[clamp(0.95rem,1.6vw,1.3rem)] font-medium">
                   <MemberImages photoUrl={d.photoUrl} partyEmblemUrl={d.partyEmblemUrl} name={d.name} />
-                  {d.name} <span className="font-mono text-sm text-zinc-500">{d.party}</span>
+                  {d.name} <span className="font-mono text-sm text-zinc-400">{d.party}</span>
                 </span>
                 <VoteTag value={d.value} options={customOptions} />
               </li>
@@ -547,7 +547,7 @@ function VoteTag({ value, options = [] }: { value: VoteValueOrEmpty; options?: V
       </span>
     )
   return (
-    <span className="shrink-0 text-[clamp(0.9rem,1.6vw,1.25rem)] text-zinc-600">—</span>
+    <span className="shrink-0 text-[clamp(0.9rem,1.6vw,1.25rem)] text-zinc-400">—</span>
   )
 }
 
@@ -571,7 +571,7 @@ function SpeechProfile({ view, primary, accent }: { view: PublicLiveViewExt | nu
   if (!speech) {
     return (
       <section className="flex flex-1 items-center justify-center p-8" aria-label="Discurso indisponível">
-        <p className="text-[clamp(1rem,2vw,1.5rem)] text-zinc-500">Nenhum orador no palco.</p>
+        <p className="text-[clamp(1rem,2vw,1.5rem)] text-zinc-400">Nenhum orador no palco.</p>
       </section>
     )
   }

@@ -115,7 +115,7 @@ export default function LegislaturesTab() {
                     <TableCell className="tabular-nums text-muted-foreground">{period(l)}</TableCell>
                     <TableCell>
                       {l.current ? (
-                        <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                        <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700">
                           <CheckCircle2 className="size-3" /> Atual
                         </Badge>
                       ) : (

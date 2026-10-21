@@ -410,9 +410,9 @@ function SpeechRow({
 
 function SideBadge({ side }: { side: 'situacao' | 'oposicao' | 'neutro' }) {
   if (side === 'situacao')
-    return <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Situação</Badge>
+    return <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Situação</Badge>
   if (side === 'oposicao')
-    return <Badge className="bg-amber-600 text-white hover:bg-amber-600">Oposição</Badge>
+    return <Badge className="bg-amber-700 text-white hover:bg-amber-700">Oposição</Badge>
   return <Badge variant="outline">Neutro</Badge>
 }
 
@@ -425,7 +425,7 @@ function SpeechStatusBadge({ status }: { status: SpeechView['status'] }) {
   }
   const { variant, icon, label } = map[status]
   return (
-    <Badge variant={variant} className={cn(status === 'falando' && 'bg-emerald-600 text-white hover:bg-emerald-600')}>
+    <Badge variant={variant} className={cn(status === 'falando' && 'bg-emerald-700 text-white hover:bg-emerald-700')}>
       {icon} {label}
     </Badge>
   )

@@ -239,7 +239,7 @@ export default function AuditModule() {
           {chain ? (
             <div className="flex flex-wrap items-center gap-3">
               {chain.valid ? (
-                <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700">
                   <ShieldCheck className="size-3.5" /> Cadeia válida
                 </Badge>
               ) : (

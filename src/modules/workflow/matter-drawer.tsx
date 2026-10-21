@@ -86,7 +86,7 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
 
 export function MatterStatusBadge({ status }: { status: string }) {
   if (status === 'aprovado')
-    return <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600"><FileCheck2 className="size-3" />{MATTER_STATUS_LABEL.aprovado}</Badge>
+    return <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700"><FileCheck2 className="size-3" />{MATTER_STATUS_LABEL.aprovado}</Badge>
   if (status === 'rejeitado')
     return <Badge className="gap-1 bg-rose-600 text-white hover:bg-rose-600"><XOctagon className="size-3" />{MATTER_STATUS_LABEL.rejeitado}</Badge>
   if (status === 'arquivado')
@@ -275,7 +275,7 @@ export default function MatterDrawer({
                 <span className="font-mono text-sm font-bold uppercase">{matter.type.replace(/_/g, ' ')} {matter.number}/{matter.year}</span>
                 <MatterStatusBadge status={matter.status} />
                 {matter.regime === 'urgencia' && (
-                  <Badge className="gap-1 bg-amber-600 text-white hover:bg-amber-600">Urgência</Badge>
+                  <Badge className="gap-1 bg-amber-700 text-white hover:bg-amber-700">Urgência</Badge>
                 )}
               </SheetTitle>
               <SheetDescription>
