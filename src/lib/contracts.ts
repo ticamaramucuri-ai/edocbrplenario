@@ -419,6 +419,8 @@ export type BootstrapView = {
   tenant: TenantView
   demoMode: boolean
   actors: ActorView[]
+  /** Preenchido quando a Câmara do escopo não tem usuário ativo próprio. */
+  actorsEmptyReason: 'tenant_sem_usuarios' | null
   counts: { parliamentarians: number; matters: number; sessions: number }
   nextSession: SessionSummary | null
   liveSession: SessionSummary | null

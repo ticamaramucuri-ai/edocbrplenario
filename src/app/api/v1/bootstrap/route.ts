@@ -17,7 +17,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const demoMode = demoModeEnabled()
   const tenantId = actor ? await resolveTenantScope(req, actor) : await defaultTenantId(req)
 
-  const [tenant, users, parliamentarianCount, matterCount, sessionCount] = await Promise.all([
+  const [tenant, users, tenantUserCount, parliamentarianCount, matterCount, sessionCount] = await Promise.all([
     db.tenant.findUnique({ where: { id: tenantId } }),
     !actor && !demoMode ? Promise.resolve([]) : db.user.findMany({
       where: {
@@ -30,6 +30,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
       },
       orderBy: [{ role: 'asc' }, { name: 'asc' }],
     }),
+    db.user.count({ where: { tenantId, active: true } }),
     db.parliamentarian.count({ where: { tenantId, active: true } }),
     db.legislativeMatter.count({ where: { tenantId } }),
     db.session.count({ where: { tenantId } }),
@@ -59,6 +60,9 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
     tenant: toTenantView(tenant, parliamentarianCount),
     demoMode,
     actors: users.map(toActorView),
+    // Mucuri está cadastrada sem usuários: sem este motivo a tela de entrada
+    // mostrava só os atores de plataforma e não explicava a ausência.
+    actorsEmptyReason: tenantUserCount === 0 ? 'tenant_sem_usuarios' : null,
     counts: {
       parliamentarians: actor || demoMode ? parliamentarianCount : 0,
       matters: actor || demoMode ? matterCount : 0,
