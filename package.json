@@ -12,6 +12,7 @@
     "media:prepare-smoke": "bash scripts/prepare-media-smoke.sh",
     "test:security": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/realtime-auth.test.ts tests/demo-mode.test.ts",
     "test:unit": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/database-guard.test.ts tests/realtime-endpoint.test.ts",
+    "test:images:parliamentarian": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/parliamentarian-images.test.ts",
     "test:display:state": "bash scripts/test-display-state.sh",
     "test:staging:display-browser": "bun scripts/staging-display-browser.mjs",
     "test:staging:plenary-load": "python3 scripts/staging-plenary-load.py",
