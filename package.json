@@ -51,6 +51,8 @@
     "media:reconcile": "bun scripts/media-reconcile.ts",
     "media:health": "bun scripts/media-health.ts",
     "test:realtime:smoke": "bun scripts/realtime-auth-smoke.ts",
+    "db:clean:test-tenants": "bun scripts/clean-test-tenants.ts",
+    "test:clean:test-tenants": "bash scripts/test-clean-test-tenants.sh",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
     "db:register:mucuri": "bun scripts/register-mucuri.ts",

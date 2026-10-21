@@ -1,0 +1,4 @@
+# Guarda de banco: nenhuma execução de teste escreve na base de desenvolvimento.
+# Ver tests/guard-dev-database.ts e docs/PLANO-CONTINUIDADE-2026-10-20.md (tarefa 1).
+[test]
+preload = ["./tests/guard-dev-database.ts"]
