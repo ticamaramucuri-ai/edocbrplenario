@@ -4,8 +4,12 @@ Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). �
 
 Revisão de 13/10/2026: o [plano corrente](PLANO-ATUALIZADO-2026-10-13.md) distingue incrementos técnicos concluídos de homologação pendente. O telão tem ensaio sintético em três navegadores e dois nós; a fase 045 continua aberta até prova operacional fora do host e aceite das metas. Acessibilidade automatizada iniciou pela entrada, painel e telão; o leitor de tela humano e equipamento real continuam na fase 053.
 
+Revisão de 20/10/2026: a trilha A do [plano de continuidade](PLANO-CONTINUIDADE-2026-10-20.md) fechou os fundamentos do repositório — ver [`etapas/045-fundamentos-do-repositorio.md`](etapas/045-fundamentos-do-repositorio.md). Duas pendências novas nascem dela, abaixo. As trilhas B e C continuam esperando host de homologação separado; D e E, dado e assinatura da Câmara.
+
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
+| Média | 045 | Aplicar a limpeza dos 15 tenants sintéticos e a retenção dos backups em `db/` (ambas simuladas e conferidas, nenhuma aplicada) | Operação SaaS | `db:clean:test-tenants --apply` e `db:backup:prune --apply` executados, com backup gravado antes |
+| Média | 045 | Dados da VPS para a seção Deploy do `CLAUDE.md` (host, usuário, pasta, reinício, health check) | Responsável pela infraestrutura | Seção sem campos `A DEFINIR` e um deploy verificado pelo health check |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
 | Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |
