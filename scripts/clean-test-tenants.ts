@@ -23,10 +23,25 @@ const LOTE = 400
 
 export const SLUGS_PROTEGIDOS = ['camara-vila-nova', 'camara-serra-azul', 'camara-mucuri-ba']
 
+/**
+ * Teste cria tenant com sufixo de `crypto.randomUUID()`; Câmara real, não — nem
+ * a cadastrada por onboarding da plataforma. O sufixo é a evidência de origem
+ * sintética, e por isso vale mais que uma lista de prefixos: cobre
+ * `attendance-other-…`, `mail-admin-…`, `scan-mail-a-…` e os demais formatos.
+ */
 export const PADRAO_TENANT_DE_TESTE =
-  /^(attendance|self-attendance|tally|mail|scan-mail|camara-a|camara-b)-[0-9a-f-]{8,}$/
+  /-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export type MotivoDescarte = 'padrao_de_teste' | 'fora_da_lista_de_reais'
+
+export interface OpcoesDeLimpeza {
+  /**
+   * Inclui tenant que não é dos três reais nem casa o padrão de teste. Fora
+   * disso, Câmara ativada por onboarding depois desta lista seria apagada sem
+   * ninguém ter editado `SLUGS_PROTEGIDOS`.
+   */
+  incluirDesconhecidos?: boolean
+}
 
 export interface TenantDescartavel {
   id: string
@@ -42,14 +57,27 @@ export interface PlanoDeLimpeza {
   totalDeLinhas: number
 }
 
-/** Caminho do arquivo SQLite designado pela URL do Prisma. */
+/**
+ * Caminho do arquivo SQLite designado pela URL do Prisma.
+ *
+ * Falha alto quando a URL não designa arquivo — antes isto caía em
+ * `db/custom.db`, de modo que rodar com a URL de homologação exportada
+ * planejava contra PostgreSQL e apagava na base de desenvolvimento.
+ */
 export function caminhoDoBancoSqlite(databaseUrl: string): string {
   const url = databaseUrl.trim()
-  if (!url.toLowerCase().startsWith('file:')) return resolve(RAIZ, 'db/custom.db')
+  if (!url.toLowerCase().startsWith('file:')) {
+    throw new Error(
+      `DATABASE_URL não designa arquivo SQLite (${url || 'vazia'}). Este roteiro só opera ` +
+        'em SQLite: informe o arquivo com --database <caminho>.',
+    )
+  }
 
   let caminho = url.slice('file:'.length).split('?')[0]
   if (caminho.startsWith('//')) caminho = caminho.slice(2)
-  if (!caminho) return resolve(RAIZ, 'db/custom.db')
+  if (!caminho) {
+    throw new Error('DATABASE_URL começa com file: e não traz caminho; use --database <caminho>.')
+  }
   if (caminho.startsWith('/')) return resolve(caminho)
 
   // Prisma resolve caminho relativo contra o diretório do schema.
@@ -57,14 +85,14 @@ export function caminhoDoBancoSqlite(databaseUrl: string): string {
   return existsSync(contraPrisma) ? contraPrisma : resolve(RAIZ, caminho)
 }
 
-export function ehTenantDescartavel(slug: string): boolean {
-  return motivoDeDescarte(slug) !== null
+export function ehTenantDescartavel(slug: string, opcoes: OpcoesDeLimpeza = {}): boolean {
+  return motivoDeDescarte(slug, opcoes) !== null
 }
 
-function motivoDeDescarte(slug: string): MotivoDescarte | null {
+function motivoDeDescarte(slug: string, opcoes: OpcoesDeLimpeza): MotivoDescarte | null {
   if (SLUGS_PROTEGIDOS.includes(slug)) return null
   if (PADRAO_TENANT_DE_TESTE.test(slug)) return 'padrao_de_teste'
-  return 'fora_da_lista_de_reais'
+  return opcoes.incluirDesconhecidos ? 'fora_da_lista_de_reais' : null
 }
 
 interface Filho {
@@ -165,20 +193,20 @@ function linhasAlcancaveis(
   return coletadas
 }
 
-function tenantsDescartaveis(banco: Database): TenantDescartavel[] {
+function tenantsDescartaveis(banco: Database, opcoes: OpcoesDeLimpeza): TenantDescartavel[] {
   const linhas = banco
     .query<{ id: string; slug: string; name: string }, []>(
       'select id, slug, name from "Tenant" order by slug',
     )
     .all()
   return linhas.flatMap((linha) => {
-    const motivo = motivoDeDescarte(linha.slug)
+    const motivo = motivoDeDescarte(linha.slug, opcoes)
     return motivo === null ? [] : [{ ...linha, motivo }]
   })
 }
 
-function montarPlano(banco: Database, caminho: string): PlanoDeLimpeza {
-  const condenados = tenantsDescartaveis(banco)
+function montarPlano(banco: Database, caminho: string, opcoes: OpcoesDeLimpeza): PlanoDeLimpeza {
+  const condenados = tenantsDescartaveis(banco, opcoes)
   const linhasPorTabela: Record<string, number> = {}
   let totalDeLinhas = 0
 
@@ -198,21 +226,21 @@ function montarPlano(banco: Database, caminho: string): PlanoDeLimpeza {
 }
 
 /** Plano de remoção, sem tocar no arquivo. */
-export function planejarLimpeza(caminho: string): PlanoDeLimpeza {
+export function planejarLimpeza(caminho: string, opcoes: OpcoesDeLimpeza = {}): PlanoDeLimpeza {
   const banco = new Database(caminho, { readonly: true })
   try {
-    return montarPlano(banco, caminho)
+    return montarPlano(banco, caminho, opcoes)
   } finally {
     banco.close()
   }
 }
 
 /** Remove as linhas do plano em uma transação; devolve o que foi removido. */
-export function executarLimpeza(caminho: string): PlanoDeLimpeza {
+export function executarLimpeza(caminho: string, opcoes: OpcoesDeLimpeza = {}): PlanoDeLimpeza {
   const banco = new Database(caminho)
   try {
     banco.run('pragma foreign_keys = on')
-    const plano = montarPlano(banco, caminho)
+    const plano = montarPlano(banco, caminho, opcoes)
     if (plano.tenants.length === 0) return plano
 
     const alcancaveis = linhasAlcancaveis(
@@ -241,37 +269,70 @@ export function executarLimpeza(caminho: string): PlanoDeLimpeza {
   }
 }
 
-function gravarBackup(): void {
-  const destino = resolve(
+/**
+ * Pacote verificável do banco antes de remover. `backup-bundle.py create` exige
+ * `--sqlite-source`, `--images-root` e `--public-root` (raízes absolutas): sem
+ * eles o comando falhava sempre e o caminho de `--apply` nunca executava.
+ */
+export function gravarBackupDoBanco(caminho: string, destino: string): void {
+  const imagens = resolve(
     RAIZ,
-    `db/bundle-clean-test-tenants-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`,
+    process.env.PARLIAMENTARIAN_IMAGES_ROOT || 'upload/parliamentarian-images',
   )
   const execucao = spawnSync(
     'python3',
-    ['scripts/backup-bundle.py', 'create', '--database', 'sqlite', '--output', destino],
-    { cwd: RAIZ, stdio: 'inherit' },
+    [
+      'scripts/backup-bundle.py', 'create',
+      '--database', 'sqlite',
+      '--sqlite-source', resolve(caminho),
+      '--output', resolve(destino),
+      '--images-root', imagens,
+      '--public-root', resolve(RAIZ, 'public'),
+    ],
+    { cwd: RAIZ, stdio: ['ignore', 'pipe', 'pipe'] },
   )
   if (execucao.status !== 0) {
-    throw new Error(`Backup falhou (${execucao.status}); nada foi removido.`)
+    const detalhe = execucao.stderr?.toString().trim().slice(-600) || 'sem detalhe'
+    throw new Error(`Backup falhou (${execucao.status}); nada foi removido. ${detalhe}`)
   }
-  console.log(`Backup gravado em ${destino}`)
+}
+
+/** `--database <caminho>` vence a URL do ambiente; sem os dois, a base do repositório. */
+function caminhoEscolhido(argumentos: string[]): string {
+  const indice = argumentos.indexOf('--database')
+  if (indice >= 0) {
+    const valor = argumentos[indice + 1]
+    if (!valor || valor.startsWith('--')) {
+      throw new Error('--database exige o caminho do arquivo SQLite.')
+    }
+    return resolve(RAIZ, valor)
+  }
+  const url = process.env.DATABASE_URL
+  if (!url) return resolve(RAIZ, 'db/custom.db')
+  return caminhoDoBancoSqlite(url)
 }
 
 function principal(): void {
   const argumentos = process.argv.slice(2)
   const aplicar = argumentos.includes('--apply')
-  const indiceBanco = argumentos.indexOf('--database')
-  const caminho =
-    indiceBanco >= 0
-      ? resolve(RAIZ, argumentos[indiceBanco + 1])
-      : caminhoDoBancoSqlite(process.env.DATABASE_URL ?? '')
+  const opcoes: OpcoesDeLimpeza = {
+    incluirDesconhecidos: argumentos.includes('--incluir-desconhecidos'),
+  }
+
+  let caminho: string
+  try {
+    caminho = caminhoEscolhido(argumentos)
+  } catch (erro) {
+    console.error((erro as Error).message)
+    process.exit(2)
+  }
 
   if (!existsSync(caminho)) {
     console.error(`Banco não encontrado: ${caminho}`)
     process.exit(2)
   }
 
-  const plano = planejarLimpeza(caminho)
+  const plano = planejarLimpeza(caminho, opcoes)
   console.log(`Banco: ${plano.caminho}`)
   if (plano.tenants.length === 0) {
     console.log('Nenhum tenant descartável.')
@@ -285,13 +346,25 @@ function principal(): void {
     console.log(`  ${tabela}: ${linhas}`)
   }
 
+  if (!opcoes.incluirDesconhecidos) {
+    console.log(
+      'Somente tenants com sufixo de UUID (origem de teste). Use --incluir-desconhecidos ' +
+        'para alcançar slug que não é dos três reais nem casa o padrão.',
+    )
+  }
+
   if (!aplicar) {
     console.log('Simulação (padrão). Use --apply para remover.')
     return
   }
 
-  gravarBackup()
-  const removido = executarLimpeza(caminho)
+  const destino = resolve(
+    RAIZ,
+    `db/bundle-clean-test-tenants-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`,
+  )
+  gravarBackupDoBanco(caminho, destino)
+  console.log(`Backup gravado em ${destino}`)
+  const removido = executarLimpeza(caminho, opcoes)
   console.log(`Removidos ${removido.tenants.length} tenants e ${removido.totalDeLinhas} linhas.`)
 }
 
