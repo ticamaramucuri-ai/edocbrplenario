@@ -11,9 +11,11 @@
  * - como preload da suíte (`bunfig.toml`), que falha a execução inteira antes
  *   de qualquer teste tocar o Prisma.
  */
+import { existsSync, readFileSync } from 'fs'
 import { resolve, sep } from 'path'
 
 const VARIAVEL_ESCAPE = 'EDOCBR_ALLOW_DEV_DB'
+const ARQUIVOS_DE_AMBIENTE = ['.env.local', '.env']
 
 /**
  * Caminhos de arquivo que a URL pode designar. Prisma resolve caminho relativo
@@ -53,6 +55,34 @@ export function assertDisposableDatabase(databaseUrl: string, repoRoot: string):
   }
 }
 
-if (process.env.DATABASE_URL) {
-  assertDisposableDatabase(process.env.DATABASE_URL, resolve(import.meta.dir, '..'))
+/**
+ * URL que vale para esta execução: a do ambiente, se houver, senão a do
+ * primeiro arquivo de ambiente do repositório.
+ *
+ * `bun test` roda com `NODE_ENV=test` e, pela convenção dotenv, **não** carrega
+ * `.env.local` — sem ler o arquivo, a guarda ficava inerte justamente em
+ * `bun test <arquivo>`, a invocação que ela existe para cobrir. Conferimos o
+ * valor configurado porque é o que o processo usaria se alguém reintroduzisse o
+ * carregamento (um `.env`, um `export`, um `--env-file`).
+ */
+export function urlDeBancoConfigurada(repoRoot: string): string | null {
+  const doAmbiente = process.env.DATABASE_URL?.trim()
+  if (doAmbiente) return doAmbiente
+
+  for (const nome of ARQUIVOS_DE_AMBIENTE) {
+    const caminho = resolve(repoRoot, nome)
+    if (!existsSync(caminho)) continue
+    for (const linha of readFileSync(caminho, 'utf8').split('\n')) {
+      const texto = linha.trim()
+      if (!texto.startsWith('DATABASE_URL')) continue
+      const valor = texto.slice(texto.indexOf('=') + 1).trim()
+      const limpo = valor.replace(/^["']|["']$/g, '').trim()
+      if (limpo) return limpo
+    }
+  }
+  return null
 }
+
+const raizDoRepositorio = resolve(import.meta.dir, '..')
+const urlConfigurada = urlDeBancoConfigurada(raizDoRepositorio)
+if (urlConfigurada) assertDisposableDatabase(urlConfigurada, raizDoRepositorio)

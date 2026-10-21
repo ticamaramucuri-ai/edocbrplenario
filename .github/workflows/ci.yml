@@ -18,8 +18,7 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test:security
-      - run: bun test tests/database-guard.test.ts
-      - run: bun test tests/realtime-endpoint.test.ts
+      - run: bun run test:unit
       - run: bun run test:clean:test-tenants
       - run: bun run test:bootstrap:empty-tenant
       - run: bun run test:seed:demo-logins

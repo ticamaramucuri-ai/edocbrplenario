@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { expect, test } from 'bun:test'
-import { assertDisposableDatabase } from './guard-dev-database'
+import { assertDisposableDatabase, urlDeBancoConfigurada } from './guard-dev-database'
 
 const root = '/repo'
 
@@ -29,6 +32,59 @@ test('recusa caminho relativo do .env.local resolvido contra prisma/', () => {
 
 test('recusa caminho relativo resolvido contra a raiz', () => {
   expect(() => assertDisposableDatabase('file:./db/custom.db', root)).toThrow(/descartável/)
+})
+
+/** Executa sem `DATABASE_URL` no ambiente e devolve o valor anterior ao final. */
+function semUrlNoAmbiente<T>(corpo: () => T): T {
+  const anterior = process.env.DATABASE_URL
+  delete process.env.DATABASE_URL
+  try {
+    return corpo()
+  } finally {
+    if (anterior === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = anterior
+  }
+}
+
+test('lê a URL do .env.local quando o ambiente não a traz', () => {
+  const diretorio = mkdtempSync(join(tmpdir(), 'edocbr-guarda-'))
+  try {
+    semUrlNoAmbiente(() => {
+      writeFileSync(
+        join(diretorio, '.env.local'),
+        'DEFAULT_TENANT_SLUG="camara-mucuri-ba"\nDATABASE_URL="file:../db/custom.db?x=1"\n',
+      )
+      expect(urlDeBancoConfigurada(diretorio)).toBe('file:../db/custom.db?x=1')
+      expect(() => assertDisposableDatabase(urlDeBancoConfigurada(diretorio)!, diretorio)).toThrow(
+        /descartável/,
+      )
+    })
+  } finally {
+    rmSync(diretorio, { recursive: true, force: true })
+  }
+})
+
+test('sem arquivo de ambiente e sem variável, não há URL a conferir', () => {
+  const diretorio = mkdtempSync(join(tmpdir(), 'edocbr-guarda-'))
+  try {
+    semUrlNoAmbiente(() => {
+      expect(urlDeBancoConfigurada(diretorio)).toBeNull()
+    })
+  } finally {
+    rmSync(diretorio, { recursive: true, force: true })
+  }
+})
+
+test('variável do ambiente vence o arquivo', () => {
+  const diretorio = mkdtempSync(join(tmpdir(), 'edocbr-guarda-'))
+  try {
+    writeFileSync(join(diretorio, '.env.local'), 'DATABASE_URL="file:../db/custom.db"\n')
+    process.env.DATABASE_URL = 'file:/tmp/edocbr-x.db'
+    expect(urlDeBancoConfigurada(diretorio)).toBe('file:/tmp/edocbr-x.db')
+  } finally {
+    delete process.env.DATABASE_URL
+    rmSync(diretorio, { recursive: true, force: true })
+  }
 })
 
 test('nomeia a variável e o caminho na mensagem', () => {

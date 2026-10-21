@@ -75,8 +75,8 @@ Variáveis de ambiente que mudam o comportamento da execução local:
 ```bash
 bun run lint          # eslint .  — sem saída quando passa
 bun run typecheck     # tsc --noEmit — sem saída quando passa
-bun test tests/database-guard.test.ts      # guarda de banco · 7/7
-bun run test:clean:test-tenants            # limpeza de tenants de teste · 2/2
+bun run test:unit                          # guarda de banco + endereço do tempo real
+bun run test:clean:test-tenants            # limpeza de tenants de teste
 bun run test:security                      # realtime-auth + demo-mode
 ```
 
@@ -88,6 +88,12 @@ Teste que precisa de banco roda por um wrapper `scripts/test-*.sh`, que cria
 SQLite temporário em `/tmp` e só então chama `bun test`. **Nunca** aponte
 `DATABASE_URL` para `db/custom.db` ao rodar teste: o preload de `bunfig.toml`
 (`tests/guard-dev-database.ts`) derruba a execução antes do primeiro teste.
+
+A guarda confere a `DATABASE_URL` do ambiente e, quando ela não está definida, a
+do `.env.local` — que é o valor que o processo usaria se alguém reintroduzisse o
+carregamento. Por isso `bun test <arquivo>` solto também é barrado nesta
+instalação: use um wrapper, `bun run test:unit` (que aponta para `/tmp`) ou
+`EDOCBR_ALLOW_DEV_DB=1` para assumir a escrita.
 
 ### Build
 
