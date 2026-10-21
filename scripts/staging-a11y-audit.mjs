@@ -11,8 +11,10 @@
  * `moderate`/`minor` não derrubam o roteiro — saem no JSON para entrar no
  * documento da etapa com justificativa.
  *
- * Uso: `bun scripts/staging-a11y-audit.mjs --base-url http://127.0.0.1:3010`
- * O wrapper `scripts/test-a11y-audit.sh` sobe uma instância descartável.
+ * `--base-url` é obrigatório e não pode ser a porta do servidor de
+ * desenvolvimento: o roteiro **grava** sessão, presença, votações e eventos de
+ * auditoria. Use `scripts/test-a11y-audit.sh`, que sobe uma instância
+ * descartável e passa o endereço.
  */
 import AxeBuilder from '@axe-core/playwright'
 import { chromium } from 'playwright'
@@ -30,7 +32,23 @@ function opcao(nome, padrao) {
   const indice = argumentos.indexOf(`--${nome}`)
   return indice >= 0 ? argumentos[indice + 1] : padrao
 }
-const base = (opcao('base-url', process.env.A11Y_BASE_URL || 'http://127.0.0.1:3000')).replace(/\/$/, '')
+const informado = opcao('base-url', process.env.A11Y_BASE_URL)
+if (!informado) {
+  throw new Error(
+    'Informe --base-url (ou A11Y_BASE_URL) apontando para uma instância descartável. ' +
+      'Use scripts/test-a11y-audit.sh, que sobe uma e passa o endereço.',
+  )
+}
+const base = informado.replace(/\/$/, '')
+// O roteiro autentica e **escreve**: sessão, check-ins, votações e eventos de
+// auditoria, que entram na cadeia de hash append-only. Apontar para a porta do
+// `bun run dev` sujaria a base de desenvolvimento de forma irreversível.
+if (/:3000(\/|$)/.test(base)) {
+  throw new Error(
+    `Recusado: ${base} é a porta do servidor de desenvolvimento. Este roteiro grava dados ` +
+      'e só roda contra instância descartável.',
+  )
+}
 
 /** Chromium do Playwright quando baixado; senão o do sistema. */
 async function abrirNavegador() {

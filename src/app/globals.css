@@ -149,3 +149,22 @@
     color: black !important;
   }
 }
+
+/*
+ * Cores vivas do sonner: no tema claro o texto padrão fica entre 3,3:1 e 4,4:1
+ * sobre o fundo quase branco de cada tipo, abaixo do 4,5:1 da WCAG AA para
+ * texto pequeno. Razões medidas depois do ajuste: sucesso 5,98:1 · informação
+ * 6,6:1 · atenção 5,4:1 · erro 6,1:1. O tema escuro do sonner já usa texto
+ * claro sobre fundo escuro e passa sem ajuste.
+ *
+ * O seletor segue o atributo que o próprio sonner resolve (`data-sonner-theme`),
+ * então vale também com `theme="system"` e no primeiro render — e leva o
+ * prefixo `html` só para vencer em especificidade a folha que o sonner injeta
+ * em tempo de execução. Ver src/components/ui/sonner.tsx.
+ */
+html [data-sonner-toaster][data-sonner-theme='light'] {
+  --success-text: hsl(140, 100%, 22%);
+  --info-text: hsl(210, 92%, 35%);
+  --warning-text: hsl(31, 92%, 32%);
+  --error-text: hsl(360, 100%, 38%);
+}

@@ -65,4 +65,27 @@ with tempfile.TemporaryDirectory() as directory:
     run('--directory', str(base), '--keep', '-1', success=False)
     run('--directory', str(base / 'inexistente'), success=False)
 
+    # --keep 0 apagaria toda cópia, inclusive a mais recente: exige consentimento.
+    recusa = run('--directory', str(base), '--keep', '0', '--apply', success=False)
+    assert 'permitir-zero' in recusa.stderr, recusa.stderr
+    assert len(list(base.glob('custom.db.backup.*'))) == 5, 'recusa não remove nada'
+    zerado = nomes(run('--directory', str(base), '--keep', '0', '--permitir-zero',
+                       '--apply').stdout)
+    assert zerado['removed'] == 5, zerado
+    assert list(base.glob('custom.db.backup.*')) == [], 'com consentimento, remove tudo'
+
+    # Falha no meio de uma remoção continua e relata o que ficou.
+    protegido = base / 'sub'
+    protegido.mkdir()
+    alvo = protegido / 'custom.db.backup.20261020T000000Z'
+    alvo.write_bytes(b'x')
+    protegido.chmod(0o500)
+    try:
+        parcial = nomes(run('--directory', str(protegido), '--keep', '0', '--permitir-zero',
+                            '--apply', success=False).stdout)
+        assert parcial['removed'] == 0, parcial
+        assert parcial['failed'] == [alvo.name], parcial
+    finally:
+        protegido.chmod(0o700)
+
 print('retenção de backups: simulação, aplicação e proteção por padrão conferidas')

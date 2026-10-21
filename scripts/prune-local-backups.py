@@ -30,6 +30,8 @@ def argumentos(argv: list[str]) -> argparse.Namespace:
                         help='trecho de nome sempre preservado; pode repetir')
     parser.add_argument('--apply', action='store_true',
                         help='remove de fato; sem esta opção apenas simula')
+    parser.add_argument('--permitir-zero', action='store_true',
+                        help='consentimento para --keep 0, que não preserva nenhuma cópia')
     return parser.parse_args(argv)
 
 
@@ -37,6 +39,11 @@ def main(argv: list[str]) -> int:
     opcoes = argumentos(argv)
     if opcoes.keep < 0:
         print('--keep não aceita valor negativo.', file=sys.stderr)
+        return 2
+    # Sem piso, um `--keep 0 --apply` distraído deixa a base ativa sem backup local.
+    if opcoes.keep == 0 and not opcoes.keep_pattern and not opcoes.permitir_zero:
+        print('--keep 0 sem --keep-pattern remove todas as cópias; confirme com '
+              '--permitir-zero.', file=sys.stderr)
         return 2
 
     diretorio = Path(opcoes.directory)
@@ -59,10 +66,18 @@ def main(argv: list[str]) -> int:
         else:
             candidatas.append(caminho)
 
+    # Remoção que falha no meio (diretório somente leitura, arquivo em uso) ainda
+    # precisa dizer o que saiu e o que ficou: o relatório é o registro do operador.
     removidas: list[str] = []
+    falhas: list[str] = []
     if opcoes.apply:
         for caminho in candidatas:
-            caminho.unlink()
+            try:
+                caminho.unlink()
+            except OSError as erro:
+                falhas.append(caminho.name)
+                print(f'Não removido: {caminho.name} ({erro})', file=sys.stderr)
+                continue
             removidas.append(caminho.name)
 
     relatorio = {
@@ -78,9 +93,10 @@ def main(argv: list[str]) -> int:
         if not opcoes.apply else 0,
         'removed': len(removidas),
         'removedNames': removidas,
+        'failed': falhas,
     }
     print(json.dumps(relatorio, ensure_ascii=False, indent=2))
-    return 0
+    return 1 if falhas else 0
 
 
 if __name__ == '__main__':
