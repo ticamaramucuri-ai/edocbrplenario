@@ -10,6 +10,7 @@ Revisão de 21/10/2026: a limpeza dos 15 tenants sintéticos foi aplicada (base 
 
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
+| Alta | 045 | Perda de rede entre app e banco não tem ensaio — derrubar o contêiner do banco é outra falha | Engenharia de plataforma | Rota cortada com o banco vivo, nenhuma transação aceita perdida e pool recuperado |
 | Média | 045 | Retenção dos backups locais de `db/` (simulada e conferida; 19 arquivos, 19,1 MB) | Operação SaaS | `db:backup:prune --apply` executado com os rótulos citados em documento protegidos por `--keep-pattern` |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |

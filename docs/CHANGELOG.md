@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Matriz de falhas induzidas: seis cenários com o que deve acontecer, o que invalida o ensaio e qual roteiro existente cobre cada um; achado de que o cenário de perda de rede entre app e banco não tem ensaio e que reinício de contêiner não é reinício de host.
 - Verificação de saúde feita de fora da instalação: sonda do app e dos serviços alcançáveis, leitura do `platform/system-status` para os que não ficam expostos, acordo de relógio pelo cabeçalho `Date` e recusa explícita (saída 2) de serviço que não pôde ser verificado; agendamento por timer de sistema. Execução contra host separado segue pendente.
 - Topologia da homologação em contêiner documentada (`deploy/staging/README.md`) com serviços, volumes duráveis, segredos e o que falta provar fora do host; portas publicadas passam a ligar em `STAGE_BIND`, loopback por padrão.
 - Carga concorrente de jornada, telão e portal: 13 parlamentares votando, dois telões em nós distintos de tempo real, oito leitores do portal e congelamento durante a votação aberta. Observado: atraso de evento p50 419 ms / p95 671 ms, quadro congelado em 71,62 ms, zero evento perdido em 134 e zero erro HTTP; o detector de perda foi provado com queda induzida (31 eventos perdidos).
