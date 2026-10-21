@@ -151,12 +151,23 @@ webhooks (3004) · gateway Caddy (única porta externa, com `?XTransformPort={po
 para os serviços). Acesse pela **porta do gateway** (preview do sandbox). Duas formas de
 entrar:
 
-- **E-mail e senha** (contas do seed, senha `DemoLegis!2026`):
-  `ana.ribeiro@vilanova.mg.leg.br` (admin) · `carla.mendes@vilanova.mg.leg.br` (vereadora)
-  · `marta.lima@serraazul.sp.leg.br` (admin da 2ª Câmara) · `suporte@legissaas.dev`
-  (dono da plataforma) · `joao.prado@legissaas.dev` (**Suporte da Plataforma**).
-- **Perfis de demonstração** (um clique): Operador de Sessão, Presidência, Administração
-  Legislativa, Administrador da Câmara, Parlamentar, Auditor e Operação da Plataforma.
+- **E-mail e senha** — contas do seed, senha `DemoLegis!2026`. Os sete papéis
+  oferecidos na entrada por perfil também entram por senha (gate
+  `bun run test:seed:demo-logins`):
+
+  | Papel | E-mail |
+  |---|---|
+  | Administrador da Câmara | `ana.ribeiro@vilanova.mg.leg.br` |
+  | Administração Legislativa | `paula.andrade@vilanova.mg.leg.br` |
+  | Operador de Sessão | `marcos.vieira@vilanova.mg.leg.br` |
+  | Presidência | `roberto.nogueira@vilanova.mg.leg.br` |
+  | Parlamentar | `carla.mendes@vilanova.mg.leg.br` |
+  | Auditor | `helena.costa@tce.mg.gov.br` |
+  | Operação da Plataforma | `suporte@legissaas.dev` |
+
+  Também no seed: `marta.lima@serraazul.sp.leg.br` (admin da 2ª Câmara) e
+  `joao.prado@legissaas.dev` (**Suporte da Plataforma**).
+- **Perfis de demonstração** (um clique): os mesmos sete papéis, sem senha.
 
 ## Documentação (índice)
 

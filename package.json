@@ -54,6 +54,7 @@
     "db:clean:test-tenants": "bun scripts/clean-test-tenants.ts",
     "test:clean:test-tenants": "bash scripts/test-clean-test-tenants.sh",
     "test:bootstrap:empty-tenant": "bash scripts/test-bootstrap-empty-tenant.sh",
+    "test:seed:demo-logins": "bash scripts/test-seed-demo-logins.sh",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
     "db:register:mucuri": "bun scripts/register-mucuri.ts",
