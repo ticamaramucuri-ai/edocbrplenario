@@ -13,6 +13,7 @@ db/*.db-shm
 db/*.backup.*
 mini-services/realtime/checkpoint.json
 tool-results/
+.superpowers/
 recordings/
 upload/parliamentarian-images/
 *.key

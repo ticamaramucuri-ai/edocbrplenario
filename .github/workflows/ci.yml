@@ -25,6 +25,7 @@ jobs:
       - run: bun run test:seed:demo-logins
       - run: bun test tests/parliamentarian-images.test.ts
       - run: python3 tests/test-backup-bundle.py
+      - run: python3 -I tests/test-prune-local-backups.py
       - run: python3 scripts/recovery-drill-local.py
       - run: bash scripts/test-party-emblems.sh
       - run: bun run test:session:preparation

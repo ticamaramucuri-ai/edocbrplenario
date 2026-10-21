@@ -241,6 +241,41 @@ cp backups/custom-YYYYMMDD-HHMM.db db/custom.db
 Verificação pós-restauração: health checks (§1) + `GET /api/v1/audit?verify=true` →
 `chain.valid: true` + conferir sessão demo nº 2 (hoje 19h, scheduled).
 
+### 5.1 Retenção dos backups locais
+
+`db/` acumula uma cópia `custom.db.backup.<rótulo>` por etapa e por ensaio. Em
+20/10/2026 eram 29 cópias e 33 MB. A regra de descarte é explícita, nunca
+automática:
+
+```bash
+bun run db:backup:prune                                  # simulação (padrão)
+bun run db:backup:prune -- --keep 5 --keep-pattern etapa- --apply
+```
+
+O roteiro preserva as `--keep` cópias mais recentes (padrão 5) e, além dessas,
+toda cópia cujo nome contenha algum `--keep-pattern`. A base ativa
+(`db/custom.db`) e seus `-wal`/`-shm` nunca entram na lista, e sem `--apply`
+nada é removido — a saída JSON traz `removable` e `removableBytes` para
+conferência.
+
+**Antes de aplicar**, liste os rótulos citados em documento e acrescente cada um
+como `--keep-pattern`: apagar um arquivo que uma etapa nomeia deixa a referência
+do documento sem lastro.
+
+```bash
+for rotulo in $(ls db/custom.db.backup.* | sed 's#db/custom.db.backup.##'); do
+  grep -rq "$rotulo" docs/ && echo "$rotulo"
+done
+```
+
+### 5.2 Artefatos de ferramenta no repositório
+
+`worklog.md`, `dev.log`, `tool-results/`, `agent-ctx/` e `.superpowers/` são
+saída de ferramenta de desenvolvimento, não fonte de verdade. O estado real de
+cada etapa está em `docs/etapas/`, o histórico em `docs/CHANGELOG.md` e as
+pendências em `docs/PENDENCIAS-PRIORIZADAS.md`. Divergência entre um desses
+arquivos e os documentos de etapa resolve-se pelo documento.
+
 ## 6. Procedimentos de incidente
 
 ### 6.1 Sessão offline (perda de internet no plenário)
