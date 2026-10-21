@@ -1,0 +1,43 @@
+{
+  "baseUrl": "http://127.0.0.1:3212",
+  "data": "2026-10-21T19:36:13.363981+00:00",
+  "esperados": [
+    "app",
+    "realtime"
+  ],
+  "inacessiveis": [],
+  "limiteDeDivergenciaSegundos": 2.0,
+  "limites": [
+    "Nenhum serviço expõe a versão implantada; a prova não afirma versão.",
+    "O cabeçalho Date tem resolução de 1 s: mede desacordo grosseiro, não sincronia fina.",
+    "Alvo em loopback: não é verificação de fora do host."
+  ],
+  "maiorDivergenciaDeRelogioSegundos": 0.363954,
+  "ok": true,
+  "problemas": [],
+  "remoto": false,
+  "servicos": [
+    {
+      "divergenciaDeRelogioSegundos": 0.363127,
+      "latenciaMs": 7.38,
+      "nome": "app",
+      "ok": true,
+      "status": 200,
+      "tenant": "camara-vila-nova",
+      "url": "http://127.0.0.1:3212",
+      "via": "direto"
+    },
+    {
+      "divergenciaDeRelogioSegundos": 0.363954,
+      "fanout": "local",
+      "latenciaMs": 0.72,
+      "nome": "realtime",
+      "ok": true,
+      "servico": "legis-realtime",
+      "status": 200,
+      "uptimeSegundos": 46,
+      "url": "http://127.0.0.1:3003",
+      "via": "direto"
+    }
+  ]
+}

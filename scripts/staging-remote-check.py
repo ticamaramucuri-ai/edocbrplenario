@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Verificação de saúde de uma instalação, feita de fora dela.
+
+Confere, em uma passada: o app responde `/api/v1/bootstrap`, cada serviço
+esperado responde `/health` com `ok: true`, e os relógios divergem menos do
+limite. Grava JSON com horário, latências e o que foi observado.
+
+Saídas: 0 tudo certo · 1 serviço doente ou relógio divergente · 2 alvo
+inacessível ou serviço esperado sem como ser verificado.
+
+    python3 scripts/staging-remote-check.py --base-url http://host:3100 \\
+      --expect-services app,realtime --service realtime=http://host:3103
+
+Num host dedicado, só a porta do app fica exposta — banco, Redis, webhooks e
+scheduler seguem em loopback por decisão (ver deploy/staging/README.md). Para
+alcançá-los de fora, informe credenciais de plataforma: o roteiro lê
+`/api/v1/platform/system-status`, que o próprio app consulta por dentro.
+
+O scheduler não aparece nesse endpoint hoje; sem `--service scheduler=<url>`
+o roteiro **recusa** em vez de supor que está sadio.
+"""
+import argparse
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+import json
+from pathlib import Path
+import ssl
+import sys
+import time
+from urllib.error import HTTPError, URLError
+from urllib.request import HTTPCookieProcessor, Request, build_opener
+import http.cookiejar
+
+# Serviços que o app sabe conferir por dentro, em `platform/system-status`.
+PELO_APP = {'realtime', 'webhooks', 'mail'}
+
+
+def argumentos(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--base-url', required=True, help='base do app, ex.: http://host:3100')
+    parser.add_argument('--expect-services', default='app',
+                        help='lista separada por vírgula; `app` é sempre conferido')
+    parser.add_argument('--service', action='append', default=[], metavar='nome=url',
+                        help='URL direta de um serviço; pode repetir')
+    parser.add_argument('--platform-email', help='ator de plataforma, para ler system-status')
+    parser.add_argument('--platform-password')
+    parser.add_argument('--max-clock-skew', type=float, default=2.0,
+                        help='divergência máxima de relógio, em segundos (padrão 2)')
+    parser.add_argument('--timeout', type=float, default=10.0)
+    parser.add_argument('--output', help='arquivo onde gravar a prova em JSON')
+    return parser.parse_args(argv)
+
+
+def opener():
+    contexto = ssl.create_default_context()
+    return build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar())), contexto
+
+
+def buscar(cliente, url: str, timeout: float, payload=None):
+    """Devolve (status, corpo, divergência de relógio em s, latência em ms)."""
+    corpo = None if payload is None else json.dumps(payload).encode()
+    pedido = Request(url, corpo, {'Content-Type': 'application/json'} if corpo else {})
+    inicio = time.monotonic()
+    try:
+        with cliente.open(pedido, timeout=timeout) as resposta:
+            status, dados, cabecalhos = resposta.status, resposta.read(), resposta.headers
+    except HTTPError as erro:
+        status, dados, cabecalhos = erro.code, erro.read(), erro.headers
+    except (URLError, OSError, TimeoutError) as erro:
+        raise ConnectionError(str(erro)) from erro
+    latencia = round((time.monotonic() - inicio) * 1000, 2)
+
+    divergencia = None
+    data = cabecalhos.get('Date') if cabecalhos else None
+    if data:
+        try:
+            # O cabeçalho Date tem resolução de 1 s: mede desacordo grosseiro de
+            # relógio, que é o que invalida correlacionar log entre máquinas.
+            divergencia = abs((parsedate_to_datetime(data)
+                               - datetime.now(timezone.utc)).total_seconds())
+        except (TypeError, ValueError):
+            divergencia = None
+    try:
+        conteudo = json.loads(dados) if dados else {}
+    except json.JSONDecodeError:
+        conteudo = {}
+    return status, conteudo, divergencia, latencia
+
+
+def main(argv: list[str]) -> int:
+    opcoes = argumentos(argv)
+    base = opcoes.base_url.rstrip('/')
+    esperados = [nome.strip() for nome in opcoes.expect_services.split(',') if nome.strip()]
+    if 'app' not in esperados:
+        esperados.insert(0, 'app')
+
+    diretos: dict[str, str] = {}
+    for item in opcoes.service:
+        if '=' not in item:
+            print(f'--service precisa de nome=url: {item}', file=sys.stderr)
+            return 2
+        nome, url = item.split('=', 1)
+        diretos[nome.strip()] = url.strip().rstrip('/')
+
+    cliente, _ = opener()
+    observados: list[dict] = []
+    problemas: list[str] = []
+    inacessiveis: list[str] = []
+
+    # ─── app ─────────────────────────────────────────────────────────────────
+    try:
+        status, corpo, divergencia, latencia = buscar(
+            cliente, f'{base}/api/v1/bootstrap', opcoes.timeout)
+        saudavel = status == 200 and bool((corpo.get('tenant') or {}).get('slug'))
+        observados.append({'nome': 'app', 'url': base, 'via': 'direto', 'status': status,
+                           'ok': saudavel, 'latenciaMs': latencia,
+                           'divergenciaDeRelogioSegundos': divergencia,
+                           'tenant': (corpo.get('tenant') or {}).get('slug')})
+        if not saudavel:
+            problemas.append(f'app respondeu HTTP {status} sem Câmara no bootstrap')
+    except ConnectionError as erro:
+        inacessiveis.append('app')
+        observados.append({'nome': 'app', 'url': base, 'via': 'direto', 'ok': False,
+                           'erro': str(erro)[:200]})
+
+    # ─── serviços com URL direta ─────────────────────────────────────────────
+    for nome in [n for n in esperados if n != 'app' and n in diretos]:
+        url = f'{diretos[nome]}/health'
+        try:
+            status, corpo, divergencia, latencia = buscar(cliente, url, opcoes.timeout)
+            saudavel = status == 200 and corpo.get('ok') is True
+            observados.append({'nome': nome, 'url': diretos[nome], 'via': 'direto',
+                               'status': status, 'ok': saudavel, 'latenciaMs': latencia,
+                               'divergenciaDeRelogioSegundos': divergencia,
+                               'servico': corpo.get('service'),
+                               'uptimeSegundos': corpo.get('uptimeSeconds'),
+                               'fanout': corpo.get('fanout')})
+            if not saudavel:
+                problemas.append(f'{nome} respondeu HTTP {status} com ok={corpo.get("ok")}')
+        except ConnectionError as erro:
+            inacessiveis.append(nome)
+            observados.append({'nome': nome, 'url': diretos[nome], 'via': 'direto',
+                               'ok': False, 'erro': str(erro)[:200]})
+
+    # ─── serviços lidos pelo app, quando houver credencial de plataforma ─────
+    faltantes = [n for n in esperados
+                 if n != 'app' and n not in diretos and n not in inacessiveis]
+    pelo_app: dict[str, dict] = {}
+    if faltantes and opcoes.platform_email and opcoes.platform_password:
+        try:
+            status, _, _, _ = buscar(cliente, f'{base}/api/v1/auth/login', opcoes.timeout,
+                                     {'email': opcoes.platform_email,
+                                      'password': opcoes.platform_password})
+            if status != 200:
+                problemas.append(f'login de plataforma respondeu HTTP {status}')
+            else:
+                status, corpo, _, latencia = buscar(
+                    cliente, f'{base}/api/v1/platform/system-status', opcoes.timeout)
+                if status != 200:
+                    problemas.append(f'system-status respondeu HTTP {status}')
+                else:
+                    for servico in corpo.get('services') or []:
+                        pelo_app[str(servico.get('id'))] = servico
+                    observados.append({'nome': 'system-status', 'url': base, 'via': 'app',
+                                       'status': status, 'ok': True, 'latenciaMs': latencia,
+                                       'servicosRelatados': sorted(pelo_app)})
+        except ConnectionError as erro:
+            problemas.append(f'system-status inacessível: {str(erro)[:150]}')
+
+    for nome in faltantes:
+        servico = pelo_app.get(nome)
+        if servico is None:
+            razao = ('não tem URL direta e o app não o relata'
+                     if nome not in PELO_APP or not pelo_app
+                     else 'ausente no system-status do app')
+            inacessiveis.append(nome)
+            observados.append({'nome': nome, 'via': 'nenhuma', 'ok': False, 'erro': razao})
+            continue
+        # `platform/system-status` devolve {id, name, url, ok, latencyMs, detail}.
+        saudavel = servico.get('ok') is True
+        observados.append({'nome': nome, 'via': 'app', 'ok': saudavel,
+                           'detalheRelatado': servico.get('detail'),
+                           'latenciaMs': servico.get('latencyMs')})
+        if not saudavel:
+            problemas.append(f'{nome} relatado pelo app como doente: '
+                             f'{servico.get("detail") or "sem detalhe"}')
+
+    divergencias = [o['divergenciaDeRelogioSegundos'] for o in observados
+                    if isinstance(o.get('divergenciaDeRelogioSegundos'), (int, float))]
+    maior_divergencia = max(divergencias) if divergencias else None
+    if maior_divergencia is not None and maior_divergencia >= opcoes.max_clock_skew:
+        problemas.append(f'relógio divergente: {maior_divergencia:.1f} s '
+                         f'(limite {opcoes.max_clock_skew} s)')
+
+    # Alvo em loopback não é verificação remota, e o relatório diz isso.
+    remoto = not any(marca in base for marca in ('127.0.0.1', 'localhost', '::1'))
+
+    prova = {
+        'ok': not problemas and not inacessiveis,
+        'data': datetime.now(timezone.utc).isoformat(),
+        'baseUrl': base,
+        'remoto': remoto,
+        'esperados': esperados,
+        'servicos': observados,
+        'inacessiveis': sorted(set(inacessiveis)),
+        'problemas': problemas,
+        'maiorDivergenciaDeRelogioSegundos': maior_divergencia,
+        'limiteDeDivergenciaSegundos': opcoes.max_clock_skew,
+        'limites': [
+            'Nenhum serviço expõe a versão implantada; a prova não afirma versão.',
+            'O cabeçalho Date tem resolução de 1 s: mede desacordo grosseiro, não sincronia fina.',
+        ] + ([] if remoto else ['Alvo em loopback: não é verificação de fora do host.']),
+    }
+    saida = json.dumps(prova, ensure_ascii=False, indent=2, sort_keys=True)
+    print(saida)
+    if opcoes.output:
+        Path(opcoes.output).write_text(saida + '\n')
+
+    if inacessiveis:
+        print(f'Inacessíveis ou sem como verificar: {", ".join(sorted(set(inacessiveis)))}',
+              file=sys.stderr)
+        return 2
+    if problemas:
+        print('; '.join(problemas), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main(sys.argv[1:]))
