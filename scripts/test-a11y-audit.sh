@@ -14,6 +14,9 @@ fi
 
 port="${A11Y_PORT:-3210}"
 database="$(mktemp /tmp/edocbr-a11y.XXXXXX.db)"
+# Segredo efêmero: a instância é descartável e o serviço de tempo real não
+# sobe aqui; nada de valor fixo em arquivo versionado.
+secret="$(head -c 32 /dev/urandom | base64 | tr -d '\n=')"
 server_pid=''
 
 cleanup() {
@@ -27,7 +30,7 @@ DATABASE_URL="file:$database" bun prisma/seed.ts > /dev/null
 
 DATABASE_URL="file:$database" \
   DEFAULT_TENANT_SLUG=camara-vila-nova \
-  REALTIME_AUTH_SECRET="${REALTIME_AUTH_SECRET:-auditoria-de-acessibilidade-somente-local-32b}" \
+  REALTIME_AUTH_SECRET="${REALTIME_AUTH_SECRET:-$secret}" \
   NODE_ENV=production PORT="$port" HOSTNAME=127.0.0.1 \
   bun .next/standalone/server.js > /tmp/edocbr-a11y-server.log 2>&1 &
 server_pid=$!
