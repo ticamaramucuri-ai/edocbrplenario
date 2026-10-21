@@ -1,0 +1,27 @@
+# Verificação de saúde feita DE FORA da instalação observada.
+#
+# Instale em máquina diferente da que roda o app: um verificador que mora no
+# mesmo host do observado não enxerga a falha que derruba os dois juntos.
+# Conecte a unidade em falha ao monitoramento da Casa.
+[Unit]
+Description=edocBR - verificar saúde da instalação a partir de outro host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=legis
+Group=legis
+WorkingDirectory=/opt/legis/current
+# Defina EDOCBR_BASE_URL, EDOCBR_EXPECT_SERVICES e, se for ler o system-status,
+# EDOCBR_PLATFORM_EMAIL/EDOCBR_PLATFORM_PASSWORD. Arquivo em 0600.
+EnvironmentFile=/etc/legis/remote-check.env
+ExecStart=/usr/bin/python3 scripts/staging-remote-check.py \
+  --base-url ${EDOCBR_BASE_URL} \
+  --expect-services ${EDOCBR_EXPECT_SERVICES} \
+  --output /var/lib/legis/remote-check.json
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/legis

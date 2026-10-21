@@ -1,0 +1,12 @@
+[Unit]
+Description=edocBR - verificação remota de saúde a cada minuto
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+# Evita que várias instalações sondem no mesmo instante.
+RandomizedDelaySec=15s
+Unit=legis-remote-check.service
+
+[Install]
+WantedBy=timers.target

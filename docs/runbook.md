@@ -229,6 +229,40 @@ v0.12.0 no seed: tabelas **RoadmapPhase** (4 fases F21–F24 da Onda 5) e
   "Parado" (nunca 500): um serviço nesse estado já aponta a ação deste runbook (§1 subir
   novamente / §6.2–§6.4 para diagnóstico).
 
+### 4.1 Verificação de fora da instalação
+
+A aba Sistema e os health checks acima são sondagem **de dentro**: o app consulta
+os serviços e a si mesmo. Uma falha que derrube app e sondagem ao mesmo tempo —
+host desligado, rede cortada, disco cheio — passa sem ser vista justamente por
+quem precisa vê-la.
+
+```bash
+python3 scripts/staging-remote-check.py \
+  --base-url http://<host>:3100 \
+  --expect-services app,realtime \
+  --output /var/lib/legis/remote-check.json
+```
+
+Saídas: `0` tudo certo · `1` serviço doente ou relógio divergente acima de 2 s ·
+`2` alvo inacessível ou serviço esperado sem como ser verificado. O JSON guarda
+horário, latência por serviço, divergência de relógio observada e os limites do
+que foi medido.
+
+Em host dedicado só a porta do app fica exposta, então webhooks e scheduler não
+respondem de fora. Para alcançá-los, informe `--platform-email` e
+`--platform-password`: o roteiro lê `/api/v1/platform/system-status`, que o app
+consulta por dentro. **O scheduler não aparece nesse endpoint hoje** — sem
+`--service scheduler=<url>` o roteiro recusa em vez de supor saúde.
+
+Para agendar, use os modelos `deploy/systemd/legis-remote-check.{service,timer}.example`.
+Instale-os em **máquina diferente** da observada: verificador no mesmo host é
+sondagem de dentro com outro nome, e o próprio JSON marca `remoto: false` quando
+o alvo é loopback.
+
+Limites do que essa verificação mede: nenhum serviço expõe a versão implantada,
+então a prova não afirma versão; e o cabeçalho `Date` tem resolução de 1 s, de
+modo que ela detecta desacordo grosseiro de relógio, não sincronia fina.
+
 ## 5. Backup e restauração (SQLite)
 
 ```bash
