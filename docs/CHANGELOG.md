@@ -6,6 +6,9 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Revisão em contexto novo do branch inteiro, com correção dos achados: backup do `--apply` chamado sem os argumentos obrigatórios, URL não-`file:` caindo na base de desenvolvimento, remoção alcançando Câmara desconhecida, guarda inerte em `bun test <arquivo>`, variável de tempo real inválida derrubando a tela, vigia não rearmado, rótulo quebrando a topbar, `--keep 0` apagando todo backup e auditoria de acessibilidade com a porta de desenvolvimento como alvo padrão.
+- Limpeza dos 15 tenants sintéticos aplicada na base de desenvolvimento, com backup verificável e integridade conferida.
+- Registrado que o projeto não tem VPS: desenvolvimento local, sem passo de deploy.
 - Pacote de validação institucional: cinco formulários de aceite (matriz regimental, composição da legislatura, canal de convocação, casos de presença/votação e ata/publicação) derivados dos campos que o código já exige, para a Câmara preencher escolhendo.
 - Acessibilidade de presença, votação (três estados), telão em 1920×1080 e 3840×2160 e app do parlamentar em 390×844, com gate axe sem violação `critical`/`serious` e percurso por teclado de check-in a apuração.
 - Contraste corrigido: selos `emerald-600`/`amber-600` com texto branco, texto das cores vivas do sonner no tema claro e texto secundário do telão.

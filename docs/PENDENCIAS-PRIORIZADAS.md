@@ -6,10 +6,11 @@ Revisão de 13/10/2026: o [plano corrente](PLANO-ATUALIZADO-2026-10-13.md) disti
 
 Revisão de 20/10/2026: a trilha A do [plano de continuidade](PLANO-CONTINUIDADE-2026-10-20.md) fechou os fundamentos do repositório — ver [`etapas/045-fundamentos-do-repositorio.md`](etapas/045-fundamentos-do-repositorio.md). Duas pendências novas nascem dela, abaixo. As trilhas B e C continuam esperando host de homologação separado; D e E, dado e assinatura da Câmara.
 
+Revisão de 21/10/2026: a limpeza dos 15 tenants sintéticos foi aplicada (base de desenvolvimento com os três tenants reais, `foreign_key_check` e `integrity_check` limpos, backup verificável em `db/bundle-clean-test-tenants-20261021T140704Z`). Decidido que o projeto **não tem VPS**: o desenvolvimento segue local e a seção Deploy do `CLAUDE.md` registra isso — deixa de ser pendência. A trilha B do plano de continuidade permanece bloqueada por falta de host separado.
+
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
-| Média | 045 | Aplicar a limpeza dos 15 tenants sintéticos e a retenção dos backups em `db/` (ambas simuladas e conferidas, nenhuma aplicada) | Operação SaaS | `db:clean:test-tenants --apply` e `db:backup:prune --apply` executados, com backup gravado antes |
-| Média | 045 | Dados da VPS para a seção Deploy do `CLAUDE.md` (host, usuário, pasta, reinício, health check) | Responsável pela infraestrutura | Seção sem campos `A DEFINIR` e um deploy verificado pelo health check |
+| Média | 045 | Retenção dos backups locais de `db/` (simulada e conferida; 19 arquivos, 19,1 MB) | Operação SaaS | `db:backup:prune --apply` executado com os rótulos citados em documento protegidos por `--keep-pattern` |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
 | Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara — formulários prontos em [`aceite/`](aceite/README.md), aguardando preenchimento e assinatura | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |

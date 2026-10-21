@@ -114,22 +114,24 @@ bun prisma/seed.ts                          # só em base descartável de demons
 
 ## Deploy
 
-> **A DEFINIR.** O responsável ainda não informou os dados da VPS. Enquanto
-> estes campos estiverem assim, nenhum deploy deste projeto foi executado nem
-> documentado — não invente host, caminho ou comando.
+**Este projeto não tem VPS.** Decisão de 21/10/2026: todo o desenvolvimento
+segue local, e nenhum ambiente de produção ou homologação remoto existe hoje.
 
-| Campo | Valor |
-|---|---|
-| Host | `A DEFINIR` |
-| Usuário SSH | `A DEFINIR` (acesso por `~/.ssh/id_ed25519`, nunca senha) |
-| Pasta da aplicação | `A DEFINIR` |
-| Puxar do GitHub | `A DEFINIR` (esperado: `git pull --ff-only` na `main`) |
-| Build | `A DEFINIR` (esperado: `bun install --frozen-lockfile && bun run db:generate && bun run build`) |
-| Reiniciar | `A DEFINIR` (serviço do app + os três mini-serviços) |
-| Health check | `A DEFINIR` (esperado: `GET /api/v1/bootstrap` → 200 e `/health` → 200 em 3003, 3004 e 3005) |
+O que isso implica, enquanto a decisão valer:
+
+- O ciclo do `CLAUDE.md` de `~/Work` para neste projeto em **GitHub**: local →
+  branch → push → merge na `main`. Não há passo de deploy.
+- Não invente host, usuário, pasta ou comando de reinício. Se alguém pedir
+  deploy, a resposta é que o ambiente não existe e precisa ser decidido antes.
+- A homologação em contêiner (`deploy/staging/compose.yaml`) roda **na própria
+  máquina de desenvolvimento**. Isso não é host separado: a trilha B do plano de
+  continuidade (prova de operação fora do host, recuperação medida, matriz de
+  falhas com observador externo) continua **bloqueada** por falta de host, e
+  nenhum ensaio local a substitui.
+- `bun run build` + `bun run start` servem o bundle de produção localmente, para
+  ensaio e auditoria — não é publicação.
 
 Repositório remoto: `https://github.com/lsjlima/edocBR_Plenario.git`.
-Deploy só depois do merge na `main` e sempre pedindo confirmação antes.
 
 ## Regras do projeto
 

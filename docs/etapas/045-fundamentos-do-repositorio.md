@@ -41,9 +41,23 @@ Números observados, sem meta institucional declarada.
 - A lista de perfis de demonstração está no gate de acesso (`src/app/page.tsx`), não em `login-form.tsx`.
 - Com Mucuri, `actors` nunca vem vazio (traz os dois atores de plataforma). O motivo olha os usuários próprios do tenant, senão o aviso nunca apareceria no caso que motivou a tarefa.
 
+## Correções após revisão de contexto novo (21/10/2026)
+
+A revisão do branch inteiro, em contexto novo, achou dois defeitos críticos no que esta etapa entregou. Ambos corrigidos com teste que falhou primeiro:
+
+- **O `--apply` da limpeza nunca executava.** `backup-bundle.py create` exige `--sqlite-source`, `--images-root` e `--public-root`, e o roteiro chamava sem nenhum deles: o backup falhava sempre e a remoção nunca acontecia. O caminho de aplicação era código morto, e o teste não pegava porque exercitava a remoção direto, sem passar pelo backup.
+- **URL que não designa arquivo caía em `db/custom.db` em silêncio.** Rodar com a URL de homologação exportada planejava contra PostgreSQL e apagava na base de desenvolvimento, sem backup. Agora falha alto pedindo `--database`.
+- **Tudo fora de três slugs fixos era descartável**, então Câmara ativada por onboarding seria apagada sem ninguém editar a lista. O padrão passou a ser o sufixo de UUID — evidência de origem sintética, que cobre os 15 tenants da base — e slug desconhecido só entra com `--incluir-desconhecidos`.
+- **A guarda de banco estava inerte em `bun test <arquivo>`**, a invocação que ela existe para cobrir, porque só olhava a variável do ambiente. Passou a conferir também a URL do `.env.local`. Como efeito, toda invocação de `bun test` declara banco descartável; `bun run test:unit` é o comando dos testes unitários.
+- **Variável de tempo real inválida derrubava a tela.** `realtimeEndpoint` lança por desenho, mas era chamada dentro do efeito do hook: erro de configuração desmontava a árvore React. O cliente passou a usar a versão tolerante, que registra o erro e cai no gateway; o vigia faz o diagnóstico. Provado em build de produção com valor inválido.
+- Também corrigidos: vigia não rearmado na queda do serviço, rótulo de 73 caracteres quebrando a topbar, `.env.example` com valor que quebra instalação com gateway, `--keep 0` da poda apagando todo backup, e a auditoria de acessibilidade tendo a porta do servidor de desenvolvimento como alvo padrão.
+
+## Limpeza aplicada (21/10/2026)
+
+`bun run db:clean:test-tenants --apply` foi executado com autorização explícita: 15 tenants sintéticos e 185 linhas removidos; sobraram os três reais (`camara-mucuri-ba`, `camara-serra-azul`, `camara-vila-nova`). `pragma foreign_key_check` sem saída e `pragma integrity_check` em `ok`. Backup verificável em `db/bundle-clean-test-tenants-20261021T140704Z` (7 arquivos, manifesto SHA-256 conferido), preservando o estado anterior de 18 tenants.
+
 ## Limites e pendências
 
-- **Seção Deploy do `CLAUDE.md` com campos `A DEFINIR`.** Host, usuário, pasta e comando de reinício da VPS não foram informados; nenhum deploy foi executado nem documentado.
-- **Dois passos destrutivos não aplicados**, por exigirem autorização explícita: `bun run db:clean:test-tenants --apply` (simulação confere: 15 tenants sintéticos, 171 linhas, os três reais intactos) e `bun run db:backup:prune -- --apply` (simulação com `--keep 5 --keep-pattern etapa-`: 19 arquivos, 19,1 MB). Ambos gravam backup antes e falham fechado.
-- A retenção de backups pede, antes de aplicar, listar os rótulos citados em documento e protegê-los por `--keep-pattern` — 20 das 29 cópias são nomeadas em algum documento de etapa.
-- Nada aqui substitui prova fora do host (trilha B), carga e acessibilidade estendida (trilha C) ou aceite institucional (trilhas D e E).
+- **Este projeto não tem VPS** (decisão de 21/10/2026): o desenvolvimento segue local e a seção Deploy do `CLAUDE.md` registra isso. A homologação em contêiner roda na própria máquina de desenvolvimento e **não** substitui host separado.
+- **A retenção de backups segue não aplicada.** A simulação com `--keep 5 --keep-pattern etapa-` removeria 19 arquivos (19,1 MB), mas 20 das 29 cópias são nomeadas em algum documento de etapa: antes de aplicar, liste os rótulos citados e proteja cada um por `--keep-pattern` (runbook §5.1).
+- Nada aqui substitui prova fora do host (trilha B), carga concorrente (tarefa 12) ou aceite institucional (trilhas D e E).
