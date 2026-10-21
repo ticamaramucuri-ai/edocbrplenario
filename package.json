@@ -14,6 +14,7 @@
     "test:unit": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/database-guard.test.ts tests/realtime-endpoint.test.ts",
     "test:display:state": "bash scripts/test-display-state.sh",
     "test:staging:display-browser": "bun scripts/staging-display-browser.mjs",
+    "test:staging:plenary-load": "python3 scripts/staging-plenary-load.py",
     "test:a11y:plenario": "bash scripts/test-a11y-audit.sh",
     "test:media:domain": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/media-status.test.ts tests/media-control.test.ts",
     "test:media:integration": "bash scripts/test-media-reconciliation.sh",
