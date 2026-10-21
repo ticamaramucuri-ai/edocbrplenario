@@ -19,6 +19,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run test:security
       - run: bun test tests/database-guard.test.ts
+      - run: bun test tests/realtime-endpoint.test.ts
       - run: bun run test:clean:test-tenants
       - run: bun test tests/parliamentarian-images.test.ts
       - run: python3 tests/test-backup-bundle.py

@@ -4,6 +4,8 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
+import { ROTULO_TEMPO_REAL_INDISPONIVEL } from '@/lib/realtime-endpoint'
+import type { ConnectionState } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import {
   AGENDA_STATUS_LABEL,
@@ -221,12 +223,13 @@ export function PartyBadge({ party, bloc }: { party: string; bloc?: string | nul
   )
 }
 
-export function ConnectionBadge({ state, className }: { state: 'connecting' | 'online' | 'reconnecting' | 'offline'; className?: string }) {
+export function ConnectionBadge({ state, className }: { state: ConnectionState; className?: string }) {
   const map = {
     online: { label: 'Tempo real', dot: 'bg-emerald-500', pulse: true },
     connecting: { label: 'Conectando…', dot: 'bg-amber-500', pulse: true },
     reconnecting: { label: 'Reconectando…', dot: 'bg-amber-500', pulse: true },
     offline: { label: 'Offline', dot: 'bg-rose-500', pulse: false },
+    unavailable: { label: ROTULO_TEMPO_REAL_INDISPONIVEL, dot: 'bg-rose-500', pulse: false },
   }[state]
   return (
     <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground', className)} role="status" aria-label={`Status de conexão: ${map.label}`}>

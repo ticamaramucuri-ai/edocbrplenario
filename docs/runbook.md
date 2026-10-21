@@ -18,6 +18,36 @@ plataforma e da Câmara.
 
 Banco: **SQLite** em `db/custom.db` (WAL) via Prisma (`prisma/schema.prisma`).
 
+### Duas formas de subir o ambiente
+
+O navegador precisa alcançar o serviço de tempo real. Há dois arranjos, e o
+segundo exige variável — sem ela a topbar fica em "Conectando…" sem erro visível.
+
+**Com gateway Caddy** (arranjo do sandbox e o esperado em operação):
+
+```bash
+bun run dev                                   # 3000
+(cd mini-services/realtime  && bun run dev)   # 3003
+(cd mini-services/webhooks  && bun run dev)   # 3004
+(cd mini-services/scheduler && bun run dev)   # 3005
+# acesse pela porta do gateway (81); o cliente usa /?XTransformPort=3003
+```
+
+Deixe `NEXT_PUBLIC_REALTIME_URL` vazia: o cliente resolve o caminho do gateway.
+
+**Sem gateway** (máquina de desenvolvimento, acesso direto a `localhost:3000`):
+
+```bash
+NEXT_PUBLIC_REALTIME_URL=http://localhost:3003 bun run dev
+```
+
+A variável é lida no build do cliente (`src/lib/realtime-endpoint.ts`): valor só
+com espaços é ignorado e valor inválido falha alto, nomeando a variável. Depois
+de 15 s sem entrar na sala interna, o estado passa a `unavailable` e a topbar
+mostra "Tempo real indisponível — verifique o gateway ou
+`NEXT_PUBLIC_REALTIME_URL`". Confirmação de que subiu certo: a topbar mostra
+"Tempo real" e o log do serviço registra `cliente inscrito`.
+
 ### Identidade e tempo real (etapa 001)
 
 - `REALTIME_AUTH_SECRET`: segredo aleatório compartilhado pelo Next.js e pelo serviço
