@@ -12,8 +12,12 @@ export const GATEWAY_PADRAO = '/?XTransformPort=3003'
 /** Tempo sem entrar na sala antes de declarar o tempo real indisponível. */
 export const ATRASO_INDISPONIVEL_MS = 15_000
 
+/** Vai no selo, que divide a linha com o resto da topbar e do app móvel. */
+export const ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO = 'Tempo real indisponível'
+
+/** Causa provável, no título e no rótulo acessível do selo. */
 export const ROTULO_TEMPO_REAL_INDISPONIVEL =
-  'Tempo real indisponível — verifique o gateway ou NEXT_PUBLIC_REALTIME_URL'
+  `${ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO} — verifique o gateway ou NEXT_PUBLIC_REALTIME_URL`
 
 export interface AmbienteRealtime {
   NEXT_PUBLIC_REALTIME_URL?: string
@@ -59,4 +63,22 @@ export function realtimeEndpoint(env: AmbienteRealtime): string {
   }
 
   return GATEWAY_PADRAO
+}
+
+/**
+ * Mesma decisão, sem lançar: valor inválido registra o erro e cai no gateway.
+ *
+ * `realtimeEndpoint` falha alto porque é lida por quem configura. No cliente,
+ * porém, ela é chamada dentro do efeito do hook: lançar ali desmontava a
+ * árvore React e o plenário ficava em tela branca — uma configuração errada
+ * tirava o sistema do ar em vez de só não conectar. Aqui o vigia de 15 s faz o
+ * diagnóstico, que é o canal criado para isso.
+ */
+export function realtimeEndpointTolerante(env: AmbienteRealtime): string {
+  try {
+    return realtimeEndpoint(env)
+  } catch (erro) {
+    console.error(`[tempo real] ${(erro as Error).message}`)
+    return GATEWAY_PADRAO
+  }
 }

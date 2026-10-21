@@ -4,7 +4,10 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { ROTULO_TEMPO_REAL_INDISPONIVEL } from '@/lib/realtime-endpoint'
+import {
+  ROTULO_TEMPO_REAL_INDISPONIVEL,
+  ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO,
+} from '@/lib/realtime-endpoint'
 import type { ConnectionState } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import {
@@ -231,11 +234,27 @@ export function ConnectionBadge({ state, className }: { state: ConnectionState; 
     connecting: { label: 'Conectando…', dot: 'bg-amber-500', pulse: true },
     reconnecting: { label: 'Reconectando…', dot: 'bg-amber-500', pulse: true },
     offline: { label: 'Offline', dot: 'bg-rose-500', pulse: false },
-    unavailable: { label: ROTULO_TEMPO_REAL_INDISPONIVEL, dot: 'bg-rose-500', pulse: false },
+    unavailable: {
+      label: ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO,
+      dot: 'bg-rose-500',
+      pulse: false,
+      causa: ROTULO_TEMPO_REAL_INDISPONIVEL,
+    },
   }[state]
+  // O rótulo divide a linha com o resto da topbar e do app móvel: o selo mostra
+  // o estado curto e a causa provável vai no título e no rótulo acessível.
+  const causa = 'causa' in map ? map.causa : map.label
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground', className)} role="status" aria-label={`Status de conexão: ${map.label}`}>
-      <span className={cn('relative flex size-2', map.pulse && 'animate-pulse')}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground',
+        className,
+      )}
+      role="status"
+      title={causa}
+      aria-label={`Status de conexão: ${causa}`}
+    >
+      <span className={cn('relative flex size-2 shrink-0', map.pulse && 'animate-pulse')}>
         <span className={cn('absolute inline-flex size-full rounded-full opacity-60', map.dot)} />
       </span>
       {map.label}

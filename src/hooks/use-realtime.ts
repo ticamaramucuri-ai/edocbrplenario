@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { io, type Socket } from 'socket.io-client'
 import type { RealtimeEvent, RealtimeEventType } from '@/lib/contracts'
-import { ATRASO_INDISPONIVEL_MS, realtimeEndpoint } from '@/lib/realtime-endpoint'
+import { ATRASO_INDISPONIVEL_MS, realtimeEndpointTolerante } from '@/lib/realtime-endpoint'
 import { useApp } from '@/lib/store'
 
 /**
@@ -20,7 +20,7 @@ import { useApp } from '@/lib/store'
  * no build por texto, então não dá para repassar `process.env` inteiro.
  */
 function endpointDoAmbiente(): string {
-  return realtimeEndpoint({
+  return realtimeEndpointTolerante({
     NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
     NEXT_PUBLIC_REALTIME_GATEWAY: process.env.NEXT_PUBLIC_REALTIME_GATEWAY,
   })
@@ -62,7 +62,6 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
   if (socketState.socket && socketState.tenantId === tenantId && socketState.actorId === actorId) return socketState.socket
 
   socketState.socket?.disconnect()
-  armarVigiaDeIndisponibilidade()
   const socket = io(endpointDoAmbiente(), {
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -92,6 +91,7 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
   socketState.tenantId = tenantId
   socketState.actorId = actorId
   socketState.seen = new Set()
+  armarVigiaDeIndisponibilidade()
 
   const { setConnection, markEvent } = useApp.getState()
 
@@ -112,8 +112,11 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
     useApp.getState().setConnection('offline')
   })
   socket.on('disconnect', (reason) => {
-    desarmarVigiaDeIndisponibilidade()
     useApp.getState().setConnection('offline')
+    // Rearma: serviço que morre no meio da sessão também precisa de diagnóstico,
+    // senão o selo fica em "Reconectando…" para sempre — o sintoma que o estado
+    // `unavailable` existe para matar.
+    armarVigiaDeIndisponibilidade()
     if (reason === 'io server disconnect') socket.connect()
   })
   socket.io.on('reconnect_attempt', () => {
