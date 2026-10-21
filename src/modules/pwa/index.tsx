@@ -280,16 +280,16 @@ function SignAtaCard({ context }: { context: MeContextViewExt }) {
 // ─── Cartão: votação aberta ─────────────────────────────────────────────────
 
 const VOTE_OPTIONS: Array<{ value: VoteValue; label: string; className: string }> = [
-  { value: 'sim', label: 'Sim', className: 'bg-emerald-600 text-white hover:bg-emerald-700' },
+  { value: 'sim', label: 'Sim', className: 'bg-emerald-700 text-white hover:bg-emerald-800' },
   { value: 'nao', label: 'Não', className: 'bg-rose-600 text-white hover:bg-rose-700' },
-  { value: 'abstencao', label: 'Abstenção', className: 'bg-amber-600 text-white hover:bg-amber-700' },
+  { value: 'abstencao', label: 'Abstenção', className: 'bg-amber-700 text-white hover:bg-amber-800' },
 ]
 
 /** Fase 18 — tons alternados para opções regimentais customizadas (4º/5º repetem). */
 const CUSTOM_VOTE_TONES = [
-  'bg-emerald-600 text-white hover:bg-emerald-700',
+  'bg-emerald-700 text-white hover:bg-emerald-800',
   'bg-rose-600 text-white hover:bg-rose-700',
-  'bg-amber-600 text-white hover:bg-amber-700',
+  'bg-amber-700 text-white hover:bg-amber-800',
   'bg-zinc-700 text-white hover:bg-zinc-800',
   'bg-primary text-white hover:bg-primary',
 ]

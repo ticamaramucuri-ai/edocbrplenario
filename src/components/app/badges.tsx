@@ -4,6 +4,11 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
+import {
+  ROTULO_TEMPO_REAL_INDISPONIVEL,
+  ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO,
+} from '@/lib/realtime-endpoint'
+import type { ConnectionState } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import {
   AGENDA_STATUS_LABEL,
@@ -125,7 +130,7 @@ export function AgendaStatusBadge({ status }: { status: AgendaItemStatus }) {
 export function VoteValueBadge({ value }: { value: VoteValueOrEmpty }) {
   if (value === 'sim')
     return (
-      <Badge className={cn(base, 'bg-emerald-600 hover:bg-emerald-600 text-white')}>
+      <Badge className={cn(base, 'bg-emerald-700 hover:bg-emerald-700 text-white')}>
         <CheckCircle2 /> Sim
       </Badge>
     )
@@ -137,7 +142,7 @@ export function VoteValueBadge({ value }: { value: VoteValueOrEmpty }) {
     )
   if (value === 'abstencao')
     return (
-      <Badge className={cn(base, 'bg-amber-600 hover:bg-amber-600 text-white')}>
+      <Badge className={cn(base, 'bg-amber-700 hover:bg-amber-700 text-white')}>
         <MinusCircle /> {VOTE_VALUE_LABEL.abstencao}
       </Badge>
     )
@@ -152,7 +157,7 @@ export function ResultBadge({ result }: { result: string | null }) {
   if (!result) return <span className="text-muted-foreground">—</span>
   if (result === 'aprovado')
     return (
-      <Badge className={cn(base, 'bg-emerald-600 hover:bg-emerald-600 text-white')}>
+      <Badge className={cn(base, 'bg-emerald-700 hover:bg-emerald-700 text-white')}>
         <CheckCircle2 /> {RESULT_STATUS_LABEL.aprovado}
       </Badge>
     )
@@ -164,7 +169,7 @@ export function ResultBadge({ result }: { result: string | null }) {
     )
   if (result === 'empate')
     return (
-      <Badge className={cn(base, 'bg-amber-600 hover:bg-amber-600 text-white')}>
+      <Badge className={cn(base, 'bg-amber-700 hover:bg-amber-700 text-white')}>
         <Equal /> {RESULT_STATUS_LABEL.empate}
       </Badge>
     )
@@ -193,7 +198,9 @@ export function PresenceBadge({ status }: { status: AttendanceStatus }) {
   return (
     <Badge
       variant={variant}
-      className={cn(base, status === 'presente' && 'bg-emerald-600 hover:bg-emerald-600 text-white')}
+      // emerald-600 com texto branco dá 3,77:1 — abaixo do 4,5:1 exigido para texto
+      // pequeno (axe `color-contrast`, impacto serious). emerald-700 dá 5,48:1.
+      className={cn(base, status === 'presente' && 'bg-emerald-700 hover:bg-emerald-700 text-white')}
     >
       {icon}
       {ATTENDANCE_STATUS_LABEL[status]}
@@ -221,16 +228,33 @@ export function PartyBadge({ party, bloc }: { party: string; bloc?: string | nul
   )
 }
 
-export function ConnectionBadge({ state, className }: { state: 'connecting' | 'online' | 'reconnecting' | 'offline'; className?: string }) {
+export function ConnectionBadge({ state, className }: { state: ConnectionState; className?: string }) {
   const map = {
     online: { label: 'Tempo real', dot: 'bg-emerald-500', pulse: true },
     connecting: { label: 'Conectando…', dot: 'bg-amber-500', pulse: true },
     reconnecting: { label: 'Reconectando…', dot: 'bg-amber-500', pulse: true },
     offline: { label: 'Offline', dot: 'bg-rose-500', pulse: false },
+    unavailable: {
+      label: ROTULO_TEMPO_REAL_INDISPONIVEL_CURTO,
+      dot: 'bg-rose-500',
+      pulse: false,
+      causa: ROTULO_TEMPO_REAL_INDISPONIVEL,
+    },
   }[state]
+  // O rótulo divide a linha com o resto da topbar e do app móvel: o selo mostra
+  // o estado curto e a causa provável vai no título e no rótulo acessível.
+  const causa = 'causa' in map ? map.causa : map.label
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground', className)} role="status" aria-label={`Status de conexão: ${map.label}`}>
-      <span className={cn('relative flex size-2', map.pulse && 'animate-pulse')}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground',
+        className,
+      )}
+      role="status"
+      title={causa}
+      aria-label={`Status de conexão: ${causa}`}
+    >
+      <span className={cn('relative flex size-2 shrink-0', map.pulse && 'animate-pulse')}>
         <span className={cn('absolute inline-flex size-full rounded-full opacity-60', map.dot)} />
       </span>
       {map.label}

@@ -1,5 +1,6 @@
 /**
- * Hook de tempo real — socket.io via gateway Caddy (/?XTransformPort=3003).
+ * Hook de tempo real — socket.io via gateway Caddy (/?XTransformPort=3003) ou
+ * pela URL de `NEXT_PUBLIC_REALTIME_URL` quando não há gateway.
  * Deduplicação por eventId; reconexão exponencial; status sempre visível.
  *
  * Singleton: todos os consumidores compartilham um socket interno; handlers
@@ -11,25 +12,57 @@ import { useEffect, useRef } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { io, type Socket } from 'socket.io-client'
 import type { RealtimeEvent, RealtimeEventType } from '@/lib/contracts'
+import { ATRASO_INDISPONIVEL_MS, realtimeEndpointTolerante } from '@/lib/realtime-endpoint'
 import { useApp } from '@/lib/store'
+
+/**
+ * Acesso estático às variáveis — o Next substitui `process.env.NEXT_PUBLIC_*`
+ * no build por texto, então não dá para repassar `process.env` inteiro.
+ */
+function endpointDoAmbiente(): string {
+  return realtimeEndpointTolerante({
+    NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
+    NEXT_PUBLIC_REALTIME_GATEWAY: process.env.NEXT_PUBLIC_REALTIME_GATEWAY,
+  })
+}
 
 type Handler = (event: RealtimeEvent) => void
 type HandlerMap = Partial<Record<RealtimeEventType, Handler>>
 
 const registry = new Map<string, HandlerMap>()
-const socketState: { socket: Socket | null; tenantId: string | null; actorId: string | null; refCount: number; seen: Set<string> } = {
+const socketState: { socket: Socket | null; tenantId: string | null; actorId: string | null; refCount: number; seen: Set<string>; vigia: ReturnType<typeof setTimeout> | null } = {
   socket: null,
   tenantId: null,
   actorId: null,
   refCount: 0,
   seen: new Set(),
+  vigia: null,
+}
+
+/**
+ * Sem gateway nem URL explícita a conexão nunca se estabelece e o estado ficava
+ * em "Conectando…" indefinidamente. Depois de 15 s sem entrar na sala, o estado
+ * passa a `unavailable`, que a topbar exibe nomeando a causa provável.
+ */
+function armarVigiaDeIndisponibilidade(): void {
+  if (socketState.vigia) clearTimeout(socketState.vigia)
+  socketState.vigia = setTimeout(() => {
+    socketState.vigia = null
+    if (useApp.getState().connection !== 'online') useApp.getState().setConnection('unavailable')
+  }, ATRASO_INDISPONIVEL_MS)
+}
+
+function desarmarVigiaDeIndisponibilidade(): void {
+  if (!socketState.vigia) return
+  clearTimeout(socketState.vigia)
+  socketState.vigia = null
 }
 
 function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClient): Socket {
   if (socketState.socket && socketState.tenantId === tenantId && socketState.actorId === actorId) return socketState.socket
 
   socketState.socket?.disconnect()
-  const socket = io(process.env.NEXT_PUBLIC_REALTIME_URL || '/?XTransformPort=3003', {
+  const socket = io(endpointDoAmbiente(), {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,
@@ -58,6 +91,7 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
   socketState.tenantId = tenantId
   socketState.actorId = actorId
   socketState.seen = new Set()
+  armarVigiaDeIndisponibilidade()
 
   const { setConnection, markEvent } = useApp.getState()
 
@@ -66,6 +100,7 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
   })
   socket.on('subscribed', (subscription: { tenantId?: string; scope?: string }) => {
     if (subscription.tenantId === tenantId && subscription.scope === 'internal') {
+      desarmarVigiaDeIndisponibilidade()
       useApp.getState().setConnection('online')
       // O outbox sinaliza mudanças, mas pode haver lacuna durante uma queda.
       // Releia as consultas ativas sempre que a sala for restabelecida.
@@ -73,18 +108,24 @@ function ensureSocket(tenantId: string, actorId: string, queryClient: QueryClien
     }
   })
   socket.on('subscribe_error', () => {
+    desarmarVigiaDeIndisponibilidade()
     useApp.getState().setConnection('offline')
   })
   socket.on('disconnect', (reason) => {
     useApp.getState().setConnection('offline')
+    // Rearma: serviço que morre no meio da sessão também precisa de diagnóstico,
+    // senão o selo fica em "Reconectando…" para sempre — o sintoma que o estado
+    // `unavailable` existe para matar.
+    armarVigiaDeIndisponibilidade()
     if (reason === 'io server disconnect') socket.connect()
   })
   socket.io.on('reconnect_attempt', () => {
-    useApp.getState().setConnection('reconnecting')
+    // `unavailable` já é um diagnóstico; tentativa de reconexão não o apaga.
+    if (useApp.getState().connection !== 'unavailable') useApp.getState().setConnection('reconnecting')
   })
   socket.on('connect_error', () => {
     const st = useApp.getState().connection
-    if (st !== 'reconnecting') useApp.getState().setConnection('reconnecting')
+    if (st !== 'reconnecting' && st !== 'unavailable') useApp.getState().setConnection('reconnecting')
   })
 
   socket.onAny((eventType: string, event: RealtimeEvent) => {
@@ -127,6 +168,7 @@ export function useRealtime(handlers: HandlerMap) {
         socketState.tenantId = null
         socketState.actorId = null
         socketState.refCount = 0
+        desarmarVigiaDeIndisponibilidade()
       }
     }
   }, [tenantId, actorId, queryClient])
@@ -134,7 +176,7 @@ export function useRealtime(handlers: HandlerMap) {
 
 /** Assinatura pública (portal/telão) — instância independente */
 export function connectPublicSocket(tenantId: string): Socket {
-  const s = io(process.env.NEXT_PUBLIC_REALTIME_URL || '/?XTransformPort=3003', {
+  const s = io(endpointDoAmbiente(), {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

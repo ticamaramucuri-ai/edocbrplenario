@@ -40,7 +40,7 @@ export type ModuleId =
   | 'integrations'
   | 'growth'
 
-type ConnectionState = 'connecting' | 'online' | 'reconnecting' | 'offline'
+export type ConnectionState = 'connecting' | 'online' | 'reconnecting' | 'offline' | 'unavailable'
 
 type AppState = {
   // Navegação

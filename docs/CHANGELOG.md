@@ -6,6 +6,19 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Revisão em contexto novo do branch inteiro, com correção dos achados: backup do `--apply` chamado sem os argumentos obrigatórios, URL não-`file:` caindo na base de desenvolvimento, remoção alcançando Câmara desconhecida, guarda inerte em `bun test <arquivo>`, variável de tempo real inválida derrubando a tela, vigia não rearmado, rótulo quebrando a topbar, `--keep 0` apagando todo backup e auditoria de acessibilidade com a porta de desenvolvimento como alvo padrão.
+- Limpeza dos 15 tenants sintéticos aplicada na base de desenvolvimento, com backup verificável e integridade conferida.
+- Registrado que o projeto não tem VPS: desenvolvimento local, sem passo de deploy.
+- Pacote de validação institucional: cinco formulários de aceite (matriz regimental, composição da legislatura, canal de convocação, casos de presença/votação e ata/publicação) derivados dos campos que o código já exige, para a Câmara preencher escolhendo.
+- Acessibilidade de presença, votação (três estados), telão em 1920×1080 e 3840×2160 e app do parlamentar em 390×844, com gate axe sem violação `critical`/`serious` e percurso por teclado de check-in a apuração.
+- Contraste corrigido: selos `emerald-600`/`amber-600` com texto branco, texto das cores vivas do sonner no tema claro e texto secundário do telão.
+- Guarda de banco como preload da suíte: teste com `DATABASE_URL` apontando para `db/` falha antes do primeiro caso.
+- Limpeza de tenants sintéticos com simulação por padrão, percurso do grafo de chaves estrangeiras e transação com `defer_foreign_keys`.
+- Execução sem gateway Caddy: `realtimeEndpoint()` decide o endereço do tempo real e a conexão sem resposta em 15 s vira estado visível na topbar.
+- Câmara sem usuários explicada no gate de acesso (`actorsEmptyReason` no bootstrap).
+- Senha para todos os perfis de demonstração do seed, com gate dos sete papéis.
+- Retenção dos backups locais com simulação por padrão e runbook §5.1/§5.2.
+- `CLAUDE.md` do projeto com stack, comandos conferidos, deploy (campos a definir) e regras.
 - Leases de workers PostgreSQL para outbox, webhooks e scheduler; testes de concorrência e retomada.
 - Rate limit público/API key compartilhado no PostgreSQL com advisory lock e hash da identidade.
 - Migrações 0005–0006 e cópia conciliada de 71 tabelas em ambiente descartável.

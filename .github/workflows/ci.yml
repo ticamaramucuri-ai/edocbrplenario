@@ -18,8 +18,13 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test:security
+      - run: bun run test:unit
+      - run: bun run test:clean:test-tenants
+      - run: bun run test:bootstrap:empty-tenant
+      - run: bun run test:seed:demo-logins
       - run: bun test tests/parliamentarian-images.test.ts
       - run: python3 tests/test-backup-bundle.py
+      - run: python3 -I tests/test-prune-local-backups.py
       - run: python3 scripts/recovery-drill-local.py
       - run: bash scripts/test-party-emblems.sh
       - run: bun run test:session:preparation
@@ -42,6 +47,8 @@ jobs:
       - run: bun run test:media:public-link
       - run: bun run test:media:archive
       - run: bun run build
+      - run: bunx playwright install chromium
+      - run: bun run test:a11y:plenario
 
   postgres-foundation:
     runs-on: ubuntu-latest

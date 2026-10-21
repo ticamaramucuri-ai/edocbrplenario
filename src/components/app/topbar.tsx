@@ -532,7 +532,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
                   {ROLE_LABEL[a.role]}{a.jobTitle ? ` · ${a.jobTitle}` : ''}
                 </span>
               </span>
-              {actor?.id === a.id && <Badge className="ml-1 bg-emerald-600 text-[10px]">Ativo</Badge>}
+              {actor?.id === a.id && <Badge className="ml-1 bg-emerald-700 text-[10px]">Ativo</Badge>}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

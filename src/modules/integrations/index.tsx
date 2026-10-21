@@ -105,7 +105,7 @@ function KeyStateBadge({ revokedAt }: { revokedAt: string | null }) {
       Revogada
     </Badge>
   ) : (
-    <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Ativa</Badge>
+    <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Ativa</Badge>
   )
 }
 
@@ -718,7 +718,7 @@ function DocsTab() {
           {ENDPOINT_DOCS.map(({ scope, description }) => (
             <article key={scope} className="space-y-2 rounded-xl border bg-card p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">GET</Badge>
+                <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">GET</Badge>
                 <code className="break-all font-mono text-xs font-semibold">
                   {API_SCOPE_ENDPOINT[scope]}
                 </code>

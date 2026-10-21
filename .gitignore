@@ -11,8 +11,11 @@ db/*.db
 db/*.db-wal
 db/*.db-shm
 db/*.backup.*
+# Pacotes de backup verificáveis (banco + mídia); nunca versionar.
+db/bundle-*/
 mini-services/realtime/checkpoint.json
 tool-results/
+.superpowers/
 recordings/
 upload/parliamentarian-images/
 *.key

@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Gavel, MapPin, RotateCcw, UserCog, Users, CalendarDays, ScrollText } from 'lucide-react'
 
 import { api } from '@/lib/api-client'
-import { useApp } from '@/lib/store'
+import { useApp, type ConnectionState } from '@/lib/store'
 import { useRealtime } from '@/hooks/use-realtime'
 import type { RealtimeEvent, SessionDetail } from '@/lib/contracts'
 import { ConnectionBadge, QuorumBadge, SessionStatusBadge } from '@/components/app/badges'
@@ -155,7 +155,7 @@ function MesaBody({
   onTabChange: (t: PlenaryTab) => void
   invalidate: () => void
   onExit: () => void
-  connection: 'connecting' | 'online' | 'reconnecting' | 'offline'
+  connection: ConnectionState
 }) {
   const { session, quorum } = data
   const canReadMedia = useApp((s) => s.can('media.read'))

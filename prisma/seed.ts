@@ -1030,14 +1030,12 @@ async function main() {
   // FASE 9 — Autenticação real: senhas demo + usuário inativo
   // ════════════════════════════════════════════════════════════════
   console.log('Fase 9: senhas de demonstração…')
-  const demoLogins = [
-    'suporte@legissaas.dev',
-    'ana.ribeiro@vilanova.mg.leg.br',
-    'carla.mendes@vilanova.mg.leg.br',
-    'marta.lima@serraazul.sp.leg.br',
-  ]
+  // Todos os usuários de demonstração recebem senha. Uma lista fixa deixava
+  // justamente os papéis da Mesa (presidência, operador de sessão, direção
+  // legislativa e auditoria) sem `passwordHash`, e o login por senha falhava
+  // para eles enquanto a entrada por perfil funcionava.
   await db.user.updateMany({
-    where: { email: { in: demoLogins } },
+    where: { passwordHash: null },
     data: { passwordHash: hashPassword(DEMO_PASSWORD) },
   })
   // Usuário inativo (demonstra bloqueio imediato de acesso)

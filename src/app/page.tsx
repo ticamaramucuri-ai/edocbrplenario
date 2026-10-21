@@ -16,6 +16,7 @@ import { api, ApiRequestError } from '@/lib/api-client'
 import { useRealtime } from '@/hooks/use-realtime'
 import { ROLE_LABEL } from '@/lib/contracts'
 import type { ActorView, Role } from '@/lib/contracts'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
@@ -187,6 +188,16 @@ function ActorGate({ children }: { children: React.ReactNode }) {
             </span>
             <Separator className="flex-1" />
           </div>}
+
+          {bootstrap?.demoMode && bootstrap.actorsEmptyReason === 'tenant_sem_usuarios' && (
+            <Alert>
+              <Landmark className="size-4" aria-hidden />
+              <AlertTitle>Esta Câmara ainda não tem usuários cadastrados</AlertTitle>
+              <AlertDescription>
+                Entre com e-mail e senha de outra Câmara ou cadastre o primeiro usuário.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {bootstrap?.demoMode && <ul className="max-h-72 space-y-1.5 overflow-y-auto custom-scroll pr-1">
             {(bootstrap?.actors ?? []).map((a) => (

@@ -338,7 +338,7 @@ function AtaDoc({ ata }: { ata: AtaReportView }) {
 function AiDraftBadge({ status }: { status: AiArtifactView['status'] }) {
   if (status === 'approved')
     return (
-      <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+      <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700">
         <CheckCircle2 className="size-3" /> {AI_STATUS_LABEL.approved}
       </Badge>
     )
@@ -453,7 +453,7 @@ function AiAtaDraftSection({ sessionId }: { sessionId: string }) {
             <Badge variant="outline" className="text-[11px]">provedor: {artifact.provider}</Badge>
             <span>{fmtDateTime(artifact.createdAt)}</span>
             {artifact.status === 'approved' && (
-              <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+              <Badge className="gap-1 bg-emerald-700 text-white hover:bg-emerald-700">
                 Aprovada por {artifact.reviewedBy}
               </Badge>
             )}
