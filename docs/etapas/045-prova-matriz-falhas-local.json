@@ -1,19 +1,19 @@
 {
-  "at": "2026-11-04T18:21:54.653885+00:00",
+  "at": "2026-11-04T21:21:10.335860+00:00",
   "buildVersion": "local-unversioned",
   "hostRestartExecuted": false,
   "ok": true,
   "remoteObserver": false,
   "scenarios": [
     {
-      "elapsedSeconds": 7.547,
+      "elapsedSeconds": 7.881,
       "error": null,
       "evidence": {
         "appAvailableDuringOutage": true,
-        "fromRestartToDrainSeconds": 6.59,
+        "fromRestartToDrainSeconds": 6.64,
         "officialRtoRpoMeasured": false,
         "ok": true,
-        "pendingDuringOutage": 56,
+        "pendingDuringOutage": 26,
         "publishedSessionEvents": 330,
         "receipts": 220,
         "synthetic": true,
@@ -22,22 +22,27 @@
       },
       "name": "realtime",
       "passed": true,
+      "postIntegrity": {
+        "auditChainValid": true,
+        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "outboxPending": 0
+      },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 30,
+        "healthyResponses": 31,
         "invalidSuccessfulPayloads": 0,
-        "requests": 30,
+        "requests": 31,
         "statusCounts": {
-          "200": 30
+          "200": 31
         }
       }
     },
     {
-      "elapsedSeconds": 4.238,
+      "elapsedSeconds": 5.317,
       "error": null,
       "evidence": {
-        "eventId": "stagefanout422ad4c02ad465bdfdba4cf2",
+        "eventId": "stagefanoute534c759752478eb012e9237",
         "internalSubscribers": 2,
         "isolatedPublicPayload": true,
         "nodes": 2,
@@ -52,22 +57,27 @@
       },
       "name": "redis",
       "passed": true,
+      "postIntegrity": {
+        "auditChainValid": true,
+        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "outboxPending": 0
+      },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 17,
+        "healthyResponses": 21,
         "invalidSuccessfulPayloads": 0,
-        "requests": 17,
+        "requests": 21,
         "statusCounts": {
-          "200": 17
+          "200": 21
         }
       }
     },
     {
-      "elapsedSeconds": 49.898,
+      "elapsedSeconds": 50.302,
       "error": null,
       "evidence": {
-        "captureCount": 17,
+        "captureCount": 21,
         "externalDelivery": false,
         "firstDelivery": "sent",
         "networkRetryAttempts": 2,
@@ -84,36 +94,41 @@
       },
       "name": "mail",
       "passed": true,
+      "postIntegrity": {
+        "auditChainValid": true,
+        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "outboxPending": 0
+      },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 190,
+        "healthyResponses": 187,
         "invalidSuccessfulPayloads": 0,
-        "requests": 190,
+        "requests": 187,
         "statusCounts": {
-          "200": 190
+          "200": 187
         }
       }
     },
     {
-      "elapsedSeconds": 2.479,
+      "elapsedSeconds": 3.179,
       "error": null,
       "evidence": {
         "after": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 12.5,
-          "p95Ms": 22.9,
+          "p50Ms": 15.8,
+          "p95Ms": 30.9,
           "requests": 60
         },
         "before": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 12.0,
-          "p95Ms": 16.8,
+          "p50Ms": 15.8,
+          "p95Ms": 26.6,
           "requests": 60
         },
-        "fromDatabaseStartToUsefulHttpSeconds": 1.527,
+        "fromDatabaseStartToUsefulHttpSeconds": 1.813,
         "officialRtoRpoMeasured": false,
         "ok": true,
         "outageHttpStatus": 503,
@@ -123,25 +138,30 @@
       },
       "name": "postgres",
       "passed": true,
+      "postIntegrity": {
+        "auditChainValid": true,
+        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "outboxPending": 0
+      },
       "publicReadObservation": {
-        "degradedResponses": 3,
+        "degradedResponses": 9,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 7,
+        "healthyResponses": 4,
         "invalidSuccessfulPayloads": 0,
-        "requests": 10,
+        "requests": 13,
         "statusCounts": {
-          "200": 7,
-          "503": 3
+          "200": 4,
+          "503": 9
         }
       }
     },
     {
-      "elapsedSeconds": 37.506,
+      "elapsedSeconds": 55.029,
       "error": null,
       "evidence": {
         "acceptedSessions": [
-          "cmw2g2qqy0b8xp80114y6jiva",
-          "cmw2g3ja90bc8p801dzrwkq8f"
+          "cmw2mhbvg03nnp801x9rixof9",
+          "cmw2mi4m703qyp8019n284mvg"
         ],
         "acceptedWritesVerified": true,
         "appPortRemainedOpen": true,
@@ -162,7 +182,7 @@
         ],
         "outageWriteStatus": 0,
         "postgresStayedUp": true,
-        "recoverySeconds": 0.408,
+        "recoverySeconds": 0.527,
         "remoteObserver": false,
         "scope": "synthetic-staging",
         "voteIdempotencyVerified": true,
@@ -170,15 +190,20 @@
       },
       "name": "app_db_network",
       "passed": true,
+      "postIntegrity": {
+        "auditChainValid": true,
+        "auditHead": "e46fb0870a402752c37ff4313259d2a842b0db524e7d66573f3abfb37e9c9e8f",
+        "outboxPending": 0
+      },
       "publicReadObservation": {
         "degradedResponses": 37,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 5,
+        "healthyResponses": 73,
         "invalidSuccessfulPayloads": 0,
-        "requests": 42,
+        "requests": 110,
         "statusCounts": {
           "0": 9,
-          "200": 5,
+          "200": 73,
           "503": 28
         }
       }

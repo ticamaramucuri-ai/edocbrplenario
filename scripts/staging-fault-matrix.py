@@ -6,6 +6,7 @@ usa seu roteiro próprio, com restauração em finally. O resultado é JSON.
 """
 import argparse
 from datetime import datetime, timezone
+import http.cookiejar
 import json
 import os
 from pathlib import Path
@@ -15,7 +16,7 @@ import sys
 import threading
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
+from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / 'deploy/staging/.env'
@@ -162,6 +163,41 @@ def preflight() -> tuple[dict[str, str], dict[str, str]]:
     return values, env
 
 
+def authenticated_client(app_url: str, values: dict[str, str]):
+    client = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    payload = json.dumps({'email': 'stage-admin@example.invalid',
+                          'password': values['STAGE_ADMIN_PASSWORD']}).encode()
+    request = Request(app_url + '/api/v1/auth/login', payload,
+                      {'Content-Type': 'application/json'})
+    with client.open(request, timeout=10) as response:
+        actor = json.load(response).get('actor', {})
+    if actor.get('role') != 'tenant_admin':
+        raise RuntimeError('Login sintético não confirmou o administrador.')
+    return client
+
+
+def post_invariants(client, app_url: str, env: dict[str, str]) -> dict:
+    sql = ('SELECT count(*) FROM "OutboxEvent" WHERE status=\'pending\' AND '
+           '"tenantId"=(SELECT id FROM "Tenant" WHERE slug=\'staging-example\')')
+    deadline = time.monotonic() + 45
+    while True:
+        pending = run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-c', sql],
+                      env=env, timeout=10)
+        if pending.returncode or not pending.stdout.strip().isdigit():
+            raise RuntimeError('Não foi possível conferir a outbox sintética.')
+        count = int(pending.stdout.strip())
+        if count == 0:
+            break
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f'Outbox não drenou: {count} evento(s) pendente(s).')
+        time.sleep(0.5)
+    with client.open(app_url + '/api/v1/audit?verify=true&limit=1', timeout=30) as response:
+        chain = json.load(response).get('chain', {})
+    if chain.get('valid') is not True or not chain.get('head'):
+        raise RuntimeError('Cadeia de auditoria sintética inválida ou ausente.')
+    return {'outboxPending': 0, 'auditChainValid': True, 'auditHead': chain['head']}
+
+
 def ensure_mail_lab(values: dict[str, str]) -> bool:
     mail_url = f"http://127.0.0.1:{values.get('STAGE_MAILPIT_PORT', '3125')}/api/v1/messages"
     worker = compose('ps', '-q', 'mail_worker')
@@ -195,8 +231,10 @@ def main() -> int:
     parser.add_argument('--output', type=Path, help='arquivo da prova JSON')
     args = parser.parse_args()
     selected = list(dict.fromkeys(args.only or SCENARIOS))
-    values, _ = preflight()
+    values, env = preflight()
     app_url = f"http://127.0.0.1:{values.get('STAGE_APP_PORT', '3100')}"
+    client = authenticated_client(app_url, values)
+    post_invariants(client, app_url, env)
     report = {'schemaVersion': 1, 'scope': 'synthetic-staging',
               'at': datetime.now(timezone.utc).isoformat(),
               'buildVersion': values.get('STAGE_BUILD_VERSION', 'local-unversioned'),
@@ -224,7 +262,8 @@ def main() -> int:
                 passed = result.returncode == 0 and valid_evidence(name, payload)
                 if passed:
                     wait_for(app_url + '/api/v1/health?ready=1', 'App após ' + name)
-            except (subprocess.TimeoutExpired, ValueError, IndexError, RuntimeError) as error:
+                    integrity = post_invariants(client, app_url, env)
+            except (subprocess.TimeoutExpired, ValueError, IndexError, RuntimeError, OSError) as error:
                 passed = False
                 payload = None
                 failure = type(error).__name__
@@ -241,6 +280,7 @@ def main() -> int:
             entry = {'name': name, 'passed': passed,
                      'elapsedSeconds': round(time.monotonic() - began, 3),
                      'evidence': payload if passed else None,
+                     'postIntegrity': integrity if passed else None,
                      'publicReadObservation': observation,
                      'error': failure}
             report['scenarios'].append(entry)

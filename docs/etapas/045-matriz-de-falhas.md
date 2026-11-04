@@ -96,8 +96,11 @@ em `finally`; o executor confere a prontidão entre os cenários. Um leitor
 público consulta a listagem de sessões a cada 250 ms durante cada cenário,
 conta os status e rejeita HTTP 200 sem lista JSON válida. Nas falhas de banco,
 exige que o leitor veja pelo menos uma resposta degradada e uma saudável; nas
-demais, exige apenas respostas 200. Se um roteiro falhar, sua prova não contiver
-os invariantes essenciais ou a leitura pública divergir, o conjunto falha.
+demais, exige apenas respostas 200. Depois de cada cenário, espera a outbox do
+tenant sintético drenar até zero e usa `GET /api/v1/audit?verify=true` com o
+administrador de ensaio para verificar a cadeia inteira de hashes. Se um
+roteiro falhar, sua prova não contiver os invariantes essenciais, a leitura
+pública divergir, a outbox não drenar ou a auditoria quebrar, o conjunto falha.
 
 A [prova de 04/11/2026](045-prova-matriz-falhas-local.json) registrou cinco
 cenários aprovados: 220 votos e recibos durante a queda do realtime; Redis
@@ -108,12 +111,14 @@ queda do PostgreSQL sem erro; e sete votos HTTP 503 durante o corte de rede,
 com recibos, auditoria e incidente correlacionado após retorno. O relatório
 marca `remoteObserver: false` e `hostRestartExecuted: false`.
 
-Na repetição com leitura pública contínua, foram **30, 17 e 190 respostas
-HTTP 200** durante os cenários de tempo real, Redis e correio. Na queda do
-PostgreSQL, o leitor viu 3 respostas 503 e 7 respostas 200; no corte de rede,
-28 respostas 503, 9 conexões sem resposta HTTP e 5 respostas 200. Nenhuma
-resposta 200 trouxe lista inválida. Esses totais são amostras locais de
-intervalos diferentes, não medição de disponibilidade institucional.
+Na repetição com leitura pública e verificação de integridade, foram **31, 21 e
+187 respostas HTTP 200** durante os cenários de tempo real, Redis e correio.
+Na queda do PostgreSQL, o leitor viu 9 respostas 503 e 4 respostas 200; no
+corte de rede, 28 respostas 503, 9 conexões sem resposta HTTP e 73 respostas
+200. Nenhuma resposta 200 trouxe lista inválida. A outbox ficou sem eventos
+pendentes e a cadeia de auditoria foi validada após **cada um dos cinco
+cenários**. Esses totais são amostras locais de intervalos diferentes, não
+medição de disponibilidade institucional.
 
 ## O que bloqueia a execução fora do host
 
