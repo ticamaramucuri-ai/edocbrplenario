@@ -22,7 +22,7 @@ const server = createServer((req, res) => {
   const pathname = (req.url ?? '').split('?')[0] ?? '/'
   if (req.method === 'GET' && (pathname === '/health' || pathname.startsWith('/health/'))) {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, service: 'scheduler', port: PORT, provider: 'postgresql' }))
+    res.end(JSON.stringify({ ok: true, service: 'scheduler', version: process.env.EDOCBR_BUILD_VERSION?.trim() || 'local-unversioned', port: PORT, provider: 'postgresql' }))
     return
   }
   const match = req.method === 'POST' ? pathname.match(/^\/jobs\/([^/]+)\/run$/) : null

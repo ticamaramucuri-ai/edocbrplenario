@@ -4,7 +4,9 @@ Complementa o `CLAUDE.md` de `~/Work` (fluxo local → GitHub → VPS, idioma,
 segurança). Aqui ficam só as informações próprias deste repositório.
 
 Documento de referência para a ordem do trabalho:
-[`docs/PLANO-CONTINUIDADE-2026-10-20.md`](docs/PLANO-CONTINUIDADE-2026-10-20.md).
+[`docs/PLANO-INTEGRAL-2026-11-04.md`](docs/PLANO-INTEGRAL-2026-11-04.md).
+O [plano de continuidade de 20/10](docs/PLANO-CONTINUIDADE-2026-10-20.md)
+preserva tarefas e contexto anteriores.
 
 ## Stack
 
@@ -75,7 +77,7 @@ Variáveis de ambiente que mudam o comportamento da execução local:
 ```bash
 bun run lint          # eslint .  — sem saída quando passa
 bun run typecheck     # tsc --noEmit — sem saída quando passa
-bun run test:unit                          # guarda de banco + endereço do tempo real
+bun run test:unit                          # guarda de banco + falha de banco + tempo real
 bun run test:clean:test-tenants            # limpeza de tenants de teste
 bun run test:security                      # realtime-auth + demo-mode
 ```

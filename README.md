@@ -17,8 +17,10 @@ Onda 6**. Piloto **v0.13.0** (26 módulos).
 > sessões ou dados oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
 > continuam disponíveis exclusivamente para demonstração.
 
-O [plano atualizado](docs/PLANO-ATUALIZADO-2026-10-13.md) separa o desenvolvimento
-técnico do aceite institucional e ordena as próximas fases. A
+O [plano integral de 04/11/2026](docs/PLANO-INTEGRAL-2026-11-04.md) é a referência
+atual para a ordem das fases; a [matriz de rastreabilidade](docs/MATRIZ-RASTREABILIDADE-2026-11-04.md)
+liga funções, código, testes e evidências. O número v0.13.0 e os 26 módulos acima
+descrevem a versão histórica do núcleo do produto, não a homologação do piloto. A
 [etapa 045](docs/etapas/045-fundacao-operacional-saas.md) permanece aberta:
 PostgreSQL, workers, SMTP de laboratório, fanout e recuperação sintética passaram
 em ensaios locais; implantação, correio e recuperação institucionais continuam pendentes.

@@ -13,6 +13,12 @@ tempo real, webhooks, scheduler e, sob perfil, correio de laboratório.
 
 ## Serviços
 
+Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA do commit ou a
+identificação imutável do build antes de subir a stack. App e workers expõem esse
+valor em `/api/v1/health` ou `/health`; `local-unversioned` indica ensaio sem
+identificação de versão. A sonda remota registra a versão observada, mas só
+uma execução em host separado constitui a prova operacional da fase 045.
+
 | Serviço | Porta publicada | Papel | Perfil |
 |---|---|---|---|
 | `postgres` | `${STAGE_DB_PORT:-55432}` → 5432 | Banco da homologação | padrão |

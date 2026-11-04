@@ -72,8 +72,8 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 |---|---|
 | **Deve acontecer** | Mesmo desfecho do cenário 2 pela ótica do cliente, com uma diferença: o banco continua de pé, então ao restabelecer a rede **nenhuma** transação aceita pode faltar |
 | **Invalida** | Transação aceita e perdida; pool de conexões preso sem recuperar depois do retorno da rede; erro genérico que não distingue banco fora de rede fora |
-| **Ensaio hoje** | **Nenhum.** O ensaio 2 derruba o contêiner do banco, o que não é a mesma falha |
-| **Falta** | O ensaio inteiro — cortar a rota entre app e banco (regra de rede no contêiner) mantendo o banco vivo |
+| **Ensaio hoje** | `python3 scripts/staging-db-network-drill.py` corrigido e executado localmente em 04/11: banco vivo, porta HTTP aberta, sessões aceitas persistidas com auditoria, sete votos concorrentes sem 2xx no corte, sete recibos e repetição idempotente após retorno. [Prova e limites](045-corte-rede-app-banco.md). |
+| **Falta** | Múltiplos nós, alerta correlacionado e observador externo; correção 503 já repetida na stack sintética |
 
 ### 6. Reinício do host inteiro
 
@@ -87,7 +87,7 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 ## O que bloqueia a execução conjunta
 
 1. **Host separado.** Cinco dos seis cenários já rodam isolados nesta máquina, mas o plano pede carga ativa de votação e leitura pública **durante** cada falha, com o observador **fora** do host. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
-2. **Cenário 5 não tem ensaio.** Precisa de corte de rota entre app e banco, não de derrubar o banco.
+2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto e recibo foram observados na stack sintética, mas ainda faltam carga e observador externo.
 3. **Reinício de host** não é reinício de contêiner, e hoje só o segundo é possível.
 
 Enquanto isso não existir, os ensaios individuais valem como incremento técnico

@@ -69,6 +69,7 @@ export type ApiErrorCode =
   | 'MEDIA_ARCHIVE_INVALID'
   | 'MEDIA_ARCHIVE_UNAVAILABLE'
   | 'MEDIA_ARCHIVE_TAMPERED'
+  | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR'
 
 const TYPE_SLUG: Record<ApiErrorCode, string> = {
@@ -129,6 +130,7 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   MEDIA_ARCHIVE_INVALID: 'media-archive-invalid',
   MEDIA_ARCHIVE_UNAVAILABLE: 'media-archive-unavailable',
   MEDIA_ARCHIVE_TAMPERED: 'media-archive-tampered',
+  DATABASE_UNAVAILABLE: 'database-unavailable',
   INTERNAL_ERROR: 'internal-error',
 }
 
@@ -251,6 +253,16 @@ export function apiHandler<TRequest extends Request, TContext extends RouteCtx>(
           correlationId,
           { errors: fieldErrors }
         )
+      }
+      // Erros de conexão/pool são temporários; outros erros Prisma seguem
+      // como falhas internas para não esconder defeitos ou violações de dados.
+      const prismaCode = err && typeof err === 'object' && 'code' in err ? err.code : null
+      if (typeof prismaCode === 'string' &&
+          ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(prismaCode)) {
+        console.error(`[api] correlationId=${correlationId} database=${prismaCode}`)
+        return problem(503, 'DATABASE_UNAVAILABLE', 'Banco temporariamente indisponível',
+          'A operação não pôde ser confirmada. Verifique o estado antes de repetir o comando.',
+          correlationId)
       }
       // Erro inesperado — loga no servidor, nunca vaza stack ao cliente.
       console.error(`[api] correlationId=${correlationId}`, err)

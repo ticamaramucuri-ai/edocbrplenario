@@ -6,6 +6,9 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Roteiro de falha de rede corrigido para manter a porta do app aberta ao isolar o PostgreSQL; sete votos concorrentes receberam HTTP 503, com sete recibos e auditoria após retorno. Timeout Prisma `P2024` classificado como `DATABASE_UNAVAILABLE`; observador externo pendente.
+- App e serviços passam a expor `EDOCBR_BUILD_VERSION` em health; sonda remota registra a revisão de cada processo. A stack recebe `STAGE_BUILD_VERSION`; prova fora do host permanece pendente.
+- Em 04/11/2026, iniciado o plano integral de conclusão: matriz de rastreabilidade de fluxos, código, testes, evidências e gates; README, ROADMAP e índice de etapas apontam para a revisão atual. O pré-voo somente leitura de Mucuri continuou `automaticReady: false`, sem criar dados oficiais.
 - Matriz de falhas induzidas: seis cenários com o que deve acontecer, o que invalida o ensaio e qual roteiro existente cobre cada um; achado de que o cenário de perda de rede entre app e banco não tem ensaio e que reinício de contêiner não é reinício de host.
 - Verificação de saúde feita de fora da instalação: sonda do app e dos serviços alcançáveis, leitura do `platform/system-status` para os que não ficam expostos, acordo de relógio pelo cabeçalho `Date` e recusa explícita (saída 2) de serviço que não pôde ser verificado; agendamento por timer de sistema. Execução contra host separado segue pendente.
 - Topologia da homologação em contêiner documentada (`deploy/staging/README.md`) com serviços, volumes duráveis, segredos e o que falta provar fora do host; portas publicadas passam a ligar em `STAGE_BIND`, loopback por padrão.

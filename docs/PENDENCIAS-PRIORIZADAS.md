@@ -10,11 +10,11 @@ Revisão de 21/10/2026: a limpeza dos 15 tenants sintéticos foi aplicada (base 
 
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
-| Alta | 045 | Perda de rede entre app e banco não tem ensaio — derrubar o contêiner do banco é outra falha | Engenharia de plataforma | Rota cortada com o banco vivo, nenhuma transação aceita perdida e pool recuperado |
+| Alta | 045 | Corte app↔banco com sete votos concorrentes recebendo HTTP 503 e recibos/auditoria após retorno, provado localmente; faltam alerta e observador externo | Engenharia de plataforma | Mesmo ensaio em vários nós, alerta correlacionado e prova fora do host |
 | Média | 045 | Retenção dos backups locais de `db/` (simulada e conferida; 19 arquivos, 19,1 MB) | Operação SaaS | `db:backup:prune --apply` executado com os rótulos citados em documento protegidos por `--keep-pattern` |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
-| Média | 045 | Serviços não expõem a versão implantada, então a verificação de saúde não pode afirmar qual versão está no ar | Engenharia de plataforma | `/health` de app, realtime, webhooks e scheduler devolvendo versão, e a prova de saúde registrando-a |
+| Média | 045 | Versão exposta localmente; falta confirmar revisão implantada no host de homologação | Engenharia de plataforma | `STAGE_BUILD_VERSION` definido por build, sonda externa registrando a mesma revisão em app, realtime, webhooks e scheduler |
 | Bloqueante | 046 | Regimento, composição e papéis oficiais por Câmara — formulários prontos em [`aceite/`](aceite/README.md), aguardando preenchimento e assinatura | Secretaria legislativa e Presidência da Câmara | Matriz de casos e configuração versionada aprovadas |
 | Alta | 047 | Convocação com prova de entrega/ciência e documentos versionados | Secretaria legislativa | Jornada e comprovantes de envio revisados |
 | Alta | 048–049 | Quórum por ato, identificação e apuração nominal/simbólica | Mesa e secretaria | Sessões simuladas, conferência humana e testes concorrentes |

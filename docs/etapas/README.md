@@ -1,5 +1,7 @@
 # Registro de execução do plano
 
+**Referência de continuidade (04/11/2026):** [plano integral](../PLANO-INTEGRAL-2026-11-04.md) e [matriz de rastreabilidade](../MATRIZ-RASTREABILIDADE-2026-11-04.md). Os estados abaixo são evidências de cada incremento; “concluída localmente” não libera o piloto institucional.
+
 Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arquivo numerado neste diretório. O registro deve conter: objetivo, mudança entregue, arquivos principais, verificações com resultado, limitações conhecidas, decisão técnica e critérios de entrada/saída da etapa seguinte. Uma etapa só recebe estado **concluída** quando os critérios de saída foram demonstrados; trabalho parcial permanece **em andamento**.
 
 | Etapa | Estado | Entrega | Próxima dependência |
@@ -64,6 +66,8 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [045 — Acessibilidade em navegador](045-auditoria-acessibilidade-navegador.md) | Incremento local concluído | Contraste da barra lateral corrigido e auditoria WCAG automatizada da entrada, painel e telão | Leitor de tela humano, TV física e perfis com dados representativos |
 | [045 — Matriz de falhas induzidas](045-matriz-de-falhas.md) | Matriz definida; execução conjunta pendente | Seis cenários com critério de aprovação e de invalidação, ensaio existente de cada um e lacunas nomeadas | Host separado, observador externo e o ensaio de perda de rede, que não existe |
 | [045 — Verificação remota de saúde](045-verificacao-remota-de-saude.md) | Ferramenta pronta e conferida; execução remota pendente | Sonda de app e serviços, leitura do system-status, acordo de relógio e recusa explícita de serviço não verificável, com timer de sistema | Host separado para apontar a verificação |
+| [045 — Versão observável nos serviços](045-versao-nos-servicos.md) | Incremento local concluído; verificação remota pendente | App e serviços publicam a revisão implantada; sonda remota registra versões | Build identificado e prova em host separado |
+| [045 — Corte de rede app/banco](045-corte-rede-app-banco.md) | Prova local parcial | PostgreSQL vivo, porta app aberta; sessão, voto, recibo e auditoria conferidos após reconexão | Carga, alerta e observador externo |
 | [045 — Carga concorrente de jornada, telão e portal](045-carga-jornada-telao.md) | Ensaio local sintético concluído | 13 votantes, 2 telões em nós distintos, 8 leitores e comandos de telão na votação aberta; 134 eventos públicos sem perda e quadro congelado estável | Prova fora do host, observador externo e TVs físicas |
 | [045 — Acessibilidade de presença, votação, TV e app](045-acessibilidade-votacao-presenca.md) | Incremento local concluído | Oito telas auditadas por axe sem violação, três defeitos de contraste corrigidos e percurso por teclado registrado | Leitor de tela humano, TV física e carga concorrente (tarefa 12) |
 | [045 — Fundamentos do repositório](045-fundamentos-do-repositorio.md) | Incremento local concluído | Guarda de banco nos testes, execução sem gateway, entrada com Câmara vazia, senha para os sete perfis e retenção de backups | Aplicação das duas limpezas destrutivas, dados da VPS e trilhas B–E |

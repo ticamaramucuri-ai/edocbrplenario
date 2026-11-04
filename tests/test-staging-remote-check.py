@@ -62,16 +62,19 @@ assert 'realtime' in saida, saida
 assert 'inacess' in saida.lower() or 'ausente' in saida.lower(), saida
 
 # ─── 2. App de pé e um serviço esperado sem URL: ainda saída 2 ───────────────
-app, url_app = servidor({'/api/v1/bootstrap': (200, {'tenant': {'slug': 'staging-example'}})})
+app, url_app = servidor({
+    '/api/v1/bootstrap': (200, {'tenant': {'slug': 'staging-example'}}),
+    '/api/v1/health': (200, {'ok': True, 'version': 'test-revision'}),
+})
 try:
     falha = run('--base-url', url_app, '--expect-services', 'app,webhooks', esperado=2)
     saida = falha.stdout + falha.stderr
     assert 'webhooks' in saida, saida
 
     # ─── 3. Caminho feliz: app + dois serviços respondem ────────────────────
-    rt, url_rt = servidor({'/health': (200, {'ok': True, 'service': 'legis-realtime',
+    rt, url_rt = servidor({'/health': (200, {'ok': True, 'version': 'test-revision', 'service': 'legis-realtime',
                                              'uptimeSeconds': 10})})
-    wh, url_wh = servidor({'/health': (200, {'ok': True, 'service': 'legis-webhooks',
+    wh, url_wh = servidor({'/health': (200, {'ok': True, 'version': 'test-revision', 'service': 'legis-webhooks',
                                              'uptimeSeconds': 10})})
     try:
         with tempfile.TemporaryDirectory() as pasta:
@@ -85,6 +88,14 @@ try:
             assert sorted(s['nome'] for s in corpo['servicos']) == ['app', 'realtime', 'webhooks']
             assert all(isinstance(s['latenciaMs'], (int, float)) for s in corpo['servicos'])
             assert corpo['maiorDivergenciaDeRelogioSegundos'] < 2
+            assert all(s['versao'] == 'test-revision' for s in corpo['servicos'])
+            run('--base-url', url_app, '--expect-services', 'app,realtime,webhooks',
+                '--service', f'realtime={url_rt}', '--service', f'webhooks={url_wh}',
+                '--expected-version', 'test-revision')
+            diferente = run('--base-url', url_app, '--expect-services', 'app,realtime',
+                            '--service', f'realtime={url_rt}',
+                            '--expected-version', 'outra-revision', esperado=1)
+            assert 'versão' in diferente.stdout + diferente.stderr
             assert json.loads(prova.read_text())['ok'] is True
 
         # ─── 4. Serviço que responde `ok: false` reprova com saída 1 ────────

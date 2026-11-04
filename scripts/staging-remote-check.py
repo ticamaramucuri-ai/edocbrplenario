@@ -47,6 +47,7 @@ def argumentos(argv: list[str]) -> argparse.Namespace:
     parser.add_argument('--platform-password')
     parser.add_argument('--max-clock-skew', type=float, default=2.0,
                         help='divergência máxima de relógio, em segundos (padrão 2)')
+    parser.add_argument('--expected-version', help='revisão imutável esperada no app e nos serviços')
     parser.add_argument('--timeout', type=float, default=10.0)
     parser.add_argument('--output', help='arquivo onde gravar a prova em JSON')
     return parser.parse_args(argv)
@@ -113,10 +114,17 @@ def main(argv: list[str]) -> int:
         status, corpo, divergencia, latencia = buscar(
             cliente, f'{base}/api/v1/bootstrap', opcoes.timeout)
         saudavel = status == 200 and bool((corpo.get('tenant') or {}).get('slug'))
+        versao = None
+        if saudavel:
+            health_status, health, _, _ = buscar(
+                cliente, f'{base}/api/v1/health', opcoes.timeout)
+            versao = health.get('version')
+            saudavel = health_status == 200 and health.get('ok') is True
         observados.append({'nome': 'app', 'url': base, 'via': 'direto', 'status': status,
                            'ok': saudavel, 'latenciaMs': latencia,
                            'divergenciaDeRelogioSegundos': divergencia,
-                           'tenant': (corpo.get('tenant') or {}).get('slug')})
+                           'tenant': (corpo.get('tenant') or {}).get('slug'),
+                           'versao': versao})
         if not saudavel:
             problemas.append(f'app respondeu HTTP {status} sem Câmara no bootstrap')
     except ConnectionError as erro:
@@ -134,6 +142,7 @@ def main(argv: list[str]) -> int:
                                'status': status, 'ok': saudavel, 'latenciaMs': latencia,
                                'divergenciaDeRelogioSegundos': divergencia,
                                'servico': corpo.get('service'),
+                               'versao': corpo.get('version'),
                                'uptimeSegundos': corpo.get('uptimeSeconds'),
                                'fanout': corpo.get('fanout')})
             if not saudavel:
@@ -180,6 +189,7 @@ def main(argv: list[str]) -> int:
         # `platform/system-status` devolve {id, name, url, ok, latencyMs, detail}.
         saudavel = servico.get('ok') is True
         observados.append({'nome': nome, 'via': 'app', 'ok': saudavel,
+                           'versao': servico.get('version'),
                            'detalheRelatado': servico.get('detail'),
                            'latenciaMs': servico.get('latencyMs')})
         if not saudavel:
@@ -188,6 +198,10 @@ def main(argv: list[str]) -> int:
 
     divergencias = [o['divergenciaDeRelogioSegundos'] for o in observados
                     if isinstance(o.get('divergenciaDeRelogioSegundos'), (int, float))]
+    if opcoes.expected_version:
+        for item in observados:
+            if item.get('nome') in esperados and item.get('ok') and item.get('versao') != opcoes.expected_version:
+                problemas.append(f'{item["nome"]}: versão {item.get("versao")!r} difere de {opcoes.expected_version!r}')
     maior_divergencia = max(divergencias) if divergencias else None
     if maior_divergencia is not None and maior_divergencia >= opcoes.max_clock_skew:
         problemas.append(f'relógio divergente: {maior_divergencia:.1f} s '
@@ -202,13 +216,14 @@ def main(argv: list[str]) -> int:
         'baseUrl': base,
         'remoto': remoto,
         'esperados': esperados,
+        'versaoEsperada': opcoes.expected_version,
         'servicos': observados,
         'inacessiveis': sorted(set(inacessiveis)),
         'problemas': problemas,
         'maiorDivergenciaDeRelogioSegundos': maior_divergencia,
         'limiteDeDivergenciaSegundos': opcoes.max_clock_skew,
         'limites': [
-            'Nenhum serviço expõe a versão implantada; a prova não afirma versão.',
+            'Versão local-unversioned não identifica um build implantado; configure EDOCBR_BUILD_VERSION no deploy.',
             'O cabeçalho Date tem resolução de 1 s: mede desacordo grosseiro, não sincronia fina.',
         ] + ([] if remoto else ['Alvo em loopback: não é verificação de fora do host.']),
     }

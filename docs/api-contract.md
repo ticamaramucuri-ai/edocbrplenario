@@ -55,6 +55,7 @@ Voto `secreto` em sessão `official=true` retorna 409 `VOTING_INVALID_TRANSITION
 - **Versão otimista**: comandos de transição aceitam `version` no body; divergência →
   409 `CONFLICT_VERSION`.
 - **Idempotência**: `POST /votings/:id/votes` exige `commandId` (uuid) no body.
+- **Banco temporariamente indisponível**: erros de conexão, timeout e pool Prisma (`P1001`, `P1002`, `P1008`, `P1017`, `P2024`) retornam HTTP 503 com `code: "DATABASE_UNAVAILABLE"` e `correlationId`. O cliente deve consultar o estado do comando antes de repeti-lo com a mesma chave idempotente; a API não afirma que uma operação com resposta perdida foi desfeita.
 - **Matriz RBAC** (`src/lib/server/rbac.ts`):
   | Ação | Papéis permitidos |
   |---|---|

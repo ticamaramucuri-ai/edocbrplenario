@@ -32,8 +32,9 @@ if (!Number.isInteger(healthPort) || healthPort < 1 || healthPort > 65535) throw
 const healthHost = process.env.MAIL_WORKER_HEALTH_HOST || '127.0.0.1'
 if (!['127.0.0.1', '0.0.0.0'].includes(healthHost)) throw new Error('MAIL_WORKER_HEALTH_HOST inválido.')
 const health = Bun.serve({ hostname: healthHost, port: healthPort, fetch(req) {
-  return new Response(new URL(req.url).pathname === '/health' ? 'ok' : 'not found', {
+  return new Response(new URL(req.url).pathname === '/health' ? JSON.stringify({ ok: true, service: 'mail', version: process.env.EDOCBR_BUILD_VERSION?.trim() || 'local-unversioned' }) : 'not found', {
     status: new URL(req.url).pathname === '/health' ? 200 : 404,
+    headers: { 'Content-Type': 'application/json' },
   })
 } })
 let running = true

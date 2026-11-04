@@ -34,7 +34,11 @@ async function checkService(id: string, name: string, url: string): Promise<Serv
     if (!res.ok) {
       return { id, name, url, ok: false, latencyMs, detail: `HTTP ${res.status} em /health` }
     }
-    return { id, name, url, ok: true, latencyMs, detail: null }
+    const body = await res.json().catch(() => null)
+    const healthy = body?.ok === true
+    return { id, name, url, ok: healthy, latencyMs,
+      detail: healthy ? null : 'Resposta de saúde inválida ou degradada',
+      version: typeof body?.version === 'string' ? body.version : null }
   } catch (err) {
     const latencyMs = Date.now() - startedAt
     const raw = err instanceof Error ? err.message : String(err)

@@ -232,6 +232,7 @@ httpServer.on('request', (req: IncomingMessage, res: ServerResponse) => {
       JSON.stringify({
         ok: fanoutReady,
         service: 'legis-realtime',
+        version: process.env.EDOCBR_BUILD_VERSION?.trim() || 'local-unversioned',
         fanout: redis ? (fanoutReady ? 'ready' : 'unavailable') : 'local',
         port: PORT,
         uptimeSeconds: Math.round(process.uptime()),

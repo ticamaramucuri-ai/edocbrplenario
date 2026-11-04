@@ -259,6 +259,7 @@ const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
       JSON.stringify({
         ok: true,
         service: 'legis-webhooks',
+        version: process.env.EDOCBR_BUILD_VERSION?.trim() || 'local-unversioned',
         port: PORT,
         uptimeSeconds: Math.round(process.uptime()),
         inFlight,

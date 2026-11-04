@@ -1520,6 +1520,7 @@ export type HelpContent = {
 // ─── Fase 16: Observabilidade, exportação e encerramento ────────────────────
 
 export type ServiceHealth = {
+  version?: string | null
   id: string
   name: string
   url: string

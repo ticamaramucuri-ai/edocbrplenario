@@ -596,7 +596,7 @@ const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
 
   if (req.method === 'GET' && (pathname === '/health' || pathname.startsWith('/health/'))) {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, service: 'scheduler', port: PORT }))
+    res.end(JSON.stringify({ ok: true, service: 'scheduler', version: process.env.EDOCBR_BUILD_VERSION?.trim() || 'local-unversioned', port: PORT }))
     return
   }
 
