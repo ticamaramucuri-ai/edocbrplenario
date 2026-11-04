@@ -128,7 +128,31 @@ wait_for(lambda: any(network_address in [t['Address'] for t in m['To']] for m in
 network_attempts = int(query(f"SELECT attempts FROM \"MailDelivery\" WHERE id='{network_id}'"))
 if network_attempts != 2:
     raise RuntimeError('Retentativa após falha de rede não teve duas tentativas.')
+
+# Morte do worker: a fila fica pendente e a entrega ocorre uma vez após retorno.
+worker_address = f'stage-worker-{run_id}@example.invalid'
+worker_stopped = False
+try:
+    compose('stop', 'mail_worker')
+    worker_stopped = True
+    worker_id, _ = create_delivery(worker_address)
+    if query(f"SELECT status || ':' || attempts FROM \"MailDelivery\" WHERE id='{worker_id}'") != 'pending:0':
+        raise RuntimeError('Fila avançou com o worker de e-mail parado.')
+finally:
+    if worker_stopped:
+        compose('start', 'mail_worker')
+wait_for(lambda: query(f"SELECT status FROM \"MailDelivery\" WHERE id='{worker_id}'") == 'sent',
+         'entrega após retorno do worker')
+wait_for(lambda: any(worker_address in [t['Address'] for t in m['To']] for m in messages()),
+         'captura após retorno do worker')
+worker_attempts = int(query(f"SELECT attempts FROM \"MailDelivery\" WHERE id='{worker_id}'"))
+worker_messages = sum(worker_address in [t['Address'] for t in m['To']] for m in messages())
+if worker_attempts != 1 or worker_messages != 1:
+    raise RuntimeError('Worker retomou com tentativa ou mensagem duplicada.')
 print(json.dumps({'ok': True, 'synthetic': True, 'tls': 'STARTTLS verificado pelo cliente',
                   'firstDelivery': 'sent', 'retryDelivery': 'sent', 'retryAttempts': attempts,
                   'networkRetryDelivery': 'sent', 'networkRetryAttempts': network_attempts,
+                  'workerOutageHeldQueue': True, 'workerRecoveryDelivery': 'sent',
+                  'workerRecoveryAttempts': worker_attempts,
+                  'workerRecoveryMessageCount': worker_messages,
                   'captureCount': len(messages()), 'externalDelivery': False}, sort_keys=True))

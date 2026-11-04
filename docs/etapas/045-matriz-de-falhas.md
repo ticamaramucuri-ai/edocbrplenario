@@ -63,7 +63,7 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 |---|---|
 | **Deve acontecer** | As confirmações ficam na fila com estado visível; o scheduler abre alerta por Câmara para pendência acima de 15 min; ao voltar, as entregas são retomadas sem duplicar mensagem |
 | **Invalida** | Entrega marcada como enviada sem envio; mensagem duplicada ao retomar; fila esgotada em silêncio |
-| **Ensaio hoje** | `python3 scripts/staging-mail-drill.py` (fila → SMTP → captura local → retentativa) |
+| **Ensaio hoje** | `python3 scripts/staging-mail-drill.py`: fila → SMTP → captura local → retentativa; para o worker, confirma fila pendente e uma única entrega após reinício |
 | **Falta** | Com relay institucional e observador externo; o health atesta o processo, não a entrega |
 
 ### 5. Perda de rede entre app e banco
@@ -98,7 +98,8 @@ falhar ou sua prova não contiver os invariantes essenciais, o conjunto falha.
 A [prova de 04/11/2026](045-prova-matriz-falhas-local.json) registrou cinco
 cenários aprovados: 220 votos e recibos durante a queda do realtime; Redis
 retendo a outbox e entregando aos quatro assinantes após retorno; correio local
-com STARTTLS e duas retentativas de dois tipos; 60 leituras antes e depois da
+com STARTTLS, duas retentativas de dois tipos e fila preservada durante a
+parada do worker, com uma única mensagem após retorno; 60 leituras antes e depois da
 queda do PostgreSQL sem erro; e sete votos HTTP 503 durante o corte de rede,
 com recibos, auditoria e incidente correlacionado após retorno. O relatório
 marca `remoteObserver: false` e `hostRestartExecuted: false`.

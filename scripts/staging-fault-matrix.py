@@ -43,6 +43,10 @@ def valid_evidence(name: str, proof: dict) -> bool:
         return (proof.get('retryAttempts') == 2 and proof.get('networkRetryAttempts') == 2
                 and proof.get('retryDelivery') == 'sent'
                 and proof.get('networkRetryDelivery') == 'sent'
+                and proof.get('workerOutageHeldQueue') is True
+                and proof.get('workerRecoveryDelivery') == 'sent'
+                and proof.get('workerRecoveryAttempts') == 1
+                and proof.get('workerRecoveryMessageCount') == 1
                 and proof.get('externalDelivery') is False)
     if name == 'postgres':
         return (proof.get('outageHttpStatus') != 200

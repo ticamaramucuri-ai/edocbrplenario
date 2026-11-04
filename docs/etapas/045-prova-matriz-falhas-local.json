@@ -1,19 +1,19 @@
 {
-  "at": "2026-11-04T18:09:32.859398+00:00",
+  "at": "2026-11-04T18:13:44.565051+00:00",
   "buildVersion": "local-unversioned",
   "hostRestartExecuted": false,
   "ok": true,
   "remoteObserver": false,
   "scenarios": [
     {
-      "elapsedSeconds": 7.968,
+      "elapsedSeconds": 7.064,
       "error": null,
       "evidence": {
         "appAvailableDuringOutage": true,
-        "fromRestartToDrainSeconds": 7.07,
+        "fromRestartToDrainSeconds": 6.18,
         "officialRtoRpoMeasured": false,
         "ok": true,
-        "pendingDuringOutage": 48,
+        "pendingDuringOutage": 45,
         "publishedSessionEvents": 330,
         "receipts": 220,
         "synthetic": true,
@@ -24,10 +24,10 @@
       "passed": true
     },
     {
-      "elapsedSeconds": 4.119,
+      "elapsedSeconds": 4.141,
       "error": null,
       "evidence": {
-        "eventId": "stagefanout70d42dc757499273e68e532c",
+        "eventId": "stagefanout3ce63ffbb47e94f4c3425ab2",
         "internalSubscribers": 2,
         "isolatedPublicPayload": true,
         "nodes": 2,
@@ -44,10 +44,10 @@
       "passed": true
     },
     {
-      "elapsedSeconds": 40.827,
+      "elapsedSeconds": 49.358,
       "error": null,
       "evidence": {
-        "captureCount": 9,
+        "captureCount": 13,
         "externalDelivery": false,
         "firstDelivery": "sent",
         "networkRetryAttempts": 2,
@@ -56,30 +56,34 @@
         "retryAttempts": 2,
         "retryDelivery": "sent",
         "synthetic": true,
-        "tls": "STARTTLS verificado pelo cliente"
+        "tls": "STARTTLS verificado pelo cliente",
+        "workerOutageHeldQueue": true,
+        "workerRecoveryAttempts": 1,
+        "workerRecoveryDelivery": "sent",
+        "workerRecoveryMessageCount": 1
       },
       "name": "mail",
       "passed": true
     },
     {
-      "elapsedSeconds": 15.426,
+      "elapsedSeconds": 5.461,
       "error": null,
       "evidence": {
         "after": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 11.3,
-          "p95Ms": 27.9,
+          "p50Ms": 11.9,
+          "p95Ms": 26.0,
           "requests": 60
         },
         "before": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 11.4,
-          "p95Ms": 14.8,
+          "p50Ms": 10.4,
+          "p95Ms": 13.4,
           "requests": 60
         },
-        "fromDatabaseStartToUsefulHttpSeconds": 14.459,
+        "fromDatabaseStartToUsefulHttpSeconds": 4.366,
         "officialRtoRpoMeasured": false,
         "ok": true,
         "outageHttpStatus": 503,
@@ -91,12 +95,12 @@
       "passed": true
     },
     {
-      "elapsedSeconds": 37.488,
+      "elapsedSeconds": 37.492,
       "error": null,
       "evidence": {
         "acceptedSessions": [
-          "cmw2fmyl405gup801faasmgy6",
-          "cmw2fnr3p05k5p801tg6vloe3"
+          "cmw2fsa1007g4p8016m9czgk2",
+          "cmw2ft2ke07jfp8017d5jbwbo"
         ],
         "acceptedWritesVerified": true,
         "appPortRemainedOpen": true,
@@ -117,7 +121,7 @@
         ],
         "outageWriteStatus": 0,
         "postgresStayedUp": true,
-        "recoverySeconds": 0.406,
+        "recoverySeconds": 0.371,
         "remoteObserver": false,
         "scope": "synthetic-staging",
         "voteIdempotencyVerified": true,
