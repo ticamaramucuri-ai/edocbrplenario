@@ -17,6 +17,7 @@ import threading
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
+from staging_vote_probe import VoteProbe
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / 'deploy/staging/.env'
@@ -235,7 +236,7 @@ def main() -> int:
     app_url = f"http://127.0.0.1:{values.get('STAGE_APP_PORT', '3100')}"
     client = authenticated_client(app_url, values)
     post_invariants(client, app_url, env)
-    report = {'schemaVersion': 1, 'scope': 'synthetic-staging',
+    report = {'schemaVersion': 2, 'scope': 'synthetic-staging',
               'at': datetime.now(timezone.utc).isoformat(),
               'buildVersion': values.get('STAGE_BUILD_VERSION', 'local-unversioned'),
               'remoteObserver': False, 'hostRestartExecuted': False,
@@ -248,9 +249,13 @@ def main() -> int:
             ready = threading.Event()
             samples: list[tuple[int, bool]] = []
             observer = None
+            vote_probe = None
+            vote_evidence = None
             try:
                 if name == 'mail':
                     mail_started = ensure_mail_lab(values)
+                vote_probe = VoteProbe(app_url, values, env, client, name)
+                vote_probe.start()
                 observer = threading.Thread(target=observe_public_reads,
                                             args=(app_url + '/api/v1/public/sessions?tenant=staging-example',
                                                   stop, ready, samples), daemon=True)
@@ -262,17 +267,22 @@ def main() -> int:
                 passed = result.returncode == 0 and valid_evidence(name, payload)
                 if passed:
                     wait_for(app_url + '/api/v1/health?ready=1', 'App após ' + name)
+                    vote_evidence = vote_probe.finish(name)
                     integrity = post_invariants(client, app_url, env)
-            except (subprocess.TimeoutExpired, ValueError, IndexError, RuntimeError, OSError) as error:
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError,
+                    ValueError, IndexError, KeyError, RuntimeError, OSError) as error:
                 passed = False
                 payload = None
-                failure = type(error).__name__
+                failure = (str(error)[:200] if isinstance(error, RuntimeError)
+                           else type(error).__name__)
             else:
                 failure = None if passed else f'Roteiro falhou ou prova incompleta (exit {result.returncode})'
             finally:
                 stop.set()
                 if observer:
                     observer.join(timeout=5)
+                if vote_probe:
+                    vote_probe.stop()
             observation = summarize_public_reads(name, samples)
             if not observation['expectedBehaviorObserved']:
                 passed = False
@@ -280,6 +290,7 @@ def main() -> int:
             entry = {'name': name, 'passed': passed,
                      'elapsedSeconds': round(time.monotonic() - began, 3),
                      'evidence': payload if passed else None,
+                     'voteObservation': vote_evidence if passed else None,
                      'postIntegrity': integrity if passed else None,
                      'publicReadObservation': observation,
                      'error': failure}

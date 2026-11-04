@@ -102,6 +102,15 @@ administrador de ensaio para verificar a cadeia inteira de hashes. Se um
 roteiro falhar, sua prova não contiver os invariantes essenciais, a leitura
 pública divergir, a outbox não drenar ou a auditoria quebrar, o conjunto falha.
 
+O executor também cria uma sessão e votação **não oficiais** por cenário. Um
+operador sintético envia continuamente sete comandos de voto com chaves
+idempotentes durante o roteiro. Em falha de tempo real, Redis ou correio, exige
+somente HTTP 200; em falha de banco/rede, exige pelo menos uma resposta
+degradada. Após retorno, repete as sete chaves, encerra a votação e confere no
+banco exatamente sete votos, sete recibos e sete eventos `vote.cast`. O
+encerramento gera os recibos; por isso a contagem ocorre **depois** dele. Se o
+ensaio falhar, a limpeza tenta encerrar os atos sintéticos ainda abertos.
+
 A [prova de 04/11/2026](045-prova-matriz-falhas-local.json) registrou cinco
 cenários aprovados: 220 votos e recibos durante a queda do realtime; Redis
 retendo a outbox e entregando aos quatro assinantes após retorno; correio local
@@ -111,19 +120,20 @@ queda do PostgreSQL sem erro; e sete votos HTTP 503 durante o corte de rede,
 com recibos, auditoria e incidente correlacionado após retorno. O relatório
 marca `remoteObserver: false` e `hostRestartExecuted: false`.
 
-Na repetição com leitura pública e verificação de integridade, foram **31, 21 e
-187 respostas HTTP 200** durante os cenários de tempo real, Redis e correio.
-Na queda do PostgreSQL, o leitor viu 9 respostas 503 e 4 respostas 200; no
-corte de rede, 28 respostas 503, 9 conexões sem resposta HTTP e 73 respostas
-200. Nenhuma resposta 200 trouxe lista inválida. A outbox ficou sem eventos
-pendentes e a cadeia de auditoria foi validada após **cada um dos cinco
-cenários**. Esses totais são amostras locais de intervalos diferentes, não
-medição de disponibilidade institucional.
+Na repetição com votação contínua, o votante recebeu **84, 67 e 653 respostas
+HTTP 200** nos cenários de tempo real, Redis e correio. Na queda do banco,
+recebeu 266 respostas 503 e 11 respostas 200; no corte de rede, 161 respostas
+503, uma conexão sem HTTP e 29 respostas 200. Os cinco cenários terminaram
+com sete votos, sete recibos e sete eventos de auditoria cada. A leitura
+pública também foi amostrada continuamente, sem HTTP 200 com lista inválida.
+A outbox ficou sem eventos pendentes e a cadeia de auditoria foi validada após
+**cada um dos cinco cenários**. Esses totais são amostras locais de intervalos
+diferentes, não medição de disponibilidade institucional.
 
 ## O que bloqueia a execução fora do host
 
-1. **Host separado.** Os cinco cenários já rodam em sequência com leitura pública nesta máquina, mas o plano pede também carga ativa de votação **durante cada falha**, com o observador **fora** do host. Os roteiros locais exercitam cargas diferentes; a matriz local não comprova a carga completa em todos eles. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
-2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto, recibo e transição de incidente foram observados na stack sintética, mas ainda faltam carga contínua e observador externo.
+1. **Host separado.** Os cinco cenários rodam em sequência com leitura pública e requisições de voto contínuas nesta máquina, mas o plano pede observador **fora** do host e perfil de carga representativo. A carga local repete sete chaves, portanto não demonstra capacidade para uma sessão longa com muitas votações. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
+2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto, recibo e transição de incidente foram observados na stack sintética, mas ainda faltam perfil representativo e observador externo.
 3. **Reinício de host** não é reinício de contêiner, e hoje só o segundo é possível.
 
 Enquanto isso não existir, os ensaios individuais valem como incremento técnico

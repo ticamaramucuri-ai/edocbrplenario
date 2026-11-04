@@ -1,19 +1,19 @@
 {
-  "at": "2026-11-04T21:21:10.335860+00:00",
+  "at": "2026-11-04T21:41:25.170818+00:00",
   "buildVersion": "local-unversioned",
   "hostRestartExecuted": false,
   "ok": true,
   "remoteObserver": false,
   "scenarios": [
     {
-      "elapsedSeconds": 7.881,
+      "elapsedSeconds": 12.117,
       "error": null,
       "evidence": {
         "appAvailableDuringOutage": true,
-        "fromRestartToDrainSeconds": 6.64,
+        "fromRestartToDrainSeconds": 8.69,
         "officialRtoRpoMeasured": false,
         "ok": true,
-        "pendingDuringOutage": 26,
+        "pendingDuringOutage": 36,
         "publishedSessionEvents": 330,
         "receipts": 220,
         "synthetic": true,
@@ -24,25 +24,37 @@
       "passed": true,
       "postIntegrity": {
         "auditChainValid": true,
-        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "auditHead": "acd0ea2c6fb0bdac95d8d3f59ff391f725ec58f2f16ad77d17e38b31d45de5f4",
         "outboxPending": 0
       },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 31,
+        "healthyResponses": 45,
         "invalidSuccessfulPayloads": 0,
-        "requests": 31,
+        "requests": 45,
         "statusCounts": {
-          "200": 31
+          "200": 45
         }
+      },
+      "voteObservation": {
+        "auditEvents": 7,
+        "degradedResponses": 0,
+        "idempotentReplayVerified": true,
+        "receipts": 7,
+        "requests": 84,
+        "sessionId": "cmw2n5xpe048hp80120lebyls",
+        "statusCounts": {
+          "200": 84
+        },
+        "votes": 7
       }
     },
     {
-      "elapsedSeconds": 5.317,
+      "elapsedSeconds": 6.782,
       "error": null,
       "evidence": {
-        "eventId": "stagefanoute534c759752478eb012e9237",
+        "eventId": "stagefanout05b8d1ad8995d7475fc98b7a",
         "internalSubscribers": 2,
         "isolatedPublicPayload": true,
         "nodes": 2,
@@ -59,25 +71,37 @@
       "passed": true,
       "postIntegrity": {
         "auditChainValid": true,
-        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "auditHead": "6206a80c083c14fc6af23b41c27729655efb686103abf1f6fd9eb8ae0956445e",
         "outboxPending": 0
       },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 21,
+        "healthyResponses": 24,
         "invalidSuccessfulPayloads": 0,
-        "requests": 21,
+        "requests": 24,
         "statusCounts": {
-          "200": 21
+          "200": 24
         }
+      },
+      "voteObservation": {
+        "auditEvents": 7,
+        "degradedResponses": 0,
+        "idempotentReplayVerified": true,
+        "receipts": 7,
+        "requests": 67,
+        "sessionId": "cmw2n6721067lp801q7hb3oak",
+        "statusCounts": {
+          "200": 67
+        },
+        "votes": 7
       }
     },
     {
-      "elapsedSeconds": 50.302,
+      "elapsedSeconds": 51.223,
       "error": null,
       "evidence": {
-        "captureCount": 21,
+        "captureCount": 25,
         "externalDelivery": false,
         "firstDelivery": "sent",
         "networkRetryAttempts": 2,
@@ -96,39 +120,51 @@
       "passed": true,
       "postIntegrity": {
         "auditChainValid": true,
-        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "auditHead": "3be079645c17bd9afc43686fbd68e0dfd51af722aea167fb3239d25f99a5b923",
         "outboxPending": 0
       },
       "publicReadObservation": {
         "degradedResponses": 0,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 187,
+        "healthyResponses": 189,
         "invalidSuccessfulPayloads": 0,
-        "requests": 187,
+        "requests": 189,
         "statusCounts": {
-          "200": 187
+          "200": 189
         }
+      },
+      "voteObservation": {
+        "auditEvents": 7,
+        "degradedResponses": 0,
+        "idempotentReplayVerified": true,
+        "receipts": 7,
+        "requests": 653,
+        "sessionId": "cmw2n6drs06d6p801976l305j",
+        "statusCounts": {
+          "200": 653
+        },
+        "votes": 7
       }
     },
     {
-      "elapsedSeconds": 3.179,
+      "elapsedSeconds": 17.681,
       "error": null,
       "evidence": {
         "after": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 15.8,
-          "p95Ms": 30.9,
+          "p50Ms": 20.0,
+          "p95Ms": 43.3,
           "requests": 60
         },
         "before": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 15.8,
-          "p95Ms": 26.6,
+          "p50Ms": 19.1,
+          "p95Ms": 33.2,
           "requests": 60
         },
-        "fromDatabaseStartToUsefulHttpSeconds": 1.813,
+        "fromDatabaseStartToUsefulHttpSeconds": 14.218,
         "officialRtoRpoMeasured": false,
         "ok": true,
         "outageHttpStatus": 503,
@@ -140,28 +176,41 @@
       "passed": true,
       "postIntegrity": {
         "auditChainValid": true,
-        "auditHead": "c4857688b05dbdb885a5c8dc4fcd32f26198c09c91aeabd5c2910376d16eca2d",
+        "auditHead": "41c9b1847e76c8c292616b0f8017db65f322987a8d839edd4f0715e3db6a40fa",
         "outboxPending": 0
       },
       "publicReadObservation": {
-        "degradedResponses": 9,
+        "degradedResponses": 58,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 4,
+        "healthyResponses": 9,
         "invalidSuccessfulPayloads": 0,
-        "requests": 13,
+        "requests": 67,
         "statusCounts": {
-          "200": 4,
-          "503": 9
+          "200": 9,
+          "503": 58
         }
+      },
+      "voteObservation": {
+        "auditEvents": 7,
+        "degradedResponses": 266,
+        "idempotentReplayVerified": true,
+        "receipts": 7,
+        "requests": 277,
+        "sessionId": "cmw2n7ft906irp8010s4c9dhx",
+        "statusCounts": {
+          "200": 11,
+          "503": 266
+        },
+        "votes": 7
       }
     },
     {
-      "elapsedSeconds": 55.029,
+      "elapsedSeconds": 56.614,
       "error": null,
       "evidence": {
         "acceptedSessions": [
-          "cmw2mhbvg03nnp801x9rixof9",
-          "cmw2mi4m703qyp8019n284mvg"
+          "cmw2n7u5h06spp801bn2o7tqg",
+          "cmw2n8jjf06wcp801xt1rw9oi"
         ],
         "acceptedWritesVerified": true,
         "appPortRemainedOpen": true,
@@ -180,9 +229,9 @@
           503,
           503
         ],
-        "outageWriteStatus": 0,
+        "outageWriteStatus": 503,
         "postgresStayedUp": true,
-        "recoverySeconds": 0.527,
+        "recoverySeconds": 0.867,
         "remoteObserver": false,
         "scope": "synthetic-staging",
         "voteIdempotencyVerified": true,
@@ -192,23 +241,37 @@
       "passed": true,
       "postIntegrity": {
         "auditChainValid": true,
-        "auditHead": "e46fb0870a402752c37ff4313259d2a842b0db524e7d66573f3abfb37e9c9e8f",
+        "auditHead": "b71b66971afc0758c491af26747319eb2ffd737eedb4473f5834f477d60dea6c",
         "outboxPending": 0
       },
       "publicReadObservation": {
-        "degradedResponses": 37,
+        "degradedResponses": 41,
         "expectedBehaviorObserved": true,
-        "healthyResponses": 73,
+        "healthyResponses": 95,
         "invalidSuccessfulPayloads": 0,
-        "requests": 110,
+        "requests": 136,
         "statusCounts": {
-          "0": 9,
-          "200": 73,
-          "503": 28
+          "0": 7,
+          "200": 95,
+          "503": 34
         }
+      },
+      "voteObservation": {
+        "auditEvents": 7,
+        "degradedResponses": 162,
+        "idempotentReplayVerified": true,
+        "receipts": 7,
+        "requests": 191,
+        "sessionId": "cmw2n7tgf06ocp8019dbfcd5e",
+        "statusCounts": {
+          "0": 1,
+          "200": 29,
+          "503": 161
+        },
+        "votes": 7
       }
     }
   ],
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scope": "synthetic-staging"
 }

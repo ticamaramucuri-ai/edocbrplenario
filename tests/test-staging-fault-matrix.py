@@ -3,9 +3,11 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import importlib.util
 from pathlib import Path
+import sys
 import threading
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts/staging-fault-matrix.py'
+sys.path.insert(0, str(SCRIPT.parent))
 spec = importlib.util.spec_from_file_location('staging_fault_matrix', SCRIPT)
 matrix = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(matrix)

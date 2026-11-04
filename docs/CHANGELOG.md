@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Matriz de falhas ganhou votação sintética contínua nos cinco cenários: sete votos, recibos e auditorias por cenário, chaves idempotentes repetidas e HTTP 503 observados na falha do banco e no corte de rede. Tentativas de teste interrompidas foram encerradas.
 - Matriz de falhas agora exige outbox drenada e cadeia de auditoria íntegra após cada cenário; a prova local dos cinco cenários registrou zero pendências e cinco verificações válidas da cadeia.
 - Matriz local agora lê continuamente a listagem pública durante cada falha; rejeita HTTP 200 sem lista válida e registra respostas saudáveis e degradadas por cenário. O ensaio observou 503 nas falhas de banco e manteve 200 nas falhas de tempo real, Redis e correio.
 - Executor local da matriz de falhas reúne cinco cenários sintéticos em ordem, verifica evidência de cada um e confere a prontidão entre falhas. O cenário de correio agora para o worker, verifica fila pendente e entrega única após retorno. A prova JSON mantém explícitos observador externo e reinício de host pendentes.
