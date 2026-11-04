@@ -81,6 +81,10 @@ O espelho (`GET /reports/session/:id`) e a minuta (`GET /reports/session/:id/ata
 
 ## Rotas
 
+### GET `/api/v1/health`
+
+Informa vida do processo e versão. Com `?ready=1`, consulta o banco e devolve `database: "ready"` com HTTP 200 ou `database: "unavailable"` com HTTP 503. A consulta é somente leitura, tem limite local de 3 s e não exige autenticação; a sonda remota usa a variante de prontidão antes do bootstrap.
+
 ### GET `/api/v1/bootstrap`
 Sem parâmetros (usa tenant do ator; `platform_*` usa `?tenant=slug`, default primeiro tenant).
 → `BootstrapView` (types). **Primeira chamada do frontend.**

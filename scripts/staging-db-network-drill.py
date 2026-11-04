@@ -40,9 +40,9 @@ def query(config: dict[str, str], sql: str) -> str:
                           capture_output=True).stdout.strip()
 
 
-def http_status(base: str) -> int:
+def http_status(base: str, path: str = '/api/v1/bootstrap') -> int:
     try:
-        with urlopen(base + '/api/v1/bootstrap', timeout=5) as response:
+        with urlopen(base + path, timeout=5) as response:
             response.read()
             return response.status
     except HTTPError as error:
@@ -82,6 +82,8 @@ def main() -> None:
     base = f"http://127.0.0.1:{config.get('STAGE_APP_PORT', '3100')}"
     if http_status(base) != 200:
         raise RuntimeError('App precisa responder antes do corte.')
+    if http_status(base, '/api/v1/health?ready=1') != 200:
+        raise RuntimeError('Prontidão do app falhou antes do corte.')
     client = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     login_status, login = request(client, base, '/api/v1/auth/login', {
         'email': 'stage-admin@example.invalid', 'password': config['STAGE_ADMIN_PASSWORD']})
@@ -165,8 +167,11 @@ def main() -> None:
         if command('docker', 'exec', db_id, 'pg_isready', '-U', 'edocbr_stage', '-d', 'edocbr_stage').find('accepting connections') < 0:
             raise RuntimeError('PostgreSQL deixou de responder; ensaio inválido.')
         during = http_status(base)
+        readiness_during = http_status(base, '/api/v1/health?ready=1')
         if not app_port_open(int(config.get('STAGE_APP_PORT', '3100'))):
             raise RuntimeError('Porta do app fechou; ensaio não isolou somente o banco.')
+        if readiness_during != 503:
+            raise RuntimeError(f'Prontidão não degradou para 503: HTTP {readiness_during}.')
         if 200 <= during < 300:
             raise RuntimeError('App retornou sucesso com acesso ao banco cortado.')
         write_during, during_body = create_session('durante')
@@ -188,6 +193,12 @@ def main() -> None:
         raise RuntimeError('Pool do app não recuperou em 60 segundos após reconexão.')
     if query(config, 'SELECT 1') != '1':
         raise RuntimeError('PostgreSQL indisponível após reconexão.')
+    for _ in range(15):
+        if http_status(base, '/api/v1/health?ready=1') == 200:
+            break
+        time.sleep(1)
+    else:
+        raise RuntimeError('Prontidão não recuperou em 15 segundos.')
     after_status, after_body = create_session('depois')
     if after_status != 201:
         raise RuntimeError(f'Escrita após reconexão falhou: HTTP {after_status}.')
@@ -218,6 +229,7 @@ def main() -> None:
         raise RuntimeError('Voto, recibo ou auditoria divergiram após a reconexão.')
     print(json.dumps({'ok': True, 'scope': 'synthetic-staging',
                       'postgresStayedUp': True, 'outageHttpStatus': during,
+                      'outageReadinessStatus': readiness_during,
                       'outageWriteStatus': write_during,
                       'outageVoteStatuses': votes_during, 'appPortRemainedOpen': True,
                       'recoverySeconds': round(time.monotonic() - start, 3),

@@ -73,7 +73,7 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 | **Deve acontecer** | Mesmo desfecho do cenário 2 pela ótica do cliente, com uma diferença: o banco continua de pé, então ao restabelecer a rede **nenhuma** transação aceita pode faltar |
 | **Invalida** | Transação aceita e perdida; pool de conexões preso sem recuperar depois do retorno da rede; erro genérico que não distingue banco fora de rede fora |
 | **Ensaio hoje** | `python3 scripts/staging-db-network-drill.py` corrigido e executado localmente em 04/11: banco vivo, porta HTTP aberta, sessões aceitas persistidas com auditoria, sete votos concorrentes sem 2xx no corte, sete recibos e repetição idempotente após retorno. [Prova e limites](045-corte-rede-app-banco.md). |
-| **Falta** | Múltiplos nós, alerta correlacionado e observador externo; correção 503 já repetida na stack sintética |
+| **Falta** | Múltiplos nós, alerta externo correlacionado e observador fora do host; prontidão 200→503→200 já repetida na stack sintética |
 
 ### 6. Reinício do host inteiro
 

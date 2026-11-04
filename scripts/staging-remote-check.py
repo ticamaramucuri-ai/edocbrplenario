@@ -111,22 +111,22 @@ def main(argv: list[str]) -> int:
 
     # ─── app ─────────────────────────────────────────────────────────────────
     try:
-        status, corpo, divergencia, latencia = buscar(
-            cliente, f'{base}/api/v1/bootstrap', opcoes.timeout)
-        saudavel = status == 200 and bool((corpo.get('tenant') or {}).get('slug'))
-        versao = None
+        status, health, divergencia, latencia = buscar(
+            cliente, f'{base}/api/v1/health?ready=1', opcoes.timeout)
+        saudavel = status == 200 and health.get('ok') is True
+        tenant_slug = None
         if saudavel:
-            health_status, health, _, _ = buscar(
-                cliente, f'{base}/api/v1/health', opcoes.timeout)
-            versao = health.get('version')
-            saudavel = health_status == 200 and health.get('ok') is True
+            bootstrap_status, corpo, _, _ = buscar(
+                cliente, f'{base}/api/v1/bootstrap', opcoes.timeout)
+            tenant_slug = (corpo.get('tenant') or {}).get('slug')
+            saudavel = bootstrap_status == 200 and bool(tenant_slug)
         observados.append({'nome': 'app', 'url': base, 'via': 'direto', 'status': status,
                            'ok': saudavel, 'latenciaMs': latencia,
                            'divergenciaDeRelogioSegundos': divergencia,
-                           'tenant': (corpo.get('tenant') or {}).get('slug'),
-                           'versao': versao})
+                           'tenant': tenant_slug, 'database': health.get('database'),
+                           'versao': health.get('version')})
         if not saudavel:
-            problemas.append(f'app respondeu HTTP {status} sem Câmara no bootstrap')
+            problemas.append(f'app sem prontidão (health HTTP {status}, banco={health.get("database")}) ou sem Câmara no bootstrap')
     except ConnectionError as erro:
         inacessiveis.append('app')
         observados.append({'nome': 'app', 'url': base, 'via': 'direto', 'ok': False,

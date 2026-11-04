@@ -117,6 +117,17 @@ try:
             assert 'rel' in saida.lower(), saida
         finally:
             torto.shutdown()
+        sem_banco, url_sem_banco = servidor({
+            '/api/v1/health': (503, {'ok': False, 'database': 'unavailable',
+                                     'version': 'test-revision'}),
+        })
+        try:
+            falha = run('--base-url', url_sem_banco, '--expect-services', 'app', esperado=1)
+            corpo = json.loads(falha.stdout)
+            assert corpo['servicos'][0]['database'] == 'unavailable'
+            assert corpo['servicos'][0]['status'] == 503
+        finally:
+            sem_banco.shutdown()
     finally:
         rt.shutdown()
         wh.shutdown()

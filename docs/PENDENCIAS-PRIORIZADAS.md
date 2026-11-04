@@ -10,7 +10,7 @@ Revisão de 21/10/2026: a limpeza dos 15 tenants sintéticos foi aplicada (base 
 
 | Prioridade | Fase | Pendência | Responsável funcional | Evidência de fechamento |
 |---|---:|---|---|---|
-| Alta | 045 | Corte app↔banco com sete votos concorrentes recebendo HTTP 503 e recibos/auditoria após retorno, provado localmente; faltam alerta e observador externo | Engenharia de plataforma | Mesmo ensaio em vários nós, alerta correlacionado e prova fora do host |
+| Alta | 045 | Corte app↔banco com sete votos HTTP 503, recibos/auditoria e prontidão 200→503→200 provados localmente; faltam alerta e observador externo | Engenharia de plataforma | Mesmo ensaio em vários nós, alerta externo correlacionado e prova fora do host |
 | Média | 045 | Retenção dos backups locais de `db/` (simulada e conferida; 19 arquivos, 19,1 MB) | Operação SaaS | `db:backup:prune --apply` executado com os rótulos citados em documento protegidos por `--keep-pattern` |
 | Alta | 044 | Arquivos de foto/emblema e mídia sobreviverem a troca de instância/restauração | Operação SaaS | Inventário sem ausências, snapshot dos diretórios, restore em ambiente descartável e hashes iguais |
 | Alta | 045 | PostgreSQL ativo com serviços, correio, fanout realtime e recuperação; leases e rate limit já ensaiados | Engenharia de plataforma | Ensaio de falha e restore conjunto com tempos medidos, CI e runbook |
