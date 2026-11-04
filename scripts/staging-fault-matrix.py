@@ -12,7 +12,9 @@ from pathlib import Path
 import stat
 import subprocess
 import sys
+import threading
 import time
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -92,6 +94,48 @@ def wait_for(url: str, label: str, seconds=60) -> None:
     raise RuntimeError(f'{label} não respondeu em {seconds} s.')
 
 
+def public_read(url: str) -> tuple[int, bool]:
+    try:
+        with urlopen(url, timeout=3) as response:
+            status = response.status
+            if status != 200:
+                return status, True
+            try:
+                body = json.load(response)
+                return 200, isinstance(body, dict) and isinstance(body.get('sessions'), list)
+            except (ValueError, TypeError):
+                return 200, False
+    except HTTPError as error:
+        error.close()
+        return error.code, True
+    except (OSError, URLError):
+        return 0, False
+
+
+def observe_public_reads(url: str, stop: threading.Event, ready: threading.Event,
+                         samples: list[tuple[int, bool]]) -> None:
+    while not stop.is_set():
+        samples.append(public_read(url))
+        ready.set()
+        stop.wait(0.25)
+
+
+def summarize_public_reads(name: str, samples: list[tuple[int, bool]]) -> dict:
+    statuses: dict[str, int] = {}
+    for status, _ in samples:
+        key = str(status)
+        statuses[key] = statuses.get(key, 0) + 1
+    invalid = sum(status == 200 and not valid for status, valid in samples)
+    healthy = statuses.get('200', 0)
+    degraded = len(samples) - healthy
+    return {'requests': len(samples), 'statusCounts': statuses,
+            'invalidSuccessfulPayloads': invalid,
+            'healthyResponses': healthy, 'degradedResponses': degraded,
+            'expectedBehaviorObserved': (len(samples) >= 2 and invalid == 0 and healthy > 0
+                                         and (degraded > 0 if name in ('postgres', 'app_db_network')
+                                              else degraded == 0))}
+
+
 def preflight() -> tuple[dict[str, str], dict[str, str]]:
     if not CONFIG.is_file() or CONFIG.is_symlink() or stat.S_IMODE(CONFIG.stat().st_mode) & 0o077:
         raise RuntimeError('Arquivo privado da stack sintética ausente ou inseguro.')
@@ -162,22 +206,43 @@ def main() -> int:
     try:
         for name in selected:
             began = time.monotonic()
+            stop = threading.Event()
+            ready = threading.Event()
+            samples: list[tuple[int, bool]] = []
+            observer = None
             try:
                 if name == 'mail':
                     mail_started = ensure_mail_lab(values)
+                observer = threading.Thread(target=observe_public_reads,
+                                            args=(app_url + '/api/v1/public/sessions?tenant=staging-example',
+                                                  stop, ready, samples), daemon=True)
+                observer.start()
+                if not ready.wait(5):
+                    raise RuntimeError('Leitor público não iniciou antes da falha.')
                 result = run(SCENARIOS[name], timeout=300)
                 payload = json.loads(result.stdout.splitlines()[-1]) if result.stdout.strip() else {}
                 passed = result.returncode == 0 and valid_evidence(name, payload)
                 if passed:
                     wait_for(app_url + '/api/v1/health?ready=1', 'App após ' + name)
-                entry = {'name': name, 'passed': passed,
-                         'elapsedSeconds': round(time.monotonic() - began, 3),
-                         'evidence': payload if passed else None,
-                         'error': None if passed else f'Roteiro falhou ou prova incompleta (exit {result.returncode})'}
             except (subprocess.TimeoutExpired, ValueError, IndexError, RuntimeError) as error:
-                entry = {'name': name, 'passed': False,
-                         'elapsedSeconds': round(time.monotonic() - began, 3),
-                         'evidence': None, 'error': type(error).__name__}
+                passed = False
+                payload = None
+                failure = type(error).__name__
+            else:
+                failure = None if passed else f'Roteiro falhou ou prova incompleta (exit {result.returncode})'
+            finally:
+                stop.set()
+                if observer:
+                    observer.join(timeout=5)
+            observation = summarize_public_reads(name, samples)
+            if not observation['expectedBehaviorObserved']:
+                passed = False
+                failure = failure or 'Leitura pública não comprovou comportamento esperado.'
+            entry = {'name': name, 'passed': passed,
+                     'elapsedSeconds': round(time.monotonic() - began, 3),
+                     'evidence': payload if passed else None,
+                     'publicReadObservation': observation,
+                     'error': failure}
             report['scenarios'].append(entry)
             if not entry['passed']:
                 break

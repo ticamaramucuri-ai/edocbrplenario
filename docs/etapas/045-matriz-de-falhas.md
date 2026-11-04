@@ -92,8 +92,12 @@ rede app↔banco. Exige banco com **somente** `staging-example`, app pronto e
 serviços sintéticos ativos. O laboratório de correio é iniciado quando
 necessário e parado ao fim; contêineres antigos com rede Docker obsoleta são
 recriados sem apagar o volume. Cada roteiro restaura o serviço que interrompe
-em `finally`; o executor confere a prontidão entre os cenários. Se um roteiro
-falhar ou sua prova não contiver os invariantes essenciais, o conjunto falha.
+em `finally`; o executor confere a prontidão entre os cenários. Um leitor
+público consulta a listagem de sessões a cada 250 ms durante cada cenário,
+conta os status e rejeita HTTP 200 sem lista JSON válida. Nas falhas de banco,
+exige que o leitor veja pelo menos uma resposta degradada e uma saudável; nas
+demais, exige apenas respostas 200. Se um roteiro falhar, sua prova não contiver
+os invariantes essenciais ou a leitura pública divergir, o conjunto falha.
 
 A [prova de 04/11/2026](045-prova-matriz-falhas-local.json) registrou cinco
 cenários aprovados: 220 votos e recibos durante a queda do realtime; Redis
@@ -104,9 +108,16 @@ queda do PostgreSQL sem erro; e sete votos HTTP 503 durante o corte de rede,
 com recibos, auditoria e incidente correlacionado após retorno. O relatório
 marca `remoteObserver: false` e `hostRestartExecuted: false`.
 
+Na repetição com leitura pública contínua, foram **30, 17 e 190 respostas
+HTTP 200** durante os cenários de tempo real, Redis e correio. Na queda do
+PostgreSQL, o leitor viu 3 respostas 503 e 7 respostas 200; no corte de rede,
+28 respostas 503, 9 conexões sem resposta HTTP e 5 respostas 200. Nenhuma
+resposta 200 trouxe lista inválida. Esses totais são amostras locais de
+intervalos diferentes, não medição de disponibilidade institucional.
+
 ## O que bloqueia a execução fora do host
 
-1. **Host separado.** Os cinco cenários já rodam em sequência nesta máquina, mas o plano pede carga ativa de votação e leitura pública **durante cada falha**, com o observador **fora** do host. Os roteiros locais exercitam cargas diferentes; a matriz local não comprova a carga completa em todos eles. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
+1. **Host separado.** Os cinco cenários já rodam em sequência com leitura pública nesta máquina, mas o plano pede também carga ativa de votação **durante cada falha**, com o observador **fora** do host. Os roteiros locais exercitam cargas diferentes; a matriz local não comprova a carga completa em todos eles. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
 2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto, recibo e transição de incidente foram observados na stack sintética, mas ainda faltam carga contínua e observador externo.
 3. **Reinício de host** não é reinício de contêiner, e hoje só o segundo é possível.
 

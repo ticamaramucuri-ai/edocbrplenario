@@ -1,19 +1,19 @@
 {
-  "at": "2026-11-04T18:13:44.565051+00:00",
+  "at": "2026-11-04T18:21:54.653885+00:00",
   "buildVersion": "local-unversioned",
   "hostRestartExecuted": false,
   "ok": true,
   "remoteObserver": false,
   "scenarios": [
     {
-      "elapsedSeconds": 7.064,
+      "elapsedSeconds": 7.547,
       "error": null,
       "evidence": {
         "appAvailableDuringOutage": true,
-        "fromRestartToDrainSeconds": 6.18,
+        "fromRestartToDrainSeconds": 6.59,
         "officialRtoRpoMeasured": false,
         "ok": true,
-        "pendingDuringOutage": 45,
+        "pendingDuringOutage": 56,
         "publishedSessionEvents": 330,
         "receipts": 220,
         "synthetic": true,
@@ -21,13 +21,23 @@
         "votes": 220
       },
       "name": "realtime",
-      "passed": true
+      "passed": true,
+      "publicReadObservation": {
+        "degradedResponses": 0,
+        "expectedBehaviorObserved": true,
+        "healthyResponses": 30,
+        "invalidSuccessfulPayloads": 0,
+        "requests": 30,
+        "statusCounts": {
+          "200": 30
+        }
+      }
     },
     {
-      "elapsedSeconds": 4.141,
+      "elapsedSeconds": 4.238,
       "error": null,
       "evidence": {
-        "eventId": "stagefanout3ce63ffbb47e94f4c3425ab2",
+        "eventId": "stagefanout422ad4c02ad465bdfdba4cf2",
         "internalSubscribers": 2,
         "isolatedPublicPayload": true,
         "nodes": 2,
@@ -41,13 +51,23 @@
         "tenant": "staging-example"
       },
       "name": "redis",
-      "passed": true
+      "passed": true,
+      "publicReadObservation": {
+        "degradedResponses": 0,
+        "expectedBehaviorObserved": true,
+        "healthyResponses": 17,
+        "invalidSuccessfulPayloads": 0,
+        "requests": 17,
+        "statusCounts": {
+          "200": 17
+        }
+      }
     },
     {
-      "elapsedSeconds": 49.358,
+      "elapsedSeconds": 49.898,
       "error": null,
       "evidence": {
-        "captureCount": 13,
+        "captureCount": 17,
         "externalDelivery": false,
         "firstDelivery": "sent",
         "networkRetryAttempts": 2,
@@ -63,27 +83,37 @@
         "workerRecoveryMessageCount": 1
       },
       "name": "mail",
-      "passed": true
+      "passed": true,
+      "publicReadObservation": {
+        "degradedResponses": 0,
+        "expectedBehaviorObserved": true,
+        "healthyResponses": 190,
+        "invalidSuccessfulPayloads": 0,
+        "requests": 190,
+        "statusCounts": {
+          "200": 190
+        }
+      }
     },
     {
-      "elapsedSeconds": 5.461,
+      "elapsedSeconds": 2.479,
       "error": null,
       "evidence": {
         "after": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 11.9,
-          "p95Ms": 26.0,
+          "p50Ms": 12.5,
+          "p95Ms": 22.9,
           "requests": 60
         },
         "before": {
           "concurrency": 8,
           "errors": 0,
-          "p50Ms": 10.4,
-          "p95Ms": 13.4,
+          "p50Ms": 12.0,
+          "p95Ms": 16.8,
           "requests": 60
         },
-        "fromDatabaseStartToUsefulHttpSeconds": 4.366,
+        "fromDatabaseStartToUsefulHttpSeconds": 1.527,
         "officialRtoRpoMeasured": false,
         "ok": true,
         "outageHttpStatus": 503,
@@ -92,15 +122,26 @@
         "syntheticReplayRetained": true
       },
       "name": "postgres",
-      "passed": true
+      "passed": true,
+      "publicReadObservation": {
+        "degradedResponses": 3,
+        "expectedBehaviorObserved": true,
+        "healthyResponses": 7,
+        "invalidSuccessfulPayloads": 0,
+        "requests": 10,
+        "statusCounts": {
+          "200": 7,
+          "503": 3
+        }
+      }
     },
     {
-      "elapsedSeconds": 37.492,
+      "elapsedSeconds": 37.506,
       "error": null,
       "evidence": {
         "acceptedSessions": [
-          "cmw2fsa1007g4p8016m9czgk2",
-          "cmw2ft2ke07jfp8017d5jbwbo"
+          "cmw2g2qqy0b8xp80114y6jiva",
+          "cmw2g3ja90bc8p801dzrwkq8f"
         ],
         "acceptedWritesVerified": true,
         "appPortRemainedOpen": true,
@@ -121,14 +162,26 @@
         ],
         "outageWriteStatus": 0,
         "postgresStayedUp": true,
-        "recoverySeconds": 0.371,
+        "recoverySeconds": 0.408,
         "remoteObserver": false,
         "scope": "synthetic-staging",
         "voteIdempotencyVerified": true,
         "voteReceiptVerified": true
       },
       "name": "app_db_network",
-      "passed": true
+      "passed": true,
+      "publicReadObservation": {
+        "degradedResponses": 37,
+        "expectedBehaviorObserved": true,
+        "healthyResponses": 5,
+        "invalidSuccessfulPayloads": 0,
+        "requests": 42,
+        "statusCounts": {
+          "0": 9,
+          "200": 5,
+          "503": 28
+        }
+      }
     }
   ],
   "schemaVersion": 1,
