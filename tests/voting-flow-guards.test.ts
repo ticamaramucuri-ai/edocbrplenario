@@ -61,10 +61,21 @@ test('cancelamento restaura pauta; sessão não suspende/encerra com votação i
   expect((await transitionSession('resume', 2)).status).toBe(200)
   expect((await transitionVoting(secondId, 'resume', 3)).status).toBe(200)
   expect((await transitionSession('close', 3)).status).toBe(409)
+  const commandId = crypto.randomUUID()
   const vote = await castVote(request(`http://localhost/api/v1/votings/${secondId}/votes`, operator.id,
-    { parliamentarianId: person.id, value: 'sim', commandId: crypto.randomUUID() }),
+    { parliamentarianId: person.id, value: 'sim', commandId }),
   { params: Promise.resolve({ id: secondId }) })
   expect(vote.status).toBe(200)
+  const retry = () => castVote(request(`http://localhost/api/v1/votings/${secondId}/votes`, operator.id,
+    { parliamentarianId: person.id, value: 'sim', commandId }),
+  { params: Promise.resolve({ id: secondId }) })
+  expect((await retry()).status).toBe(200)
+  const changedPayload = await castVote(request(`http://localhost/api/v1/votings/${secondId}/votes`, operator.id,
+    { parliamentarianId: person.id, value: 'nao', commandId }),
+  { params: Promise.resolve({ id: secondId }) })
+  expect(changedPayload.status).toBe(409)
+  expect((await db.vote.findFirstOrThrow({ where: { votingId: secondId } })).value).toBe('sim')
+  expect(await db.auditEvent.count({ where: { tenantId: tenant.id, action: 'vote.cast' } })).toBe(1)
   expect((await transitionVoting(secondId, 'close', 4)).status).toBe(200)
   expect((await transitionSession('close', 3)).status).toBe(200)
   expect((await create()).status).toBe(409)

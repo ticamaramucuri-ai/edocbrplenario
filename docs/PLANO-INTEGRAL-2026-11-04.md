@@ -48,6 +48,8 @@ Há três níveis de conclusão: **incremento técnico** (código, teste, prova 
 
 As fases 2–6 têm incrementos de código existentes; o trabalho principal é fechar os gates de operação e uso institucional. A fase 1 é o principal bloqueio técnico transversal. Preparação de dados e responsabilidades institucionais pode correr em paralelo, sem antecipar atos oficiais. A fase 0 é a próxima entrega puramente local; em seguida, automatizar o máximo da fase 1 enquanto se define o host.
 
+**Direção de execução em 04/11/2026:** ainda não há host separado e a configuração oficial de Mucuri será feita depois, por decisão do responsável pelo projeto. Enquanto esses gates aguardam, avançar nos incrementos funcionais locais de 047–052 em ordem de dependência: recuperação de comandos e segurança da sessão, votação e apuração, ata/publicação e transmissão assistida em laboratório. Registrar cada incremento sem declarar o gate institucional concluído. O primeiro reforço dessa linha é a [repetição segura do auto check-in](etapas/048-repeticao-checkin-navegador.md). As integrações Nextcloud/Alfresco permanecem nas fases 054–056.
+
 ## 5. Encaixe no ecossistema edocBR
 
 | Domínio | Autoridade a confirmar | Regra de integração proposta |

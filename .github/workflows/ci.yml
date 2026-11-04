@@ -19,6 +19,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run test:security
       - run: bun run test:unit
+      - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/pending-checkin.test.ts
       - run: bun run test:clean:test-tenants
       - run: bun run test:bootstrap:empty-tenant
       - run: bun run test:seed:demo-logins

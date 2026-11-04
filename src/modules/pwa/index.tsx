@@ -12,7 +12,7 @@
  * visível; invalidação por eventos realtime (session.quorum,
  * voting.state_changed, vote.recorded…).
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -85,6 +85,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { clearPendingCheckIn, pendingCheckInCommand } from '@/lib/pending-checkin'
 
 const LIVE_SESSION_STATUSES: SessionStatus[] = ['check_in', 'open', 'suspended', 'resumed']
 type SpeechKind =
@@ -751,6 +752,7 @@ function HistoryCard({ enabled }: { enabled: boolean }) {
 function ParliamentarianApp() {
   const queryClient = useQueryClient()
   const connection = useApp((s) => s.connection)
+  const actorId = useApp((s) => s.actorId)
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['me-context'],
@@ -798,8 +800,10 @@ function ParliamentarianApp() {
   })
 
   const checkIn = useMutation({
-    mutationFn: () => api.meCheckIn(),
-    onSuccess: (res) => {
+    mutationFn: ({ sessionId, identity }: { sessionId: string; identity: string }) =>
+      api.meCheckIn(undefined, pendingCheckInCommand(window.localStorage, identity, sessionId), sessionId),
+    onSuccess: (res, { sessionId, identity }) => {
+      clearPendingCheckIn(window.localStorage, identity, sessionId)
       toast.success('Presença registrada', {
         description: `Quórum atual: ${res.quorum.present}/${res.quorum.required}.`,
       })
@@ -807,6 +811,12 @@ function ParliamentarianApp() {
       void queryClient.invalidateQueries({ queryKey: ['me-history'] })
     },
   })
+
+  useEffect(() => {
+    if (data?.session && data.attendance?.present) {
+      clearPendingCheckIn(window.localStorage, actorId ?? data.parliamentarian.id, data.session.id)
+    }
+  }, [actorId, data?.attendance?.present, data?.parliamentarian.id, data?.session])
 
   const initials = useMemo(
     () =>
@@ -857,7 +867,9 @@ function ParliamentarianApp() {
         />
       ) : (
         <>
-          <SessionCard context={data} onCheckIn={() => checkIn.mutate()} checkingIn={checkIn.isPending} />
+          <SessionCard context={data} onCheckIn={() => {
+            if (data.session) checkIn.mutate({ sessionId: data.session.id, identity: actorId ?? data.parliamentarian.id })
+          }} checkingIn={checkIn.isPending} />
           {noticeData?.notice && <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Convocação · revisão {noticeData.notice.revision}</CardTitle>

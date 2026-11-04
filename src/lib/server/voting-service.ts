@@ -94,12 +94,12 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
       where: { votingId_commandId: { votingId: voting.id, commandId } },
       include: { parliamentarian: true },
     })
-    if (byCommand && byCommand.parliamentarianId !== parliamentarian.id) {
+    if (byCommand && (byCommand.parliamentarianId !== parliamentarian.id || byCommand.value !== value)) {
       throw new DomainError(
         'VOTE_DUPLICATE_COMMAND',
         409,
         'Comando duplicado',
-        'O commandId informado já foi utilizado para outro parlamentar nesta votação.'
+        'O commandId informado já foi utilizado com outro parlamentar ou valor nesta votação.'
       )
     }
 

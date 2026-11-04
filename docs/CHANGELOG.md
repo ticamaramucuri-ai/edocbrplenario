@@ -4,8 +4,9 @@ Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). O piloto es
 **0.x** (pré-1.0). Cada fase do prompt mestre entrega código funcional, migration, seed,
 documentação e verificação reproduzível.
 
-## [Não lançado] — Etapa 045 (em andamento)
+## [Não lançado] — Desenvolvimento contínuo
 
+- Auto check-in do parlamentar reaproveita o UUID pendente após recarga da aba e envia a sessão esperada; mudança de sessão responde 409 sem presença indevida. Voto com chave idempotente reutilizada para outro valor responde 409. Testes cobrem repetição, isolamento, armazenamento bloqueado e auditoria única.
 - A sonda agendada passa a ler `EDOCBR_PLATFORM_EMAIL` e `EDOCBR_PLATFORM_PASSWORD` do arquivo de ambiente da unidade systemd, além dos argumentos de linha de comando; teste comprova a consulta interna do scheduler por esse caminho.
 - `platform/system-status` passa a medir o scheduler pela rede interna e a sonda externa o valida com credencial de plataforma; teste cobre processo sadio, degradado e ausente, sem abrir porta pública.
 - Gateway Caddy da homologação encaminha app e WebSocket pela mesma origem; todas as portas publicadas ficam no loopback. Build do navegador não incorpora `127.0.0.1:3103`. Ensaio Chromium de três telas, dois nós, reconexão e acessibilidade passou pela porta 3181; teste de configuração impede publicação acidental via variáveis antigas. Host externo/TLS seguem pendentes.

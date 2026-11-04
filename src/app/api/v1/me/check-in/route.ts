@@ -24,6 +24,7 @@ export const dynamic = 'force-dynamic'
 const bodySchema = z.object({
   note: z.string().max(500).optional(),
   commandId: z.string().uuid().optional(),
+  sessionId: z.string().min(1).optional(),
 })
 
 const LIVE_STATUSES = ['check_in', 'open', 'suspended', 'resumed']
@@ -42,6 +43,10 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       'Nenhuma sessão disponível',
       'Não há sessão agendada, em andamento ou encerrada recentemente para registrar presença.'
     )
+  }
+  if (body.sessionId && body.sessionId !== session.id) {
+    throw new DomainError('SESSION_PRECONDITION', 409, 'Sessão alterada',
+      'A sessão em andamento mudou. Atualize a página antes de registrar presença.')
   }
   if (session.official && !body.commandId) {
     throw new DomainError('VALIDATION_ERROR', 422, 'Chave obrigatória', 'Informe commandId para registrar presença em sessão oficial.')

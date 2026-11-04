@@ -867,13 +867,13 @@ export const api = {
   attestNoticeDelivery: (sessionId: string, data: { revision: number; noticeSha256: string; parliamentarianId: string; channel: NoticeDeliveryView['channel']; evidenceReference: string; deliveredAt: string; commandId: string; acknowledged: true }) =>
     request<{ delivery: NoticeDeliveryView; mode: 'manual_attestation' }>(`/sessions/${encodeURIComponent(sessionId)}/notice-deliveries`, { method: 'POST', body: JSON.stringify(data) }),
   noticeRecipientPreview: (sessionId: string) => request<{ policy: 'active' | 'mandate_and_leave'; total: number; recipients: Array<{ id: string; name: string }> }>(`/sessions/${encodeURIComponent(sessionId)}/notice-recipient-preview`),
-  meCheckIn: (note?: string, commandId = crypto.randomUUID()) =>
+  meCheckIn: (note?: string, commandId = crypto.randomUUID(), sessionId?: string) =>
     request<{
       attendance: { status: string; present: boolean; lastEventAt: string | null }
       quorum: QuorumInfo
     }>('/me/check-in', {
       method: 'POST',
-      body: JSON.stringify({ note, commandId }),
+      body: JSON.stringify({ note, commandId, sessionId }),
     }),
   meVote: (votingId: string, value: VoteValue | string, commandId: string) =>
     request<{
