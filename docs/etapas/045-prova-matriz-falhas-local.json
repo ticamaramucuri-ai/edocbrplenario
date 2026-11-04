@@ -1,0 +1,132 @@
+{
+  "at": "2026-11-04T18:09:32.859398+00:00",
+  "buildVersion": "local-unversioned",
+  "hostRestartExecuted": false,
+  "ok": true,
+  "remoteObserver": false,
+  "scenarios": [
+    {
+      "elapsedSeconds": 7.968,
+      "error": null,
+      "evidence": {
+        "appAvailableDuringOutage": true,
+        "fromRestartToDrainSeconds": 7.07,
+        "officialRtoRpoMeasured": false,
+        "ok": true,
+        "pendingDuringOutage": 48,
+        "publishedSessionEvents": 330,
+        "receipts": 220,
+        "synthetic": true,
+        "voteOutboxEvents": 220,
+        "votes": 220
+      },
+      "name": "realtime",
+      "passed": true
+    },
+    {
+      "elapsedSeconds": 4.119,
+      "error": null,
+      "evidence": {
+        "eventId": "stagefanout70d42dc757499273e68e532c",
+        "internalSubscribers": 2,
+        "isolatedPublicPayload": true,
+        "nodes": 2,
+        "ok": true,
+        "outboxPublished": true,
+        "publicSubscribers": 2,
+        "redisOutageHeldOutbox": true,
+        "redisRecoveryDeliveredToAll": true,
+        "subscribers": 4,
+        "synthetic": true,
+        "tenant": "staging-example"
+      },
+      "name": "redis",
+      "passed": true
+    },
+    {
+      "elapsedSeconds": 40.827,
+      "error": null,
+      "evidence": {
+        "captureCount": 9,
+        "externalDelivery": false,
+        "firstDelivery": "sent",
+        "networkRetryAttempts": 2,
+        "networkRetryDelivery": "sent",
+        "ok": true,
+        "retryAttempts": 2,
+        "retryDelivery": "sent",
+        "synthetic": true,
+        "tls": "STARTTLS verificado pelo cliente"
+      },
+      "name": "mail",
+      "passed": true
+    },
+    {
+      "elapsedSeconds": 15.426,
+      "error": null,
+      "evidence": {
+        "after": {
+          "concurrency": 8,
+          "errors": 0,
+          "p50Ms": 11.3,
+          "p95Ms": 27.9,
+          "requests": 60
+        },
+        "before": {
+          "concurrency": 8,
+          "errors": 0,
+          "p50Ms": 11.4,
+          "p95Ms": 14.8,
+          "requests": 60
+        },
+        "fromDatabaseStartToUsefulHttpSeconds": 14.459,
+        "officialRtoRpoMeasured": false,
+        "ok": true,
+        "outageHttpStatus": 503,
+        "profile": "60 HTTP reads / 8 clients",
+        "scope": "synthetic-staging",
+        "syntheticReplayRetained": true
+      },
+      "name": "postgres",
+      "passed": true
+    },
+    {
+      "elapsedSeconds": 37.488,
+      "error": null,
+      "evidence": {
+        "acceptedSessions": [
+          "cmw2fmyl405gup801faasmgy6",
+          "cmw2fnr3p05k5p801tg6vloe3"
+        ],
+        "acceptedWritesVerified": true,
+        "appPortRemainedOpen": true,
+        "auditEventsVerified": true,
+        "concurrentVoters": 7,
+        "incidentTransitionsVerified": true,
+        "ok": true,
+        "outageHttpStatus": 0,
+        "outageReadinessStatus": 503,
+        "outageVoteStatuses": [
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503
+        ],
+        "outageWriteStatus": 0,
+        "postgresStayedUp": true,
+        "recoverySeconds": 0.406,
+        "remoteObserver": false,
+        "scope": "synthetic-staging",
+        "voteIdempotencyVerified": true,
+        "voteReceiptVerified": true
+      },
+      "name": "app_db_network",
+      "passed": true
+    }
+  ],
+  "schemaVersion": 1,
+  "scope": "synthetic-staging"
+}

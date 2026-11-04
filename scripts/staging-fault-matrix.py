@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Executa os cinco cenários locais da matriz 045 na stack sintética exclusiva.
+
+Não reinicia o host e não constitui prova com observador externo. Cada cenário
+usa seu roteiro próprio, com restauração em finally. O resultado é JSON.
+"""
+import argparse
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+import time
+from urllib.request import urlopen
+
+ROOT = Path(__file__).resolve().parent.parent
+CONFIG = ROOT / 'deploy/staging/.env'
+COMPOSE = ROOT / 'deploy/staging/compose.yaml'
+SCENARIOS = {
+    'realtime': ['python3', 'scripts/staging-realtime-write-fault.py'],
+    'redis': ['bun', 'scripts/staging-realtime-fanout.ts'],
+    'mail': ['python3', 'scripts/staging-mail-drill.py'],
+    'postgres': ['python3', 'scripts/staging-db-outage-drill.py'],
+    'app_db_network': ['python3', 'scripts/staging-db-network-drill.py'],
+}
+
+
+def valid_evidence(name: str, proof: dict) -> bool:
+    if proof.get('ok') is not True:
+        return False
+    if name == 'realtime':
+        return (proof.get('votes', 0) > 0 and proof.get('votes') == proof.get('receipts')
+                and proof.get('pendingDuringOutage', 0) > 0
+                and proof.get('appAvailableDuringOutage') is True)
+    if name == 'redis':
+        return (proof.get('nodes') == 2 and proof.get('subscribers') == 4
+                and proof.get('isolatedPublicPayload') is True
+                and proof.get('redisOutageHeldOutbox') is True
+                and proof.get('redisRecoveryDeliveredToAll') is True)
+    if name == 'mail':
+        return (proof.get('retryAttempts') == 2 and proof.get('networkRetryAttempts') == 2
+                and proof.get('retryDelivery') == 'sent'
+                and proof.get('networkRetryDelivery') == 'sent'
+                and proof.get('externalDelivery') is False)
+    if name == 'postgres':
+        return (proof.get('outageHttpStatus') != 200
+                and proof.get('syntheticReplayRetained') is True
+                and proof.get('before', {}).get('errors') == 0
+                and proof.get('after', {}).get('errors') == 0)
+    if name == 'app_db_network':
+        return (proof.get('postgresStayedUp') is True
+                and proof.get('appPortRemainedOpen') is True
+                and proof.get('outageReadinessStatus') == 503
+                and proof.get('outageVoteStatuses') == [503] * 7
+                and proof.get('voteIdempotencyVerified') is True
+                and proof.get('voteReceiptVerified') is True
+                and proof.get('auditEventsVerified') is True
+                and proof.get('incidentTransitionsVerified') is True)
+    return False
+
+
+def run(command: list[str], *, env=None, timeout=240) -> subprocess.CompletedProcess:
+    return subprocess.run(command, cwd=ROOT, env=env, capture_output=True,
+                          text=True, timeout=timeout)
+
+
+def compose(*args: str) -> subprocess.CompletedProcess:
+    return run(['docker', 'compose', '--profile', 'mail-lab', '--env-file',
+                str(CONFIG), '-f', str(COMPOSE), *args], timeout=120)
+
+
+def probe(url: str, timeout=5) -> bool:
+    try:
+        with urlopen(url, timeout=timeout) as response:
+            return response.status == 200
+    except OSError:
+        return False
+
+
+def wait_for(url: str, label: str, seconds=60) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if probe(url):
+            return
+        time.sleep(1)
+    raise RuntimeError(f'{label} não respondeu em {seconds} s.')
+
+
+def preflight() -> tuple[dict[str, str], dict[str, str]]:
+    if not CONFIG.is_file() or CONFIG.is_symlink() or stat.S_IMODE(CONFIG.stat().st_mode) & 0o077:
+        raise RuntimeError('Arquivo privado da stack sintética ausente ou inseguro.')
+    values = dict(line.split('=', 1) for line in CONFIG.read_text().splitlines()
+                  if '=' in line and not line.startswith('#'))
+    env = {**os.environ, 'PGHOST': '127.0.0.1',
+           'PGPORT': values.get('STAGE_DB_PORT', '55432'),
+           'PGUSER': 'edocbr_stage', 'PGDATABASE': 'edocbr_stage',
+           'PGPASSWORD': values['STAGE_DB_PASSWORD']}
+    tenant = run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-c',
+                  'SELECT slug FROM "Tenant" ORDER BY slug'], env=env, timeout=15)
+    if tenant.returncode or tenant.stdout.splitlines() != ['staging-example']:
+        raise RuntimeError('Matriz recusada: banco deve conter apenas staging-example.')
+    for service in ('app', 'postgres', 'redis', 'realtime', 'webhooks', 'scheduler'):
+        result = compose('ps', '-q', service)
+        if result.returncode or not result.stdout.strip():
+            raise RuntimeError(f'Serviço sintético ausente: {service}.')
+    app_url = f"http://127.0.0.1:{values.get('STAGE_APP_PORT', '3100')}"
+    wait_for(app_url + '/api/v1/health?ready=1', 'App pronto')
+    with urlopen(app_url + '/api/v1/bootstrap', timeout=5) as response:
+        bootstrap = json.load(response)
+    if bootstrap.get('tenant', {}).get('slug') != 'staging-example':
+        raise RuntimeError('App não aponta para a Câmara sintética exclusiva.')
+    return values, env
+
+
+def ensure_mail_lab(values: dict[str, str]) -> bool:
+    mail_url = f"http://127.0.0.1:{values.get('STAGE_MAILPIT_PORT', '3125')}/api/v1/messages"
+    worker = compose('ps', '-q', 'mail_worker')
+    already_running = bool(worker.stdout.strip()) and probe(mail_url)
+    if already_running:
+        return False
+    # Contêineres parados podem guardar o ID de uma rede Docker já recriada.
+    # Remove apenas os dois contêineres sintéticos; o volume mailpit_data fica.
+    removed = compose('rm', '-s', '-f', 'mail_worker', 'mailpit')
+    if removed.returncode:
+        raise RuntimeError('Não foi possível remover contêineres antigos do correio sintético.')
+    setup = run(['bash', 'scripts/staging-mail-lab-setup.sh'], timeout=30)
+    if setup.returncode:
+        raise RuntimeError('Preparação do laboratório de correio falhou.')
+    started = compose('up', '-d', '--no-build', 'mailpit', 'mail_worker')
+    if started.returncode:
+        compose('stop', 'mail_worker', 'mailpit')
+        raise RuntimeError('Não foi possível iniciar o laboratório de correio.')
+    try:
+        wait_for(mail_url, 'Capturador local de correio')
+    except RuntimeError:
+        compose('stop', 'mail_worker', 'mailpit')
+        raise
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--only', choices=tuple(SCENARIOS), action='append',
+                        help='cenário local; pode repetir (padrão: todos)')
+    parser.add_argument('--output', type=Path, help='arquivo da prova JSON')
+    args = parser.parse_args()
+    selected = list(dict.fromkeys(args.only or SCENARIOS))
+    values, _ = preflight()
+    app_url = f"http://127.0.0.1:{values.get('STAGE_APP_PORT', '3100')}"
+    report = {'schemaVersion': 1, 'scope': 'synthetic-staging',
+              'at': datetime.now(timezone.utc).isoformat(),
+              'buildVersion': values.get('STAGE_BUILD_VERSION', 'local-unversioned'),
+              'remoteObserver': False, 'hostRestartExecuted': False,
+              'scenarios': []}
+    mail_started = False
+    try:
+        for name in selected:
+            began = time.monotonic()
+            try:
+                if name == 'mail':
+                    mail_started = ensure_mail_lab(values)
+                result = run(SCENARIOS[name], timeout=300)
+                payload = json.loads(result.stdout.splitlines()[-1]) if result.stdout.strip() else {}
+                passed = result.returncode == 0 and valid_evidence(name, payload)
+                if passed:
+                    wait_for(app_url + '/api/v1/health?ready=1', 'App após ' + name)
+                entry = {'name': name, 'passed': passed,
+                         'elapsedSeconds': round(time.monotonic() - began, 3),
+                         'evidence': payload if passed else None,
+                         'error': None if passed else f'Roteiro falhou ou prova incompleta (exit {result.returncode})'}
+            except (subprocess.TimeoutExpired, ValueError, IndexError, RuntimeError) as error:
+                entry = {'name': name, 'passed': False,
+                         'elapsedSeconds': round(time.monotonic() - began, 3),
+                         'evidence': None, 'error': type(error).__name__}
+            report['scenarios'].append(entry)
+            if not entry['passed']:
+                break
+    finally:
+        if mail_started:
+            compose('stop', 'mail_worker', 'mailpit')
+    report['ok'] = len(report['scenarios']) == len(selected) and all(
+        entry['passed'] for entry in report['scenarios'])
+    text = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + '\n'
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(text)
+    print(text, end='')
+    return 0 if report['ok'] else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,12 +1,12 @@
 # Etapa 045 — Matriz de falhas induzidas
 
-**Data:** 21/10/2026 · **Estado:** matriz definida; **execução conjunta com observador externo pendente** — não existe host separado.
+**Data:** 21/10/2026; ensaio local em 04/11/2026. **Estado:** cinco cenários executados em sequência na stack sintética; **execução com observador externo e reinício do host pendentes** — não existe host separado.
 
 Passo 1 da tarefa 10 da trilha B de
 [`PLANO-CONTINUIDADE-2026-10-20.md`](../PLANO-CONTINUIDADE-2026-10-20.md).
 
-Os seis cenários obrigatórios já têm ensaio individual neste repositório. O que
-faltava — e é o que este documento entrega — é a matriz: por cenário, **o que
+Cinco dos seis cenários obrigatórios têm ensaio local neste repositório; o sexto,
+reinício do host, requer infraestrutura separada. A matriz define por cenário **o que
 deve acontecer**, **o que invalida o ensaio** e **o que ainda não foi feito**.
 Sem critério escrito antes, um ensaio que "rodou sem erro" não distingue sistema
 resiliente de ensaio que não exercitou nada.
@@ -73,7 +73,7 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 | **Deve acontecer** | Mesmo desfecho do cenário 2 pela ótica do cliente, com uma diferença: o banco continua de pé, então ao restabelecer a rede **nenhuma** transação aceita pode faltar |
 | **Invalida** | Transação aceita e perdida; pool de conexões preso sem recuperar depois do retorno da rede; erro genérico que não distingue banco fora de rede fora |
 | **Ensaio hoje** | `python3 scripts/staging-db-network-drill.py` corrigido e executado localmente em 04/11: banco vivo, porta HTTP aberta, sessões aceitas persistidas com auditoria, sete votos concorrentes sem 2xx no corte, sete recibos e repetição idempotente após retorno. [Prova e limites](045-corte-rede-app-banco.md). |
-| **Falta** | Múltiplos nós, alerta externo correlacionado e observador fora do host; prontidão 200→503→200 já repetida na stack sintética |
+| **Falta** | Múltiplos nós e observador fora do host; prontidão 200→503→200 e eventos locais de incidente já repetidos na stack sintética |
 
 ### 6. Reinício do host inteiro
 
@@ -84,10 +84,29 @@ Qualquer um destes violado invalida o ensaio inteiro, não só o cenário:
 | **Ensaio hoje** | `python3 scripts/staging-postgres.py restart-proof` cobre a persistência do banco após reinício do contêiner |
 | **Falta** | Reinício do **host**, não do contêiner — exige host dedicado que se possa reiniciar |
 
-## O que bloqueia a execução conjunta
+## Execução conjunta local
 
-1. **Host separado.** Cinco dos seis cenários já rodam isolados nesta máquina, mas o plano pede carga ativa de votação e leitura pública **durante** cada falha, com o observador **fora** do host. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
-2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto e recibo foram observados na stack sintética, mas ainda faltam carga e observador externo.
+`python3 scripts/staging-fault-matrix.py --output docs/etapas/045-prova-matriz-falhas-local.json`
+executa os cinco cenários na ordem realtime → Redis → correio → PostgreSQL →
+rede app↔banco. Exige banco com **somente** `staging-example`, app pronto e
+serviços sintéticos ativos. O laboratório de correio é iniciado quando
+necessário e parado ao fim; contêineres antigos com rede Docker obsoleta são
+recriados sem apagar o volume. Cada roteiro restaura o serviço que interrompe
+em `finally`; o executor confere a prontidão entre os cenários. Se um roteiro
+falhar ou sua prova não contiver os invariantes essenciais, o conjunto falha.
+
+A [prova de 04/11/2026](045-prova-matriz-falhas-local.json) registrou cinco
+cenários aprovados: 220 votos e recibos durante a queda do realtime; Redis
+retendo a outbox e entregando aos quatro assinantes após retorno; correio local
+com STARTTLS e duas retentativas de dois tipos; 60 leituras antes e depois da
+queda do PostgreSQL sem erro; e sete votos HTTP 503 durante o corte de rede,
+com recibos, auditoria e incidente correlacionado após retorno. O relatório
+marca `remoteObserver: false` e `hostRestartExecuted: false`.
+
+## O que bloqueia a execução fora do host
+
+1. **Host separado.** Os cinco cenários já rodam em sequência nesta máquina, mas o plano pede carga ativa de votação e leitura pública **durante cada falha**, com o observador **fora** do host. Os roteiros locais exercitam cargas diferentes; a matriz local não comprova a carga completa em todos eles. Observador no mesmo host não enxerga a falha que derruba os dois juntos — é a mesma razão da [verificação remota de saúde](045-verificacao-remota-de-saude.md).
+2. **Cenário 5 tem prova local parcial.** Corte, escrita de sessão, auditoria, voto, recibo e transição de incidente foram observados na stack sintética, mas ainda faltam carga contínua e observador externo.
 3. **Reinício de host** não é reinício de contêiner, e hoje só o segundo é possível.
 
 Enquanto isso não existir, os ensaios individuais valem como incremento técnico

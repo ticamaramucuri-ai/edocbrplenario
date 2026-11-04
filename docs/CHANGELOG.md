@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Executor local da matriz de falhas reúne cinco cenários sintéticos em ordem, verifica evidência de cada um e confere a prontidão entre falhas; prova JSON mantém explícitos observador externo e reinício de host pendentes.
 - Roteiro de recuperação agora inicia uma segunda instância do app no banco restaurado e valida bootstrap, login e leitura autenticada; prova sintética com mídia conferiu 52 sessões e 1,494 s do início do contêiner ao primeiro bootstrap. Teste recusa manifesto adulterado.
 - Sonda de saúde registra eventos JSONL de degradação e recuperação, com `incidentId` estável durante a falha; timer de exemplo persiste estado e eventos. Sequência conferida em servidor HTTP falso e no corte integrado da rede app↔banco; coleta e alerta em host externo pendentes.
 - `/api/v1/health?ready=1` passa a medir acesso ao banco e responder 503 quando degradado; sonda remota consulta prontidão antes do bootstrap. Ensaio de corte confirmou transição 200→503→200 com sete votos concorrentes íntegros.
