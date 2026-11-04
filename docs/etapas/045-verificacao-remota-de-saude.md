@@ -20,7 +20,9 @@ justamente por quem precisaria vê-la.
 | Confere | Como |
 |---|---|
 | App de pé e com Câmara | `GET /api/v1/bootstrap` 200 com `tenant.slug` |
+| App pronto para usar o banco | `GET /api/v1/health?ready=1`; 503 quando o banco falha |
 | Cada serviço esperado | `GET /health` com `ok: true`, por URL direta |
+| Revisão implantada | `version` dos health checks, comparável com `--expected-version` |
 | Serviço não exposto | `GET /api/v1/platform/system-status`, com credencial de plataforma |
 | Acordo de relógio | cabeçalho `Date` de cada resposta contra o relógio local, limite 2 s |
 | Latência | por serviço, em milissegundos |
@@ -34,10 +36,19 @@ roteiro **recusa** em vez de supor saúde de quem não conseguiu medir. O
 scheduler, em particular, não aparece no `system-status` do app hoje — sem
 `--service scheduler=<url>` ele é reportado como não verificável.
 
+Com `--state-file` e `--events-file`, a sonda mantém o estado da última passagem
+e acrescenta um evento JSONL somente ao entrar em degradação ou ao recuperar.
+O mesmo `incidentId` liga os dois eventos e não muda em sondagens repetidas
+durante a falha. A primeira passagem saudável estabelece a referência sem
+inventar um incidente. O timer grava esses arquivos em `/var/lib/legis`.
+Os eventos não contêm credenciais nem o corpo das respostas. A unidade systemd
+continua saindo com erro enquanto a instalação estiver degradada; o registro
+de transições é a evidência local para um monitor externo coletar.
+
 ## O que foi conferido
 
 `python3 -I tests/test-staging-remote-check.py` levanta servidores HTTP falsos e
-exige, em cinco casos:
+exige:
 
 1. Host inexistente → saída 2, nomeando `app` e `realtime`.
 2. App de pé e serviço esperado sem URL → saída 2, nomeando `webhooks`.
@@ -45,6 +56,9 @@ exige, em cinco casos:
    abaixo do limite e a prova gravada em arquivo.
 4. Serviço respondendo `ok: false` → saída 1, nomeando o serviço.
 5. Serviço com relógio 30 s adiantado → saída 1, acusando o relógio.
+6. Prontidão 503 → saída 1 com `database: unavailable`.
+7. Saudável → degradado → degradado → recuperado gera somente dois eventos,
+   correlacionados pelo mesmo `incidentId`.
 
 O caso 5 só passou depois de corrigir o **teste**: o servidor falso emitia um
 `Date` próprio e o desvio simulado entrava como segundo cabeçalho, ignorado.
@@ -63,10 +77,15 @@ dentro com outro nome. Documentado no runbook §4.1.
   máquina, em loopback. O próprio relatório marca `remoto: false` quando o alvo
   é `127.0.0.1`, `localhost` ou `::1`, e acrescenta esse limite à lista de
   limites do JSON. Nenhum número aqui prova operação fora do host.
-- **Nenhum serviço expõe a versão implantada.** O plano pedia versão na prova; o
-  roteiro não a afirma porque não há de onde ler. Expor versão nos `/health`
-  seria mudança nos mini-serviços, fora do escopo desta tarefa — fica como
-  pendência nomeada.
+- App e mini-serviços agora expõem `EDOCBR_BUILD_VERSION`. O valor padrão
+  `local-unversioned` é útil no laboratório, mas não identifica a revisão de um
+  deploy; o host de homologação precisa definir `STAGE_BUILD_VERSION`.
+- A transição de incidente foi conferida com servidor falso local. Falta
+  apontar o timer e o coletor de eventos de um host **diferente** para a
+  instalação de homologação e provar detecção e recuperação reais.
+- O [ensaio de corte app↔banco](045-corte-rede-app-banco.md) também confirmou
+  localmente `degraded` → `recovered` com o mesmo `incidentId` enquanto a
+  prontidão passou por 200 → 503 → 200.
 - O cabeçalho `Date` tem resolução de 1 s: detecta desacordo grosseiro de
   relógio, não sincronia fina. Correlacionar log entre máquinas com precisão
   menor que o segundo exige NTP conferido, não este roteiro.

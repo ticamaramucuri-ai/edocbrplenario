@@ -128,6 +128,41 @@ try:
             assert corpo['servicos'][0]['status'] == 503
         finally:
             sem_banco.shutdown()
+
+        # ─── 6. Uma mudança gera um evento; repetição mantém o incidente ──
+        rotas_estado = {
+            '/api/v1/health': (200, {'ok': True, 'version': 'test-revision'}),
+            '/api/v1/bootstrap': (200, {'tenant': {'slug': 'staging-example'}}),
+        }
+        monitorado, url_monitorado = servidor(rotas_estado)
+        try:
+            with tempfile.TemporaryDirectory() as pasta:
+                estado = Path(pasta) / 'estado.json'
+                eventos = Path(pasta) / 'eventos.jsonl'
+                comando = ('--base-url', url_monitorado, '--expect-services', 'app',
+                           '--state-file', str(estado), '--events-file', str(eventos))
+                run(*comando)
+                assert json.loads(estado.read_text())['ok'] is True
+                assert not eventos.exists()
+
+                rotas_estado['/api/v1/health'] = (503, {'ok': False, 'database': 'unavailable'})
+                run(*comando, esperado=1)
+                primeiro = json.loads(eventos.read_text().splitlines()[0])
+                assert primeiro['kind'] == 'degraded'
+                assert primeiro['incidentId']
+                run(*comando, esperado=1)
+                assert len(eventos.read_text().splitlines()) == 1
+                assert json.loads(estado.read_text())['incidentId'] == primeiro['incidentId']
+
+                rotas_estado['/api/v1/health'] = (200, {'ok': True, 'version': 'test-revision'})
+                run(*comando)
+                registros = [json.loads(linha) for linha in eventos.read_text().splitlines()]
+                assert len(registros) == 2
+                assert registros[1]['kind'] == 'recovered'
+                assert registros[1]['incidentId'] == primeiro['incidentId']
+                assert json.loads(estado.read_text())['incidentId'] is None
+        finally:
+            monitorado.shutdown()
     finally:
         rt.shutdown()
         wh.shutdown()
@@ -135,4 +170,4 @@ finally:
     app.shutdown()
 
 print('verificação remota: host ausente, serviço sem URL, serviço doente, '
-      'relógio divergente e caminho feliz conferidos')
+      'relógio divergente, transições de incidente e caminho feliz conferidos')

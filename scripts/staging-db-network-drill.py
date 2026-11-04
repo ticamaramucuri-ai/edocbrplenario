@@ -11,6 +11,7 @@ import socket
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
@@ -144,6 +145,24 @@ def main() -> None:
     vote_commands = [{'parliamentarianId': member_id, 'value': 'sim',
                       'commandId': str(uuid4())} for member_id in members[:7]]
 
+    probe_dir = tempfile.TemporaryDirectory(prefix='edocbr-incident-drill-')
+    probe_state = Path(probe_dir.name) / 'state.json'
+    probe_events = Path(probe_dir.name) / 'events.jsonl'
+
+    def observe(expected_status: int) -> dict:
+        result = subprocess.run([
+            'python3', '-I', str(ROOT / 'scripts/staging-remote-check.py'),
+            '--base-url', base, '--expect-services', 'app', '--timeout', '5',
+            '--state-file', str(probe_state), '--events-file', str(probe_events),
+        ], cwd=ROOT, text=True, capture_output=True)
+        if result.returncode != expected_status:
+            raise RuntimeError(f'Sonda de incidente: saída {result.returncode}, '
+                               f'esperada {expected_status}: {result.stderr[:300]}')
+        return json.loads(result.stdout)
+
+    if not observe(0)['ok']:
+        raise RuntimeError('Sonda não estabeleceu linha de base saudável.')
+
     def cast_batch() -> list[int]:
         with ThreadPoolExecutor(max_workers=len(vote_commands)) as pool:
             return list(pool.map(lambda payload: request(
@@ -172,6 +191,8 @@ def main() -> None:
             raise RuntimeError('Porta do app fechou; ensaio não isolou somente o banco.')
         if readiness_during != 503:
             raise RuntimeError(f'Prontidão não degradou para 503: HTTP {readiness_during}.')
+        if observe(1)['ok']:
+            raise RuntimeError('Sonda não registrou degradação durante o corte.')
         if 200 <= during < 300:
             raise RuntimeError('App retornou sucesso com acesso ao banco cortado.')
         write_during, during_body = create_session('durante')
@@ -199,6 +220,13 @@ def main() -> None:
         time.sleep(1)
     else:
         raise RuntimeError('Prontidão não recuperou em 15 segundos.')
+    if not observe(0)['ok']:
+        raise RuntimeError('Sonda não registrou recuperação após reconexão.')
+    incident_events = [json.loads(line) for line in probe_events.read_text().splitlines()]
+    if (len(incident_events) != 2 or
+            [event['kind'] for event in incident_events] != ['degraded', 'recovered'] or
+            incident_events[0]['incidentId'] != incident_events[1]['incidentId']):
+        raise RuntimeError('Eventos de degradação e recuperação não estão correlacionados.')
     after_status, after_body = create_session('depois')
     if after_status != 201:
         raise RuntimeError(f'Escrita após reconexão falhou: HTTP {after_status}.')
@@ -237,7 +265,9 @@ def main() -> None:
                       'acceptedSessions': ids, 'auditEventsVerified': True,
                       'voteIdempotencyVerified': True, 'voteReceiptVerified': True,
                       'concurrentVoters': len(vote_commands),
+                      'incidentTransitionsVerified': True,
                       'remoteObserver': False}, sort_keys=True))
+    probe_dir.cleanup()
 
 
 if __name__ == '__main__':

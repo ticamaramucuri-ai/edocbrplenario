@@ -16,6 +16,16 @@ Na repetição do ensaio, o script autenticou o administrador de `staging-exampl
 
 **Prontidão observável:** `GET /api/v1/health` informa vida do processo; `?ready=1` faz uma consulta limitada a 3 s ao banco. A sonda externa verifica prontidão antes do bootstrap e registra `database=unavailable` quando recebe 503. No ensaio integrado de 04/11, a prontidão passou de HTTP 200 para **503** durante o corte e voltou a **200** após a reconexão. Sete votos concorrentes também receberam 503, e os sete votos/recibos/auditorias ficaram íntegros após repetição idempotente. Recuperação do bootstrap: **0,434 s**. IDs das sessões: `cmw2f31h90009p801ftf9y3f0` e `cmw2f3jzc003kp801s5a7djf6`. O observador ainda estava no próprio host.
 
+**Transição de incidente:** repetição do ensaio no mesmo dia executou a sonda antes,
+durante e depois do corte. O histórico JSONL teve exatamente `degraded` e
+`recovered` com o mesmo `incidentId`; o roteiro valida essa correlação antes de
+declarar sucesso. A prontidão foi 503 durante o corte, sete votos receberam
+503, e sete votos, recibos e eventos de auditoria foram conferidos após a
+recuperação. O segundo ensaio mediu **0,449 s** de recuperação do bootstrap,
+com as sessões sintéticas `cmw2fa6ai0060p801mwrdn8ft` e
+`cmw2fan9m009bp8018keklrta`. A sonda ainda estava no próprio host, portanto
+essa evidência não fecha o requisito de observador externo.
+
 Foi executada também a sonda local de saúde contra app e realtime: ambos responderam, com `version=local-unversioned`, relógios dentro de 2 s e `remoto=false`. Isso confirma o formato da sonda, mas não identifica um build implantado nem demonstra observação fora do host.
 
 **Limites e próximo passo:** `acceptedWritesVerified=true`, `voteIdempotencyVerified=true` e `voteReceiptVerified=true` cobrem sete votantes em uma instância. O bootstrap expirou antes de devolver erro HTTP porque seu timeout de cliente era de 5 s; a operação de voto devolveu 503 após o timeout do pool. Repetir com build identificado, vários nós, alerta correlacionado e observador externo em host separado. Até lá, o cenário 5 da matriz de falhas não está fechado.

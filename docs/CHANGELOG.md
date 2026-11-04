@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Sonda de saúde registra eventos JSONL de degradação e recuperação, com `incidentId` estável durante a falha; timer de exemplo persiste estado e eventos. Sequência conferida em servidor HTTP falso e no corte integrado da rede app↔banco; coleta e alerta em host externo pendentes.
 - `/api/v1/health?ready=1` passa a medir acesso ao banco e responder 503 quando degradado; sonda remota consulta prontidão antes do bootstrap. Ensaio de corte confirmou transição 200→503→200 com sete votos concorrentes íntegros.
 - Roteiro de falha de rede corrigido para manter a porta do app aberta ao isolar o PostgreSQL; sete votos concorrentes receberam HTTP 503, com sete recibos e auditoria após retorno. Timeout Prisma `P2024` classificado como `DATABASE_UNAVAILABLE`; observador externo pendente.
 - App e serviços passam a expor `EDOCBR_BUILD_VERSION` em health; sonda remota registra a revisão de cada processo. A stack recebe `STAGE_BUILD_VERSION`; prova fora do host permanece pendente.

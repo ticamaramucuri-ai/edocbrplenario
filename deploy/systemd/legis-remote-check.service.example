@@ -19,7 +19,9 @@ EnvironmentFile=/etc/legis/remote-check.env
 ExecStart=/usr/bin/python3 scripts/staging-remote-check.py \
   --base-url ${EDOCBR_BASE_URL} \
   --expect-services ${EDOCBR_EXPECT_SERVICES} \
-  --output /var/lib/legis/remote-check.json
+  --output /var/lib/legis/remote-check.json \
+  --state-file /var/lib/legis/remote-check-state.json \
+  --events-file /var/lib/legis/remote-check-events.jsonl
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

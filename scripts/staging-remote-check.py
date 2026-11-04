@@ -23,10 +23,13 @@ import argparse
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 import json
+import os
 from pathlib import Path
 import ssl
 import sys
+import tempfile
 import time
+from uuid import uuid4
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 import http.cookiejar
@@ -50,7 +53,42 @@ def argumentos(argv: list[str]) -> argparse.Namespace:
     parser.add_argument('--expected-version', help='revisão imutável esperada no app e nos serviços')
     parser.add_argument('--timeout', type=float, default=10.0)
     parser.add_argument('--output', help='arquivo onde gravar a prova em JSON')
+    parser.add_argument('--state-file', help='estado local para registrar mudança saudável/degradado')
+    parser.add_argument('--events-file', help='histórico JSONL das mudanças de estado')
     return parser.parse_args(argv)
+
+
+def registrar_transicao(prova: dict, estado_path: Path, eventos_path: Path) -> None:
+    anterior = json.loads(estado_path.read_text()) if estado_path.exists() else None
+    agora = prova['data']
+    saudavel = prova['ok']
+    mudou = anterior is None and not saudavel or anterior is not None and anterior['ok'] != saudavel
+    incidente = (anterior or {}).get('incidentId')
+    if not saudavel and not incidente:
+        incidente = str(uuid4())
+    evento = None
+    if mudou:
+        evento = {'eventId': str(uuid4()), 'incidentId': incidente,
+                  'kind': 'recovered' if saudavel else 'degraded',
+                  'at': agora, 'unreachable': prova['inacessiveis'],
+                  'problemCount': len(prova['problemas'])}
+    estado = {'ok': saudavel, 'incidentId': None if saudavel else incidente,
+              'checkedAt': agora, 'lastTransitionAt': agora if mudou else (anterior or {}).get('lastTransitionAt')}
+    estado_path.parent.mkdir(parents=True, exist_ok=True)
+    eventos_path.parent.mkdir(parents=True, exist_ok=True)
+    if evento:
+        fd = os.open(eventos_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with os.fdopen(fd, 'w') as stream:
+            stream.write(json.dumps(evento, ensure_ascii=False) + '\n')
+    fd, temp_name = tempfile.mkstemp(prefix='.remote-check-', dir=estado_path.parent)
+    try:
+        with os.fdopen(fd, 'w') as stream:
+            json.dump(estado, stream, ensure_ascii=False)
+            stream.write('\n')
+        os.replace(temp_name, estado_path)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
 
 
 def opener():
@@ -231,6 +269,10 @@ def main(argv: list[str]) -> int:
     print(saida)
     if opcoes.output:
         Path(opcoes.output).write_text(saida + '\n')
+    if opcoes.state_file:
+        registrar_transicao(prova, Path(opcoes.state_file),
+                            Path(opcoes.events_file) if opcoes.events_file
+                            else Path(opcoes.state_file).with_suffix('.events.jsonl'))
 
     if inacessiveis:
         print(f'Inacessíveis ou sem como verificar: {", ".join(sorted(set(inacessiveis)))}',
