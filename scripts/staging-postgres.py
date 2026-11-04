@@ -127,14 +127,14 @@ def main() -> None:
         compose('up', '-d', '--wait', 'postgres')
         migrate(config)
         compose('build', 'app')
-        compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler')
+        compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler', 'gateway')
         subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                         'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',
                         '-e', 'STAGE_ADMIN_PASSWORD', 'app', 'bun', 'scripts/staging-seed.ts'],
                        check=True, cwd=ROOT,
                        env={**os.environ, 'STAGE_ADMIN_PASSWORD': config['STAGE_ADMIN_PASSWORD']})
         result = {**status(config), 'stackStarted': True,
-                  'appUrl': f"http://127.0.0.1:{config.get('STAGE_APP_PORT', '3100')}/",
+                  'appUrl': f"http://127.0.0.1:{config.get('STAGE_GATEWAY_PORT', '3181')}/",
                   'syntheticTenant': 'staging-example', 'adminEmail': 'stage-admin@example.invalid'}
     elif args.command == 'stack-status':
         config = private_config(create=False)
@@ -142,7 +142,7 @@ def main() -> None:
         result = {**status(config), 'stackInspected': True}
     elif args.command == 'stack-stop':
         private_config(create=False)
-        compose('stop', 'app', 'realtime', 'webhooks', 'scheduler')
+        compose('stop', 'gateway', 'app', 'realtime', 'webhooks', 'scheduler')
         result = {'scope': 'local-persistent-staging', 'servicesStopped': True,
                   'postgresPreserved': True, 'volumesPreserved': True}
     elif args.command == 'stop':

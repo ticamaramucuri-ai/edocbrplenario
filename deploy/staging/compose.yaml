@@ -1,9 +1,7 @@
 name: edocbr-plenario-staging
 
-# Toda porta publicada liga em ${STAGE_BIND:-127.0.0.1}. O padrão é loopback: nada
-# responde fora da máquina. Em host dedicado, defina STAGE_BIND para expor APENAS a
-# porta do app por um proxy — banco, Redis e serviços internos continuam em loopback
-# por decisão, não por acidente. Ver deploy/staging/README.md.
+# Todas as portas publicadas ficam no loopback. TLS e acesso externo são
+# terminados no proxy do host à frente do gateway.
 
 services:
   postgres:
@@ -14,7 +12,7 @@ services:
       POSTGRES_USER: edocbr_stage
       POSTGRES_PASSWORD: ${STAGE_DB_PASSWORD:?Configure STAGE_DB_PASSWORD no arquivo privado .env}
     ports:
-      - "${STAGE_BIND:-127.0.0.1}:${STAGE_DB_PORT:-55432}:5432"
+      - "127.0.0.1:${STAGE_DB_PORT:-55432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -29,7 +27,7 @@ services:
       context: ../..
       dockerfile: deploy/staging/Dockerfile
       args:
-        NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:${STAGE_REALTIME_PORT:-3103}
+        NEXT_PUBLIC_REALTIME_URL: ""
     restart: unless-stopped
     depends_on:
       postgres:
@@ -47,7 +45,7 @@ services:
       MEDIA_RECORDINGS_ROOT: /data/recordings
       MEDIA_REPLAY_ROOT: /data/replay
     ports:
-      - "${STAGE_BIND:-127.0.0.1}:${STAGE_APP_PORT:-3100}:3000"
+      - "127.0.0.1:${STAGE_APP_PORT:-3100}:3000"
     volumes:
       - parliamentarian_images:/data/images
       - media_recordings:/data/recordings
@@ -84,7 +82,7 @@ services:
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
       REALTIME_REDIS_URL: redis://redis:6379
     ports:
-      - "${STAGE_BIND:-127.0.0.1}:${STAGE_REALTIME_PORT:-3103}:3003"
+      - "127.0.0.1:${STAGE_REALTIME_PORT:-3103}:3003"
     command: ["bun", "mini-services/realtime/index.ts"]
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -107,7 +105,7 @@ services:
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
       REALTIME_REDIS_URL: redis://redis:6379
     ports:
-      - "${STAGE_BIND:-127.0.0.1}:${STAGE_REALTIME_PEER_PORT:-3104}:3003"
+      - "127.0.0.1:${STAGE_REALTIME_PEER_PORT:-3104}:3003"
     command: ["bun", "mini-services/realtime/index.ts"]
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -169,7 +167,20 @@ services:
       - ./mail-lab/certs:/certs:ro
       - mailpit_data:/data
     ports:
-      - "${STAGE_BIND:-127.0.0.1}:${STAGE_MAILPIT_PORT:-3125}:8025"
+      - "127.0.0.1:${STAGE_MAILPIT_PORT:-3125}:8025"
+
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${STAGE_GATEWAY_PORT:-3181}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
 
   mail_worker:
     image: edocbr-plenario-staging:local

@@ -23,6 +23,7 @@ uma execução em host separado constitui a prova operacional da fase 045.
 |---|---|---|---|
 | `postgres` | `${STAGE_DB_PORT:-55432}` → 5432 | Banco da homologação | padrão |
 | `app` | `${STAGE_APP_PORT:-3100}` → 3000 | Next.js (SPA + `/api/v1`) | padrão |
+| `gateway` | `${STAGE_GATEWAY_PORT:-3181}` → 80 | Entrada única de navegador: app + WebSocket | padrão |
 | `redis` | — (só rede interna) | Streams para fanout entre nós | padrão |
 | `realtime` | `${STAGE_REALTIME_PORT:-3103}` → 3003 | socket.io, nó principal | padrão |
 | `realtime_peer` | `${STAGE_REALTIME_PEER_PORT:-3104}` → 3003 | segundo nó, prova de fanout | `fanout-lab` |
@@ -31,10 +32,12 @@ uma execução em host separado constitui a prova operacional da fase 045.
 | `mailpit` | `${STAGE_MAILPIT_PORT:-3125}` → 8025 | SMTP de laboratório | `mail-lab` |
 | `mail_worker` | — | Confirmações por e-mail | `mail-lab` |
 
-**Toda porta publicada liga em `${STAGE_BIND:-127.0.0.1}`.** O padrão é loopback:
-nada responde fora da máquina. Em host dedicado, `STAGE_BIND` permite expor
-**apenas a porta do app** por um proxy — banco, Redis e serviços internos
-continuam em loopback por decisão, não por acidente.
+Banco, app, realtime, peer, Mailpit e gateway publicam somente em
+`127.0.0.1`. Para acesso de outro computador, ponha um proxy TLS do host em frente a `127.0.0.1:3181`
+e publique apenas 443. O gateway encaminha a query literal
+`XTransformPort=3003` para `realtime:3003`; qualquer outra rota vai para
+`app:3000`. O cliente é compilado para essa origem comum, sem endereço
+`127.0.0.1:3103` no bundle.
 
 ## Volumes duráveis
 
@@ -74,6 +77,7 @@ python3 scripts/staging-postgres.py stack-up      # banco, migrações, serviço
 docker compose --profile fanout-lab --env-file deploy/staging/.env \
   -f deploy/staging/compose.yaml up -d --no-build realtime_peer
 python3 scripts/staging-postgres.py stack-status
+curl -fsS http://127.0.0.1:3181/api/v1/health?ready=1
 docker compose --profile fanout-lab --env-file deploy/staging/.env \
   -f deploy/staging/compose.yaml stop                # para sem destruir volume
 ```

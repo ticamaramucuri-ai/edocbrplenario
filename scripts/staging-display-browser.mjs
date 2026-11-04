@@ -9,8 +9,8 @@ const config = `${root}/deploy/staging/.env`
 const values = Object.fromEntries(readFileSync(config, 'utf8').split('\n')
   .filter((line) => line.includes('=') && !line.startsWith('#'))
   .map((line) => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)]))
-const base = `http://127.0.0.1:${values.STAGE_APP_PORT || '3100'}`
-const mainPort = values.STAGE_REALTIME_PORT || '3103'
+const mainPort = values.STAGE_GATEWAY_PORT || '3181'
+const base = `http://127.0.0.1:${mainPort}`
 const peerPort = values.STAGE_REALTIME_PEER_PORT || '3104'
 const pgEnv = { ...process.env, PGHOST: '127.0.0.1', PGPORT: values.STAGE_DB_PORT || '55432',
   PGUSER: 'edocbr_stage', PGDATABASE: 'edocbr_stage', PGPASSWORD: values.STAGE_DB_PASSWORD }
