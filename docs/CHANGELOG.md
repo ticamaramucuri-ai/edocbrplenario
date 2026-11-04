@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- Roteiro de recuperação agora inicia uma segunda instância do app no banco restaurado e valida bootstrap, login e leitura autenticada; prova sintética com mídia conferiu 52 sessões e 1,494 s do início do contêiner ao primeiro bootstrap. Teste recusa manifesto adulterado.
 - Sonda de saúde registra eventos JSONL de degradação e recuperação, com `incidentId` estável durante a falha; timer de exemplo persiste estado e eventos. Sequência conferida em servidor HTTP falso e no corte integrado da rede app↔banco; coleta e alerta em host externo pendentes.
 - `/api/v1/health?ready=1` passa a medir acesso ao banco e responder 503 quando degradado; sonda remota consulta prontidão antes do bootstrap. Ensaio de corte confirmou transição 200→503→200 com sete votos concorrentes íntegros.
 - Roteiro de falha de rede corrigido para manter a porta do app aberta ao isolar o PostgreSQL; sete votos concorrentes receberam HTTP 503, com sete recibos e auditoria após retorno. Timeout Prisma `P2024` classificado como `DATABASE_UNAVAILABLE`; observador externo pendente.

@@ -32,6 +32,13 @@ with tempfile.TemporaryDirectory() as directory:
         '--images-root', str(images), '--public-root', str(public))
     proof = json.loads(run('verify', '--bundle', str(bundle)).stdout)
     assert proof['files'] == 3
+    original_manifest = (bundle / 'manifest.json').read_bytes()
+    altered_manifest = json.loads(original_manifest)
+    altered_manifest['files'][0]['sha256'] = '0' * 64
+    (bundle / 'manifest.json').write_text(json.dumps(altered_manifest))
+    failure = run('verify', '--bundle', str(bundle), success=False)
+    assert 'hash divergente' in failure.stderr, failure.stderr
+    (bundle / 'manifest.json').write_bytes(original_manifest)
     restored = root / 'restored'
     assert json.loads(run('restore-files', '--bundle', str(bundle), '--target', str(restored)).stdout)['manifestSha256'] == proof['manifestSha256']
     with sqlite3.connect(restored / 'database.sqlite') as db:
@@ -45,4 +52,4 @@ with tempfile.TemporaryDirectory() as directory:
     (restored / 'images/foto.webp').unlink()
     (restored / 'images/foto.webp').symlink_to(source)
     run('verify', '--bundle', str(restored), success=False)
-print('Pacote SQLite: restauração, hash, arquivo extra e symlink verificados.')
+print('Pacote SQLite: restauração, manifesto adulterado, hash, arquivo extra e symlink verificados.')

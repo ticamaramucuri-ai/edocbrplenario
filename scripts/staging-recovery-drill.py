@@ -2,6 +2,7 @@
 """Backup and restore the synthetic staging DB/assets into isolated targets."""
 import hashlib
 import argparse
+import http.cookiejar
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ import subprocess
 import tempfile
 import time
 from urllib.parse import quote
+from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / 'deploy/staging/.env'
@@ -50,6 +52,36 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def restored_app_read(port: str, values: dict[str, str], started: float) -> tuple[float, int]:
+    base = f'http://127.0.0.1:{port}'
+    for attempt in range(60):
+        try:
+            with urlopen(base + '/api/v1/bootstrap', timeout=2) as response:
+                bootstrap = json.load(response)
+            if bootstrap.get('tenant', {}).get('slug') == 'staging-example':
+                break
+        except (OSError, TimeoutError, ValueError):
+            pass
+        time.sleep(0.5)
+    else:
+        raise RuntimeError('Aplicação restaurada não respondeu ao bootstrap em 30 s.')
+    first_bootstrap_seconds = round(time.monotonic() - started, 3)
+    client = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    login_request = Request(base + '/api/v1/auth/login',
+                            json.dumps({'email': 'stage-admin@example.invalid',
+                                        'password': values['STAGE_ADMIN_PASSWORD']}).encode(),
+                            {'Content-Type': 'application/json'})
+    with client.open(login_request, timeout=10) as response:
+        login = json.load(response)
+    if login.get('actor', {}).get('role') != 'tenant_admin':
+        raise RuntimeError('Login no banco restaurado não confirmou administrador sintético.')
+    with client.open(base + '/api/v1/sessions', timeout=10) as response:
+        sessions = json.load(response).get('sessions')
+    if not isinstance(sessions, list) or not sessions:
+        raise RuntimeError('Instância restaurada não leu as sessões autenticadas.')
+    return first_bootstrap_seconds, len(sessions)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--require-media', action='store_true', help='Exige ao menos um replay vinculado ao banco')
@@ -64,6 +96,12 @@ def main() -> None:
     postgres = compose('ps', '-q', 'postgres', capture=True)
     if not app or not postgres:
         raise RuntimeError('Aplicação e PostgreSQL de homologação devem estar em execução.')
+    networks = json.loads(run('docker', 'inspect', '-f', '{{json .NetworkSettings.Networks}}',
+                              postgres, capture=True))
+    if len(networks) != 1:
+        raise RuntimeError('Ensaio requer uma rede Docker exclusiva da stack sintética.')
+    network = next(iter(networks))
+    app_image = run('docker', 'inspect', '-f', '{{.Config.Image}}', app, capture=True)
 
     started = time.monotonic()
     restored_db = 'edocbr_restore_' + secrets.token_hex(6)
@@ -153,6 +191,39 @@ def main() -> None:
                 if not replay.is_file() or replay.stat().st_size != int(row['replayBytes']) or \
                         file_sha256(replay) != row['replaySha256']:
                     raise RuntimeError('Replay restaurado divergiu do banco.')
+            restored_app = ''
+            try:
+                restored_password = quote(values['STAGE_DB_PASSWORD'], safe='')
+                restored_url = (f'postgresql://edocbr_stage:{restored_password}'
+                                f'@postgres:5432/{restored_db}')
+                restored_app_started = time.monotonic()
+                launch = subprocess.run([
+                    'docker', 'run', '--rm', '-d', '--network', network,
+                    '-p', '127.0.0.1::3000',
+                    '-e', f'DATABASE_URL={restored_url}',
+                    '-e', 'PORT=3000', '-e', 'DEFAULT_TENANT_SLUG=staging-example',
+                    '-e', f'REALTIME_AUTH_SECRET={values["STAGE_REALTIME_SECRET"]}',
+                    '-e', 'PARLIAMENTARIAN_IMAGES_ROOT=/data/images',
+                    '-e', 'MEDIA_RECORDINGS_ROOT=/data/recordings',
+                    '-e', 'MEDIA_REPLAY_ROOT=/data/replay',
+                    '--mount', f'type=bind,src={restored / "images"},dst=/data/images,readonly',
+                    '--mount', f'type=bind,src={restored / "recordings"},dst=/data/recordings,readonly',
+                    '--mount', f'type=bind,src={restored / "replay"},dst=/data/replay,readonly',
+                    app_image, 'bun', '.next/standalone/server.js',
+                ], cwd=ROOT, capture_output=True, text=True)
+                if launch.returncode:
+                    raise RuntimeError('Não foi possível iniciar a instância isolada restaurada.')
+                restored_app = launch.stdout.strip()
+                published = run('docker', 'port', restored_app, '3000/tcp', capture=True)
+                port = published.rsplit(':', 1)[-1]
+                if not port.isdigit():
+                    raise RuntimeError('Porta da instância restaurada não foi publicada.')
+                first_bootstrap_seconds, restored_session_count = restored_app_read(
+                    port, values, restored_app_started)
+            finally:
+                if restored_app:
+                    subprocess.run(['docker', 'rm', '-f', restored_app], cwd=ROOT,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             result = {'ok': True, 'scope': 'synthetic-staging', 'bundleFiles': proof['files'],
                       'manifestSha256': proof['manifestSha256'], 'snapshotSeconds': snapshot_seconds,
                       'restoreAndVerifySeconds': round(time.monotonic() - started - snapshot_seconds, 3),
@@ -160,6 +231,8 @@ def main() -> None:
                       'restoredVolumeMarkers': 3, 'activeDatabaseReplaced': False,
                       'restoredRecordingsVerified': len(recordings),
                       'restoredSegmentsVerified': segments_checked,
+                      'restoredAppStartToBootstrapSeconds': first_bootstrap_seconds,
+                      'restoredAppAuthenticatedSessionCount': restored_session_count,
                       'officialRtoRpoMeasured': False}
     finally:
         try:
