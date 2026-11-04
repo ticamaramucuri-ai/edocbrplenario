@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Etapa 045 (em andamento)
 
+- `platform/system-status` passa a medir o scheduler pela rede interna e a sonda externa o valida com credencial de plataforma; teste cobre processo sadio, degradado e ausente, sem abrir porta pública.
 - Gateway Caddy da homologação encaminha app e WebSocket pela mesma origem; todas as portas publicadas ficam no loopback. Build do navegador não incorpora `127.0.0.1:3103`. Ensaio Chromium de três telas, dois nós, reconexão e acessibilidade passou pela porta 3181; teste de configuração impede publicação acidental via variáveis antigas. Host externo/TLS seguem pendentes.
 - Matriz de falhas ganhou votação sintética contínua nos cinco cenários: sete votos, recibos e auditorias por cenário, chaves idempotentes repetidas e HTTP 503 observados na falha do banco e no corte de rede. Tentativas de teste interrompidas foram encerradas.
 - Matriz de falhas agora exige outbox drenada e cadeia de auditoria íntegra após cada cenário; a prova local dos cinco cenários registrou zero pendências e cinco verificações válidas da cadeia.

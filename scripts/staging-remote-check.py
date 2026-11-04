@@ -8,16 +8,13 @@ limite. Grava JSON com horário, latências e o que foi observado.
 Saídas: 0 tudo certo · 1 serviço doente ou relógio divergente · 2 alvo
 inacessível ou serviço esperado sem como ser verificado.
 
-    python3 scripts/staging-remote-check.py --base-url http://host:3100 \\
-      --expect-services app,realtime --service realtime=http://host:3103
+    python3 scripts/staging-remote-check.py --base-url https://stage.example.org \\
+      --expect-services app,realtime,webhooks,scheduler --platform-email usuario
 
-Num host dedicado, só a porta do app fica exposta — banco, Redis, webhooks e
-scheduler seguem em loopback por decisão (ver deploy/staging/README.md). Para
-alcançá-los de fora, informe credenciais de plataforma: o roteiro lê
+Num host dedicado, só o proxy TLS do gateway fica exposto — banco, Redis,
+webhooks e scheduler seguem na rede privada (ver deploy/staging/README.md). Para
+conferi-los de fora, informe credenciais de plataforma: o roteiro lê
 `/api/v1/platform/system-status`, que o próprio app consulta por dentro.
-
-O scheduler não aparece nesse endpoint hoje; sem `--service scheduler=<url>`
-o roteiro **recusa** em vez de supor que está sadio.
 """
 import argparse
 from datetime import datetime, timezone
@@ -35,7 +32,7 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener
 import http.cookiejar
 
 # Serviços que o app sabe conferir por dentro, em `platform/system-status`.
-PELO_APP = {'realtime', 'webhooks', 'mail'}
+PELO_APP = {'realtime', 'webhooks', 'scheduler', 'mail'}
 
 
 def argumentos(argv: list[str]) -> argparse.Namespace:

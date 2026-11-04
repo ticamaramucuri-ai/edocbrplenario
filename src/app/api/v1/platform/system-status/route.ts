@@ -76,6 +76,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const [
     realtime,
     webhooks,
+    scheduler,
     mailWorker,
     fileBytes,
     walBytes,
@@ -94,6 +95,8 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   ] = await Promise.all([
     checkService('realtime', 'Tempo real (socket.io)', process.env.REALTIME_HEALTH_URL || 'http://localhost:3003/health'),
     checkService('webhooks', 'Entregas de webhook', process.env.WEBHOOKS_HEALTH_URL || 'http://localhost:3004/health'),
+    checkService('scheduler', 'Agendador', process.env.SCHEDULER_HEALTH_URL ||
+      new URL('/health', process.env.SCHEDULER_BASE_URL || 'http://localhost:3005').toString()),
     mailConfigured ? checkService('mail', 'Worker de correio (processo)', process.env.MAIL_WORKER_HEALTH_URL || 'http://127.0.0.1:3006/health') : Promise.resolve(null),
     fileSizeBytes(join(dbDir, 'custom.db')),
     fileSizeBytes(join(dbDir, 'custom.db-wal')),
@@ -122,7 +125,7 @@ export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const mem = process.memoryUsage()
   const mb = (x: number) => Number((x / 1024 / 1024).toFixed(1))
 
-  const services = [realtime, webhooks, ...(mailWorker ? [mailWorker] : [])]
+  const services = [realtime, webhooks, scheduler, ...(mailWorker ? [mailWorker] : [])]
 
   // Alertas derivados — SEMPRE com ação sugerida (o banner nunca é só cor).
   const alerts: SystemStatusView['alerts'] = []

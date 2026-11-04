@@ -238,8 +238,10 @@ quem precisa vê-la.
 
 ```bash
 python3 scripts/staging-remote-check.py \
-  --base-url http://<host>:3100 \
-  --expect-services app,realtime \
+  --base-url https://<dominio-de-homologacao> \
+  --expect-services app,realtime,webhooks,scheduler \
+  --platform-email '<usuario-de-plataforma>' \
+  --platform-password '<senha-de-plataforma>' \
   --output /var/lib/legis/remote-check.json
 ```
 
@@ -248,19 +250,19 @@ Saídas: `0` tudo certo · `1` serviço doente ou relógio divergente acima de 2
 horário, latência por serviço, divergência de relógio observada e os limites do
 que foi medido.
 
-Em host dedicado só a porta do app fica exposta, então webhooks e scheduler não
-respondem de fora. Para alcançá-los, informe `--platform-email` e
-`--platform-password`: o roteiro lê `/api/v1/platform/system-status`, que o app
-consulta por dentro. **O scheduler não aparece nesse endpoint hoje** — sem
-`--service scheduler=<url>` o roteiro recusa em vez de supor saúde.
+Em host dedicado só o proxy TLS do gateway fica exposto. Os workers não
+respondem diretamente de fora. Com credencial de plataforma, o roteiro lê
+`/api/v1/platform/system-status`, que consulta realtime, webhooks e scheduler
+pela rede interna. Se um serviço não aparecer na resposta, o roteiro recusa
+em vez de supor saúde.
 
 Para agendar, use os modelos `deploy/systemd/legis-remote-check.{service,timer}.example`.
 Instale-os em **máquina diferente** da observada: verificador no mesmo host é
 sondagem de dentro com outro nome, e o próprio JSON marca `remoto: false` quando
 o alvo é loopback.
 
-Limites do que essa verificação mede: nenhum serviço expõe a versão implantada,
-então a prova não afirma versão; e o cabeçalho `Date` tem resolução de 1 s, de
+Limites do que essa verificação mede: sem `STAGE_BUILD_VERSION` configurado,
+a prova não identifica a revisão implantada; o cabeçalho `Date` tem resolução de 1 s, de
 modo que ela detecta desacordo grosseiro de relógio, não sincronia fina.
 
 ## 5. Backup e restauração (SQLite)

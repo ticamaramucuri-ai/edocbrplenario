@@ -30,11 +30,12 @@ justamente por quem precisaria vê-la.
 Saídas: `0` tudo certo · `1` serviço doente ou relógio divergente · `2` alvo
 inacessível ou serviço esperado **sem como ser verificado**.
 
-Essa terceira saída é a decisão de desenho que importa: em host dedicado só a
-porta do app fica exposta, então webhooks e scheduler não respondem de fora. O
-roteiro **recusa** em vez de supor saúde de quem não conseguiu medir. O
-scheduler, em particular, não aparece no `system-status` do app hoje — sem
-`--service scheduler=<url>` ele é reportado como não verificável.
+Essa terceira saída é a decisão de desenho que importa: em host dedicado só o
+proxy TLS do gateway fica exposto, então os workers não respondem de fora. O
+roteiro **recusa** em vez de supor saúde de quem não conseguiu medir. O app
+agora relata também o scheduler no `system-status`, junto com realtime,
+webhooks e worker de correio quando configurado. A leitura exige credencial
+de plataforma; o endpoint não torna a porta do scheduler pública.
 
 Com `--state-file` e `--events-file`, a sonda mantém o estado da última passagem
 e acrescenta um evento JSONL somente ao entrar em degradação ou ao recuperar.
@@ -59,6 +60,8 @@ exige:
 6. Prontidão 503 → saída 1 com `database: unavailable`.
 7. Saudável → degradado → degradado → recuperado gera somente dois eventos,
    correlacionados pelo mesmo `incidentId`.
+8. Scheduler relatado pelo app passa; `ok: false` reprova com saída 1 e
+   ausência do serviço reprova com saída 2.
 
 O caso 5 só passou depois de corrigir o **teste**: o servidor falso emitia um
 `Date` próprio e o desvio simulado entrava como segundo cabeçalho, ignorado.

@@ -45,6 +45,9 @@ def servidor(rotas: dict[str, tuple[int, dict]], desvio_de_relogio: float = 0.0)
             self.end_headers()
             self.wfile.write(dados)
 
+        def do_POST(self):  # noqa: N802 - assinatura da biblioteca padrão
+            self.do_GET()
+
         def log_message(self, *_):
             pass
 
@@ -169,5 +172,28 @@ try:
 finally:
     app.shutdown()
 
+# ─── 7. Scheduler via status interno exige relato concreto, sem porta pública ─
+servicos = [{'id': 'scheduler', 'ok': True, 'version': 'test-revision',
+             'latencyMs': 3, 'detail': None}]
+interno, url_interno = servidor({
+    '/api/v1/health': (200, {'ok': True, 'version': 'test-revision'}),
+    '/api/v1/bootstrap': (200, {'tenant': {'slug': 'staging-example'}}),
+    '/api/v1/auth/login': (200, {'actor': {'role': 'platform_owner'}}),
+    '/api/v1/platform/system-status': (200, {'services': servicos}),
+})
+try:
+    args = ('--base-url', url_interno, '--expect-services', 'app,scheduler',
+            '--platform-email', 'owner@example.invalid', '--platform-password', 'synthetic',
+            '--expected-version', 'test-revision')
+    prova = json.loads(run(*args).stdout)
+    assert any(s['nome'] == 'scheduler' and s['via'] == 'app' and s['ok']
+               for s in prova['servicos'])
+    servicos[0]['ok'] = False
+    assert 'scheduler' in run(*args, esperado=1).stdout
+    servicos.clear()
+    assert 'scheduler' in run(*args, esperado=2).stdout
+finally:
+    interno.shutdown()
+
 print('verificação remota: host ausente, serviço sem URL, serviço doente, '
-      'relógio divergente, transições de incidente e caminho feliz conferidos')
+      'relógio divergente, scheduler interno, transições de incidente e caminho feliz conferidos')
