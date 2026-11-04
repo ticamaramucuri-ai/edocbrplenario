@@ -136,7 +136,7 @@ export async function buildPublicLiveView(client: Client, tenant: Tenant): Promi
       accentColor: tenant.accentColor,
       logoUrl: tenant.logoUrl,
     },
-    transmissionLink: transmission?.publicUrl && transmission.publicPublishedAt && (!selected.official || transmission.publicObservationId)
+    transmissionLink: selected.status !== 'closed' && transmission?.publicUrl && transmission.publicPublishedAt && (!selected.official || transmission.publicObservationId)
       ? { url: transmission.publicUrl, publishedAt: transmission.publicPublishedAt.toISOString() }
       : null,
     localReplay: recording?.status === 'published' && recording.publishedAt && (!recording.expiresAt || recording.expiresAt > now)

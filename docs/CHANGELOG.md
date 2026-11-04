@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Portal ao vivo oculta o link de transmissão após o encerramento da sessão; o detalhe histórico preserva a referência da plataforma. Teste de publicação social cobre ambos os estados.
 - Auto check-in do parlamentar reaproveita o UUID pendente após recarga da aba e envia a sessão esperada; mudança de sessão responde 409 sem presença indevida. Voto com chave idempotente reutilizada para outro valor responde 409. Testes cobrem repetição, isolamento, armazenamento bloqueado e auditoria única.
 - A sonda agendada passa a ler `EDOCBR_PLATFORM_EMAIL` e `EDOCBR_PLATFORM_PASSWORD` do arquivo de ambiente da unidade systemd, além dos argumentos de linha de comando; teste comprova a consulta interna do scheduler por esse caminho.
 - `platform/system-status` passa a medir o scheduler pela rede interna e a sonda externa o valida com credencial de plataforma; teste cobre processo sadio, degradado e ausente, sem abrir porta pública.

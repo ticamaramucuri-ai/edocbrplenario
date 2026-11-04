@@ -125,6 +125,11 @@ test('publicação exige conferência e transporte pronto; portal só mostra lin
   expect((await (await live()).json()).transmissionLink.url).toBe(publicUrl)
   const historical = await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`), { params: Promise.resolve({ id: session.id }) })
   expect((await historical.json()).transmissionLink.url).toBe(publicUrl)
+  await db.session.update({ where: { id: session.id }, data: { status: 'closed', closedAt: new Date() } })
+  expect((await (await live()).json()).transmissionLink).toBeNull()
+  const closedDetail = await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`), { params: Promise.resolve({ id: session.id }) })
+  expect((await closedDetail.json()).transmissionLink.url).toBe(publicUrl)
+  await db.session.update({ where: { id: session.id }, data: { status: 'open', closedAt: null } })
   await db.transmission.update({ where: { id: transmission.id }, data: { publicObservationId: null } })
   expect((await (await live()).json()).transmissionLink).toBeNull()
   expect((await (await publicSessionGet(new NextRequest(`http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`),

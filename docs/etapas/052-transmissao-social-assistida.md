@@ -10,4 +10,6 @@ O controle de fonte, destinos RTMPS, reconciliação, gravação e replay já ex
 
 **Limite:** a declaração humana não é medição automática da página social nem impede que alguém registre uma observação incorreta. O teste local usa um MediaMTX simulado. Ainda faltam conta/chave institucional, equipamento e banda reais, medição de duração e falhas, supervisão e aceite. O link publicado não prova disponibilidade contínua; uma perda posterior aparece como perda de sinal local, mas o operador deve verificar a plataforma e retirar o link quando necessário. Nextcloud e Alfresco permanecem para as fases 054–056.
 
+**Ajuste funcional posterior:** a visão pública `/public/live` não apresenta a transmissão como ao vivo quando a sessão já foi encerrada. O detalhe histórico da sessão conserva o link da plataforma como referência de arquivo, se ainda publicado, e o replay local continua independente. O ensaio `test:media:public-link` cobre essa diferença. Isso não verifica se a plataforma externa preservou o vídeo.
+
 **Próximo trabalho:** fase 053, piloto assistido de Mucuri, após decisões regimentais, operação PostgreSQL persistente e ensaio de transmissão externa; preparar dados fictícios e roteiro antes de inserir fatos oficiais.
