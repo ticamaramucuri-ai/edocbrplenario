@@ -43,8 +43,10 @@ def argumentos(argv: list[str]) -> argparse.Namespace:
                         help='lista separada por vírgula; `app` é sempre conferido')
     parser.add_argument('--service', action='append', default=[], metavar='nome=url',
                         help='URL direta de um serviço; pode repetir')
-    parser.add_argument('--platform-email', help='ator de plataforma, para ler system-status')
-    parser.add_argument('--platform-password')
+    parser.add_argument('--platform-email', default=os.getenv('EDOCBR_PLATFORM_EMAIL'),
+                        help='ator de plataforma para ler system-status; também aceita EDOCBR_PLATFORM_EMAIL')
+    parser.add_argument('--platform-password', default=os.getenv('EDOCBR_PLATFORM_PASSWORD'),
+                        help='também aceita EDOCBR_PLATFORM_PASSWORD')
     parser.add_argument('--max-clock-skew', type=float, default=2.0,
                         help='divergência máxima de relógio, em segundos (padrão 2)')
     parser.add_argument('--expected-version', help='revisão imutável esperada no app e nos serviços')

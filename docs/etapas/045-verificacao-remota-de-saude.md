@@ -36,6 +36,9 @@ roteiro **recusa** em vez de supor saúde de quem não conseguiu medir. O app
 agora relata também o scheduler no `system-status`, junto com realtime,
 webhooks e worker de correio quando configurado. A leitura exige credencial
 de plataforma; o endpoint não torna a porta do scheduler pública.
+Na unidade systemd, as credenciais são lidas de `EDOCBR_PLATFORM_EMAIL` e
+`EDOCBR_PLATFORM_PASSWORD` no arquivo de ambiente privado; o teste também
+exerce esse caminho.
 
 Com `--state-file` e `--events-file`, a sonda mantém o estado da última passagem
 e acrescenta um evento JSONL somente ao entrar em degradação ou ao recuperar.

@@ -7,6 +7,7 @@ trilha B e depende de host separado, que não existe hoje.
 from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -16,9 +17,9 @@ import time
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts/staging-remote-check.py'
 
 
-def run(*args: str, esperado: int = 0):
+def run(*args: str, esperado: int = 0, env: dict[str, str] | None = None):
     resultado = subprocess.run(['python3', '-I', str(SCRIPT), *args],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, env=env)
     if resultado.returncode != esperado:
         raise AssertionError(f'esperava saída {esperado}, veio {resultado.returncode}:\n'
                              f'{resultado.stdout}\n{resultado.stderr}')
@@ -188,6 +189,12 @@ try:
     prova = json.loads(run(*args).stdout)
     assert any(s['nome'] == 'scheduler' and s['via'] == 'app' and s['ok']
                for s in prova['servicos'])
+    prova_env = json.loads(run('--base-url', url_interno,
+                              '--expect-services', 'app,scheduler',
+                              env={**os.environ, 'EDOCBR_PLATFORM_EMAIL': 'owner@example.invalid',
+                                   'EDOCBR_PLATFORM_PASSWORD': 'synthetic'}).stdout)
+    assert prova_env['ok'] and any(s['nome'] == 'scheduler' and s['via'] == 'app'
+                                  for s in prova_env['servicos'])
     servicos[0]['ok'] = False
     assert 'scheduler' in run(*args, esperado=1).stdout
     servicos.clear()
