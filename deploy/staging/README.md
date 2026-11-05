@@ -92,6 +92,7 @@ Provado (sintético, nesta máquina):
 - [Fanout de tempo real em dois nós](../../docs/etapas/045-fanout-realtime-dois-nos.md).
 - [Telão em navegadores e duas telas](../../docs/etapas/045-ensaio-navegador-duas-telas.md).
 - [Carga mista de voto, portal e replay](../../docs/etapas/045-carga-mista-voto-portal-replay.md).
+- [Deliberação PostgreSQL em duas instâncias HTTP](../../docs/etapas/049-deliberacao-postgres-duas-instancias.md) — chave simultânea, apuração e fechamento concorrente.
 
 **Não** provado, e que exige host separado (tarefas 7 a 10 da trilha B):
 

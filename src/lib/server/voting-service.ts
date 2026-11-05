@@ -20,7 +20,7 @@ import { emitOutbox } from './outbox'
 import { computeVotingResult, currentAttendance, tenantSettings } from './domain'
 import { computeReceipt, SECRET_VOTE_PLACEHOLDER } from './receipts'
 import type { ResultCounts, VoteValue, VotingRule } from '@/lib/contracts'
-import type { Parliamentarian, Prisma, Vote, Voting } from '@prisma/client'
+import { Prisma, type Parliamentarian, type Vote, type Voting } from '@prisma/client'
 
 export type VoteValueInput = 'sim' | 'nao' | 'abstencao'
 export type CastVoteSource = 'operator' | 'pwa'
@@ -227,6 +227,25 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
     }
 
     return { vote: vote as Vote & { parliamentarian: Parliamentarian }, registeredCount, voting }
+  }).catch(async (error: unknown) => {
+    // Duas instâncias podem ler a ausência da mesma chave antes do INSERT.
+    // O índice único decide; após P2002, confirmar o comando vencedor sem
+    // criar outro voto, recibo, auditoria ou evento na instância perdedora.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const committed = await db.vote.findUnique({
+        where: { votingId_commandId: { votingId: voting.id, commandId } },
+        include: { parliamentarian: true },
+      })
+      if (committed) {
+        if (committed.parliamentarianId !== parliamentarian.id ||
+            committed.actorId !== actor.id || committed.value !== value) {
+          throw new DomainError('VOTE_DUPLICATE_COMMAND', 409, 'Comando duplicado',
+            'O commandId informado já foi utilizado com outro ator, parlamentar ou valor nesta votação.')
+        }
+        return { vote: committed, registeredCount: await db.vote.count({ where: { votingId: voting.id } }), voting }
+      }
+    }
+    throw error
   })
 }
 

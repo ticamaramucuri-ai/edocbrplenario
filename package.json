@@ -16,6 +16,7 @@
     "test:display:state": "bash scripts/test-display-state.sh",
     "test:staging:display-browser": "bun scripts/staging-display-browser.mjs",
     "test:staging:plenary-load": "python3 scripts/staging-plenary-load.py",
+    "test:staging:multi-app-deliberation": "python3 scripts/staging-multi-app-deliberation.py",
     "test:staging:remote-check": "python3 scripts/staging-remote-check.py",
     "test:staging:fault-matrix": "python3 scripts/staging-fault-matrix.py",
     "test:a11y:plenario": "bash scripts/test-a11y-audit.sh",
