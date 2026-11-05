@@ -16,7 +16,7 @@
 |---|---|---|---|
 | M0 — base e jornada SaaS | Ensaiado localmente em partes | Layout desktop/móvel; criação de sessão, pauta, votação, ata e portal em jornada reproduzível; papéis e tenants separados; CI coerente com o plano | Revisão visual humana e fechamento das lacunas da jornada |
 | M1 — acervo e recuperação | Ensaiado localmente em partes | Restaurar banco e arquivos juntos; servir foto e documento por HTTP com hash íntegro; provar isolamento, adulteração e ausência; ensaiar replay e medir recuperação | Volume/host separado para prova operacional final |
-| M2 — deliberação confiável | Próximo incremento local | Casos fictícios de presença, suplência, impedimento, empate, votação nominal/simbólica e anulação; resultado esperado calculado independentemente do serviço; relatório e ata conciliados; cruzamento de tenant recusado | Regras regimentais aprovadas para aceite institucional |
+| M2 — deliberação confiável | Ensaio local concluído em parte | Casos fictícios de presença, suplência, impedimento, empate, votação nominal/simbólica e anulação; resultado esperado calculado independentemente do serviço; relatório e ata conciliados; cruzamento de tenant recusado | Matriz regimental, empate nominal, presença variável, PostgreSQL multi-instância e aceite institucional |
 | M3 — audiovisual em laboratório | Pendente nesta fila | Dois destinos simulados, vídeo e áudio, perda/retorno de um destino, gravação/replay sob carga de sessão; portal só exibe link conferido; deliberação segue independente da mídia | Equipamentos, canal e observador externos para homologação |
 | M4 — pacote de homologação | Pendente nesta fila | Implantação parametrizada, checklist por papel, comandos de diagnóstico, roteiro de ensaio longo e matriz de evidências/aceites | Host, responsáveis e contas institucionais para execução |
 | M5 — fases 045–053, piloto | Incrementos técnicos existentes; sem homologação | Implantação SaaS em host separado; política e composição aprovadas; sessão, pauta, convocação, presença, votação, ata, transparência e transmissão ensaiadas e aceitas pela Câmara; pré-voo pronto | TI, secretaria, Presidência, jurídico e audiovisual |
@@ -29,8 +29,8 @@
 
 - [x] Regressão de layout e jornada de ata pública em navegador fictício.
 - [x] Imagem restaurada por HTTP e pré-voo de referências locais por Câmara.
-- [ ] Conferência deliberativa independente (M2).
+- [x] Conferência deliberativa independente com dados fictícios (M2, incremento local).
 - [ ] Transmissão com dois destinos simulados e replay sob carga (M3).
 - [ ] Pacote executável de homologação (M4).
 
-Os dois primeiros itens são incrementos locais: documentos e replay restaurados, host separado e aceite institucional continuam em aberto nos marcos correspondentes. O próximo trabalho é **M2**, seguido de **M3** e **M4**. As integrações Nextcloud/Alfresco começam em **M6**, após o piloto.
+Os três primeiros itens são incrementos locais: documentos e replay restaurados, host separado, matriz regimental e aceite institucional continuam em aberto nos marcos correspondentes. O próximo trabalho é **M3**, seguido de **M4**. As integrações Nextcloud/Alfresco começam em **M6**, após o piloto.

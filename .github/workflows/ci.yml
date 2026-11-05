@@ -43,6 +43,7 @@ jobs:
       - run: bun run test:tenant:health-portability
       - run: bun run test:voting:policy
       - run: bun run test:deliberative:roster
+      - run: bun run test:deliberation:independent
       - run: bun run test:voting:impediments
       - run: bun run test:voting:report-basis
       - run: bun run test:voting:flow-guards

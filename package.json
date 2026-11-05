@@ -52,6 +52,7 @@
     "test:tenant:health-portability": "bash scripts/test-tenant-health-portability.sh",
     "test:voting:policy": "bash scripts/test-voting-policy.sh",
     "test:deliberative:roster": "bash scripts/test-deliberative-roster.sh",
+    "test:deliberation:independent": "bash scripts/test-deliberation-independent.sh",
     "test:voting:impediments": "bash scripts/test-voting-impediments.sh",
     "test:voting:report-basis": "bash scripts/test-voting-report-basis.sh",
     "test:voting:flow-guards": "bash scripts/test-voting-flow-guards.sh",
