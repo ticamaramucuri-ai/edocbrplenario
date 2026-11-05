@@ -2,6 +2,8 @@
 
 **Revisão:** 05/11/2026. **Situação:** produto funcional em desenvolvimento local; piloto institucional ainda não homologado. Este é o plano corrente. O [plano de 04/11](PLANO-INTEGRAL-2026-11-04.md) e os documentos anteriores preservam decisões e histórico; as [etapas numeradas](etapas/README.md) preservam as evidências de cada entrega.
 
+A [meta de execução](META-EXECUCAO-PLENARIO-2026-11-05.md) acompanha os marcos, critérios de saída e dependências deste plano.
+
 ## 1. Como o estado foi conferido
 
 Foram lidos o plano funcional, a matriz de rastreabilidade, as etapas 045–053c, o esquema Prisma, os módulos e rotas principais, os scripts de operação, a CI e o [contrato de integração](integracoes/arquitetura-edocbr.md). Para o ecossistema institucional, foram consultados `/home/suporte/Work/integracao-edocbr/documentacao/ESTADO-ATUAL.md` (atualização parcial de 05/11) e `README.md`. A operação desses serviços não foi testada nesta revisão.
@@ -64,7 +66,7 @@ Executar nesta ordem, em **Câmaras e dados fictícios**, registrando cada incre
 4. **Transmissão em laboratório:** repetir dois destinos simulados, áudio/vídeo, queda de um destino, gravação e replay enquanto há carga de sessão; reforçar mensagens de perda e retirada do link. Critério: votação não depende de mídia e o portal não afirma transmissão sem conferência.
 5. **Pacote de homologação:** produzir checklist de implantação, matriz de evidências por papel, comandos de diagnóstico e roteiro de ensaio longo. Critério: quando o host e responsáveis existirem, a equipe consegue executar sem improvisar regras ou credenciais.
 
-Essa fila entrega engenharia local; não altera o `automaticReady: false` de Mucuri artificialmente. O próximo passo funcional é a jornada de regressão. A fase 045 em host separado e as decisões da Câmara podem avançar em paralelo quando os recursos forem disponibilizados.
+Essa fila entrega engenharia local; não altera o `automaticReady: false` de Mucuri artificialmente. O próximo incremento é a conferência deliberativa independente. A fase 045 em host separado e as decisões da Câmara podem avançar em paralelo quando os recursos forem disponibilizados.
 
 ## 6. Decisões e dependências que exigem participantes externos
 
