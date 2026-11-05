@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Pré-voo do piloto passa a conferir, por Câmara, fotos, emblemas e anexos locais referenciados; ausências e tamanho divergente aparecem como bloqueios, enquanto URLs remotas são identificadas como não verificadas localmente.
 - Prova descartável de recuperação passou a servir imagem referenciada por HTTP após restaurar banco+arquivos; a CI recusa imagem ausente, adulterada ou consulta cruzada de tenant.
 - Ensaio descartável de navegador passou a percorrer encerramento da sessão, criação/revisão da ata por conta legislativa, publicação por outra conta e verificação da integridade e visibilidade no portal.
 - Ensaio de navegador passou a verificar o nome da Câmara e o recuo do cabeçalho em desktop e menu móvel; build descartável passou sem corte ou sobreposição e a auditoria de oito telas permaneceu sem violação impeditiva.
