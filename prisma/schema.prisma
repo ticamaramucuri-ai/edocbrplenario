@@ -23,6 +23,17 @@ model Tenant {
   accentColor  String   @default("#b45309")
   logoUrl      String?
   timezone     String   @default("America/Sao_Paulo")
+  contactAddress        String?
+  contactPostalCode     String?
+  contactGeneralPhone   String?
+  contactAlternatePhone String?
+  contactOmbudsmanPhone String?
+  contactGeneralEmail   String?
+  contactProtocolEmail  String?
+  contactOmbudsmanEmail String?
+  contactWebsiteUrl     String?
+  contactServiceHours   String?
+  contactSessionHours   String?
   settings     String   @default("{}") // JSON TenantSettings (quórum, votos, alertas)
   active       Boolean  @default(true)
   trialEndsAt  DateTime? // Onda 5/F24: trial self-onboarding (14d) — bloqueio suave de escrita ao expirar

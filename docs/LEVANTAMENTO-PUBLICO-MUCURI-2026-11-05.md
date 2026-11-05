@@ -19,7 +19,7 @@
 | Portal | https://camaramucuri.ba.gov.br/ | Referência pública |
 | Legislatura | 2025–2028 | Período candidato; **número ordinal não encontrado nessa página** |
 
-Fonte: [portal institucional](https://camaramucuri.ba.gov.br/) e [página de vereadores](https://camaramucuri.ba.gov.br/vereadores/). O `slug` interno `camara-mucuri-ba` é escolha técnica do projeto, não dado extraído do portal. O fuso já configurado é `America/Bahia` e deve ser confirmado na implantação. O modelo atual de tenant não possui campos próprios para endereço, telefones e e-mails institucionais; esses contatos permanecem registrados neste levantamento até o desenvolvimento desses campos.
+Fonte: [portal institucional](https://camaramucuri.ba.gov.br/) e [página de vereadores](https://camaramucuri.ba.gov.br/vereadores/). O `slug` interno `camara-mucuri-ba` é escolha técnica do projeto, não dado extraído do portal. O fuso já configurado é `America/Bahia` e deve ser confirmado na implantação. A etapa [053a](etapas/053a-contatos-institucionais.md) acrescentou campos próprios para endereço, CEP, telefones, e-mails, site e horários por Câmara. Os 11 campos foram preenchidos na base local de Mucuri, sem alterar as demais Câmaras.
 
 A [notícia oficial da Prefeitura sobre a posse de 01/01/2025](https://mucuri.ba.gov.br/posse-historica-robertinho-e-empossado-na-prefeitura-de-mucuri-pela-4a-vez/) confirma a posse dos 13 vereadores e a eleição da Mesa atual nessa data. É a fonte das datas iniciais dos mandatos e da Mesa cadastrados.
 

@@ -11,7 +11,7 @@ import { BadgeCheck, Info, Landmark, Palette, Save, Settings as SettingsIcon, Sh
 
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
-import { MATTER_TYPE_LABEL, ROLE_LABEL, SESSION_TYPE_LABEL, VOTING_RULE_LABEL, type MatterType, type SessionType, type TenantSettings, type VotingRule } from '@/lib/contracts'
+import { MATTER_TYPE_LABEL, ROLE_LABEL, SESSION_TYPE_LABEL, VOTING_RULE_LABEL, type MatterType, type SessionType, type TenantContact, type TenantSettings, type VotingRule } from '@/lib/contracts'
 import { EmptyState, PageHeader } from '@/components/app/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,6 +57,20 @@ function BrandPreview({ primary, accent, name }: { primary: string; accent: stri
   )
 }
 
+const contactFields: Array<{ key: keyof TenantContact; label: string; type?: string }> = [
+  { key: 'address', label: 'Endereço' },
+  { key: 'postalCode', label: 'CEP' },
+  { key: 'generalPhone', label: 'Telefone geral' },
+  { key: 'alternatePhone', label: 'Telefone alternativo' },
+  { key: 'ombudsmanPhone', label: 'Telefone da Ouvidoria' },
+  { key: 'generalEmail', label: 'E-mail geral', type: 'email' },
+  { key: 'protocolEmail', label: 'E-mail do Protocolo', type: 'email' },
+  { key: 'ombudsmanEmail', label: 'E-mail da Ouvidoria', type: 'email' },
+  { key: 'websiteUrl', label: 'Site oficial', type: 'url' },
+  { key: 'serviceHours', label: 'Horário de atendimento' },
+  { key: 'sessionHours', label: 'Horário habitual das sessões' },
+]
+
 export default function SettingsModule() {
   const can = useApp((s) => s.can)
   const tenant = useApp((s) => s.bootstrap?.tenant ?? null)
@@ -70,6 +84,11 @@ export default function SettingsModule() {
   const [uf, setUf] = useState(tenant?.uf ?? '')
   const [primaryColor, setPrimaryColor] = useState(tenant?.primaryColor ?? '#062f63')
   const [accentColor, setAccentColor] = useState(tenant?.accentColor ?? '#d9a441')
+  const [contact, setContact] = useState<TenantContact>(tenant?.contact ?? {
+    address: null, postalCode: null, generalPhone: null, alternatePhone: null,
+    ombudsmanPhone: null, generalEmail: null, protocolEmail: null, ombudsmanEmail: null,
+    websiteUrl: null, serviceHours: null, sessionHours: null,
+  })
   const [settings, setSettings] = useState<TenantSettings>(
     tenant?.settings ?? {
       quorumMinimum: 7,
@@ -115,7 +134,8 @@ export default function SettingsModule() {
         uf: uf.trim().toUpperCase(),
         primaryColor,
         accentColor,
-        settings,
+        contact: Object.fromEntries(Object.entries(contact).map(([key, value]) => [key, value?.trim() || null])) as TenantContact,
+        settings: JSON.stringify(settings) === JSON.stringify(tenant?.settings) ? undefined : settings,
       }),
     onSuccess: () => {
       toast.success('Configurações salvas', {
@@ -262,6 +282,23 @@ export default function SettingsModule() {
                   {errors.uf && <p className="text-xs text-destructive">{errors.uf}</p>}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Contato institucional</CardTitle>
+              <CardDescription>Informações públicas desta Câmara. O horário habitual não cria sessões no calendário.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {contactFields.map((field) => (
+                <div key={field.key} className={`grid gap-2 ${['address', 'serviceHours', 'sessionHours'].includes(field.key) ? 'sm:col-span-2' : ''}`}>
+                  <Label htmlFor={`tenant-contact-${field.key}`}>{field.label}</Label>
+                  <Input id={`tenant-contact-${field.key}`} type={field.type ?? 'text'}
+                    value={contact[field.key] ?? ''}
+                    onChange={(event) => setContact((current) => ({ ...current, [field.key]: event.target.value }))} />
+                </div>
+              ))}
             </CardContent>
           </Card>
 

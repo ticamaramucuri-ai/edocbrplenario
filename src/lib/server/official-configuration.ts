@@ -45,7 +45,13 @@ export async function inspectOfficialConfiguration(db: Reader, tenantId: string)
     { id: 'voting', label: 'Política de votação', ok: Object.keys(settings.votingPoliciesByMatterType).length > 0, detail: 'Defina ao menos uma regra explícita de votação por tipo de matéria.' },
   ]
   const snapshot = {
-    tenant: { id: tenant.id, name: tenant.name, city: tenant.city, uf: tenant.uf, timezone: tenant.timezone, settings: tenant.settings },
+    tenant: { id: tenant.id, name: tenant.name, city: tenant.city, uf: tenant.uf, timezone: tenant.timezone,
+      contactAddress: tenant.contactAddress, contactPostalCode: tenant.contactPostalCode,
+      contactGeneralPhone: tenant.contactGeneralPhone, contactAlternatePhone: tenant.contactAlternatePhone,
+      contactOmbudsmanPhone: tenant.contactOmbudsmanPhone, contactGeneralEmail: tenant.contactGeneralEmail,
+      contactProtocolEmail: tenant.contactProtocolEmail, contactOmbudsmanEmail: tenant.contactOmbudsmanEmail,
+      contactWebsiteUrl: tenant.contactWebsiteUrl, contactServiceHours: tenant.contactServiceHours,
+      contactSessionHours: tenant.contactSessionHours, settings: tenant.settings },
     legislatures, parliamentarians, mandates, boardPositions, parties, leaves, blocs, matterTypes, users,
   }
   const snapshotJson = JSON.stringify(snapshot)

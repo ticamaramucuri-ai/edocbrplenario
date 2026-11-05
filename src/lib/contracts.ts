@@ -194,8 +194,23 @@ export type TenantView = {
   accentColor: string
   logoUrl: string | null
   timezone: string
+  contact: TenantContact
   settings: TenantSettings
   trialEndsAt: string | null // Onda 5/F24: banner de trial no topbar
+}
+
+export type TenantContact = {
+  address: string | null
+  postalCode: string | null
+  generalPhone: string | null
+  alternatePhone: string | null
+  ombudsmanPhone: string | null
+  generalEmail: string | null
+  protocolEmail: string | null
+  ombudsmanEmail: string | null
+  websiteUrl: string | null
+  serviceHours: string | null
+  sessionHours: string | null
 }
 
 export type ActorView = {

@@ -14,6 +14,7 @@ import { loadTenant } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { toTenantView } from '@/lib/server/serializers'
 import { tenantSettings } from '@/lib/server/domain'
+import type { Tenant } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +41,31 @@ const settingsSchema = z
   })
   .strict()
 
+const contactSchema = z.object({
+  address: z.string().trim().max(250).nullable(),
+  postalCode: z.string().trim().regex(/^\d{2}\.?\d{3}-?\d{3}$/, 'CEP inválido.').nullable(),
+  generalPhone: z.string().trim().max(35).nullable(),
+  alternatePhone: z.string().trim().max(35).nullable(),
+  ombudsmanPhone: z.string().trim().max(35).nullable(),
+  generalEmail: z.string().email().max(254).nullable(),
+  protocolEmail: z.string().email().max(254).nullable(),
+  ombudsmanEmail: z.string().email().max(254).nullable(),
+  websiteUrl: z.string().url().startsWith('https://', 'Use um endereço HTTPS.').max(500).nullable(),
+  serviceHours: z.string().trim().max(180).nullable(),
+  sessionHours: z.string().trim().max(180).nullable(),
+}).partial().strict()
+
+function contactSnapshot(tenant: Tenant) {
+  return {
+    address: tenant.contactAddress, postalCode: tenant.contactPostalCode,
+    generalPhone: tenant.contactGeneralPhone, alternatePhone: tenant.contactAlternatePhone,
+    ombudsmanPhone: tenant.contactOmbudsmanPhone, generalEmail: tenant.contactGeneralEmail,
+    protocolEmail: tenant.contactProtocolEmail, ombudsmanEmail: tenant.contactOmbudsmanEmail,
+    websiteUrl: tenant.contactWebsiteUrl, serviceHours: tenant.contactServiceHours,
+    sessionHours: tenant.contactSessionHours,
+  }
+}
+
 const bodySchema = z
   .object({
     name: z.string().min(3).max(140).optional(),
@@ -47,6 +73,7 @@ const bodySchema = z
     uf: z.string().length(2).optional(),
     primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Cor hex (#rrggbb).').optional(),
     accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Cor hex (#rrggbb).').optional(),
+    contact: contactSchema.optional(),
     settings: settingsSchema.optional(),
   })
   .strict()
@@ -73,7 +100,18 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
         uf: body.uf ? body.uf.toUpperCase() : undefined,
         primaryColor: body.primaryColor ?? undefined,
         accentColor: body.accentColor ?? undefined,
-        settings: JSON.stringify(mergedSettings),
+        contactAddress: body.contact?.address,
+        contactPostalCode: body.contact?.postalCode,
+        contactGeneralPhone: body.contact?.generalPhone,
+        contactAlternatePhone: body.contact?.alternatePhone,
+        contactOmbudsmanPhone: body.contact?.ombudsmanPhone,
+        contactGeneralEmail: body.contact?.generalEmail,
+        contactProtocolEmail: body.contact?.protocolEmail,
+        contactOmbudsmanEmail: body.contact?.ombudsmanEmail,
+        contactWebsiteUrl: body.contact?.websiteUrl,
+        contactServiceHours: body.contact?.serviceHours,
+        contactSessionHours: body.contact?.sessionHours,
+        settings: body.settings ? JSON.stringify(mergedSettings) : undefined,
       },
     })
 
@@ -90,6 +128,7 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
         uf: current.uf,
         primaryColor: current.primaryColor,
         accentColor: current.accentColor,
+        contact: contactSnapshot(current),
         settings: currentSettings,
       },
       after: {
@@ -98,6 +137,7 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
         uf: tenant.uf,
         primaryColor: tenant.primaryColor,
         accentColor: tenant.accentColor,
+        contact: contactSnapshot(tenant),
         settings: mergedSettings,
       },
       correlationId,

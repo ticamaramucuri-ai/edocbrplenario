@@ -38,7 +38,10 @@ source = re.sub(r'\nmodel MailDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel DisplayState \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'(model Legislature \{.*?\n\s*number\s+)Int\?', r'\1Int', source, count=1, flags=re.S)
 for model, fields, indexes in [
-    ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries', 'displayStates'], []),
+    ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries', 'displayStates',
+                'contactAddress', 'contactPostalCode', 'contactGeneralPhone', 'contactAlternatePhone',
+                'contactOmbudsmanPhone', 'contactGeneralEmail', 'contactProtocolEmail', 'contactOmbudsmanEmail',
+                'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
     ('SessionAgendaRevision', ['documentManifestJson'], []),
     ('AttendanceEvent', ['commandId'], []),
