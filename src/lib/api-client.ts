@@ -452,6 +452,9 @@ export const api = {
     role: string
     parliamentarianId: string
     startDate?: string
+    endDate?: string | null
+    status?: 'confirmed' | 'elected'
+    electionReference?: string
   }) =>
     request<{ position: BoardPositionView }>('/board', {
       method: 'POST',
@@ -459,7 +462,7 @@ export const api = {
     }),
   patchBoardPosition: (
     id: string,
-    data: { action: 'encerrar' | 'transferir'; parliamentarianId?: string; startDate?: string }
+    data: { action: 'encerrar' | 'transferir' | 'confirmar_posse' | 'cancelar_eleicao'; parliamentarianId?: string; startDate?: string; confirmationReference?: string }
   ) =>
     request<{ position: BoardPositionView; successor: BoardPositionView | null }>(`/board/${id}`, {
       method: 'PATCH',

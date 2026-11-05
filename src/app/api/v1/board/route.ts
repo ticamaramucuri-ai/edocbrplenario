@@ -37,6 +37,7 @@ const createSchema = z.object({
   startDate: z.string().datetime({ offset: true }).optional(),
   endDate: z.string().datetime({ offset: true }).nullable().optional(),
   status: z.enum(['confirmed', 'elected']).optional(),
+  electionReference: z.string().min(5).max(200).optional(),
 })
 
 export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => {
@@ -54,14 +55,21 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
   assertTenantScope(actor, parliamentarian.tenantId)
   const startDate = body.startDate ? new Date(body.startDate) : new Date()
   const endDate = body.endDate ? new Date(body.endDate) : null
+  const status = body.status ?? 'confirmed'
+  if (status === 'elected' && !body.startDate) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Data necessária', 'Informe a data prevista de posse da Mesa eleita.')
+  }
+  if (status === 'elected' && !body.electionReference?.trim()) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Ato necessário', 'Informe a referência do ato de eleição.')
+  }
   if (endDate && endDate < startDate) {
     throw new DomainError('VALIDATION_ERROR', 422, 'Vigência inválida', 'A data final não pode anteceder a inicial.')
   }
 
   const position = await withTransaction(async (tx) => {
-    // Intervalos do mesmo cargo não podem se sobrepor, inclusive designações futuras.
+    // Eleição futura pode coexistir com o ocupante atual, mas não com outra eleição para o mesmo período.
     const overlappingRole = await tx.boardPosition.findFirst({
-      where: { tenantId, legislatureId: legislature.id, role: body.role,
+      where: { tenantId, legislatureId: legislature.id, role: body.role, status,
         ...(endDate ? { startDate: { lte: endDate } } : {}),
         OR: [{ endDate: null }, { endDate: { gte: startDate } }],
       },
@@ -83,7 +91,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         parliamentarianId: parliamentarian.id,
         startDate,
         endDate,
-        status: body.status ?? 'confirmed',
+        status,
       },
       include: { parliamentarian: true, legislature: true },
     })
@@ -93,8 +101,12 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       action: 'board.designated',
       aggregateType: 'board_position',
       aggregateId: created.id,
-      summary: `${BOARD_ROLE_LABEL[body.role]}: ${parliamentarian.name} designado em ${legislatureLabel(legislature.number, legislature.startYear, legislature.endYear)}.`,
-      after: { role: created.role, parliamentarian: parliamentarian.name, legislatureId: legislature.id, startDate: created.startDate },
+      summary: status === 'elected'
+        ? `Eleição para ${BOARD_ROLE_LABEL[body.role]} registrada: ${parliamentarian.name}; posse pendente.`
+        : `${BOARD_ROLE_LABEL[body.role]}: ${parliamentarian.name} designado em ${legislatureLabel(legislature.number, legislature.startYear, legislature.endYear)}.`,
+      after: { role: created.role, status: created.status, parliamentarian: parliamentarian.name,
+        legislatureId: legislature.id, startDate: created.startDate, endDate: created.endDate },
+      justification: status === 'elected' ? body.electionReference?.trim() : undefined,
       correlationId,
       ip: clientIp(req),
     })

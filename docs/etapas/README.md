@@ -82,6 +82,9 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [051 — Ata e transparência](051-ata-transparencia.md) | Incremento técnico concluído | Revisão com hash, publicação por outra pessoa, retificação por novo ato e vínculo público à sessão e replay | Aceite institucional do texto, assinaturas e retenção |
 | [052 — Transmissão social assistida](052-transmissao-social-assistida.md) | Incremento técnico concluído | Observação auditável da página pública e duas identidades para link oficial | Canal, hardware, banda e ensaio institucional real |
 | [053 — Preparação do piloto de Mucuri](053-preparacao-piloto-mucuri.md) | Roteiro e pré-voo prontos; piloto não iniciado | Diagnóstico somente leitura, critérios de entrada, sequência de ensaio e evidências de aceite | Dados, responsáveis, infraestrutura e canal institucionais |
+| [053 — Cadastro público e vigências de Mucuri](053-cadastro-publico-mucuri-vigencias.md) | Incremento local concluído | 13 vereadores/mandatos, duas Mesas temporais e legislatura sem ordinal presumido | Conferência da Câmara e usuários nominais |
+| [053a — Contatos institucionais](053a-contatos-institucionais.md) | Incremento local concluído | Contatos por tenant e 11 campos públicos de Mucuri | Conferência institucional dos contatos |
+| [053b — Ciclo de eleição da Mesa](053b-ciclo-eleicao-mesa.md) | Incremento local concluído | Eleição futura, confirmação de posse e cancelamento com ato e auditoria | Ato de posse real e homologação da Câmara |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

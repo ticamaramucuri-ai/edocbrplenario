@@ -200,8 +200,13 @@ pendências do processo legislativo (prazos vencidos, protocolos a distribuir).
 
 - **Legislaturas**: cadastro e marcação da atual (afeta defaults de mandatos).
 - **Partidos e Blocos**: partidos com sigla/nome/número e emblema opcional; uma troca de emblema atualiza todos os parlamentares do mesmo partido nesta Câmara. Blocos têm partidos componentes.
-- **Mesa Diretora**: composição vigente com vigência (início/fim) e histórico — designar,
-  transferir cargo ou encerrar vigência; nunca sobrescreve o passado.
+- **Mesa Diretora**: composição vigente e histórico com início/fim. Ao designar, escolha
+  **Cargo em exercício** ou **Eleição para posse futura**. Na eleição, informe a data
+  prevista, o fim do período se conhecido e a referência do ato. A pessoa eleita fica
+  como **posse pendente**; a passagem da data não a coloca em exercício. Depois da
+  posse, use **Confirmar posse**, confira o dia efetivo e informe a referência da ata.
+  Se a eleição perder efeito, use **Cancelar eleição** com a referência do ato. O
+  histórico permanece. A transferência e o encerramento se aplicam aos cargos vigentes.
 - **Comissões**: comissões permanentes/temporárias com composição (presidente, relator,
   titulares) e reuniões (agendar, realizar, cancelar).
 - **Mandatos e Afastamentos**: mandatos por legislatura (votos, período) e afastamentos

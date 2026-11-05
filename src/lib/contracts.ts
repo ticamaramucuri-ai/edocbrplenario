@@ -734,7 +734,7 @@ export type BoardPositionView = {
   startDate: string
   endDate: string | null
   current: boolean
-  status: 'confirmed' | 'elected'
+  status: 'confirmed' | 'elected' | 'cancelled'
 }
 
 export type CommitteeView = {

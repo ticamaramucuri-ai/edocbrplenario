@@ -903,7 +903,7 @@ model BoardPosition {
   parliamentarianId String
   startDate         DateTime
   endDate           DateTime?
-  status            String    @default("confirmed") // confirmed|elected
+  status            String    @default("confirmed") // confirmed|elected|cancelled
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

@@ -2,6 +2,8 @@
 
 **Revisão:** 04/11/2026. **Escopo:** produto SaaS multi-Câmara, piloto assistido de Mucuri/BA e integração posterior ao ecossistema edocBR. Este documento atualiza a prioridade dos planos anteriores; os registros numerados em `docs/etapas/` continuam sendo a prova de cada entrega. Uma implementação local não equivale a homologação institucional.
 
+**Atualização local de 05/11/2026:** a base de Mucuri recebeu 13 vereadores, partidos, legislatura 2025–2028 sem ordinal presumido, mandatos, Mesa atual e Mesa eleita para 2027–2028 com posse pendente, além de contatos institucionais. O ciclo de eleição futura, confirmação e cancelamento foi concluído na interface e API ([etapa 053b](etapas/053b-ciclo-eleicao-mesa.md)). O pré-voo segue negativo por regras regimentais/aprovação, responsáveis, infraestrutura e canal social; nenhuma sessão oficial ou integração externa foi ativada.
+
 ## 1. Base analisada e regra de leitura
 
 Foram confrontados `README.md`, `docs/ROADMAP.md`, `docs/DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md`, `docs/PLANO-ATUALIZADO-2026-10-13.md`, `docs/PLANO-CONTINUIDADE-2026-10-20.md`, `docs/PENDENCIAS-PRIORIZADAS.md`, ADRs, índice e registros das etapas 001–053, contrato de integração, módulos, rotas, esquema Prisma, testes, CI e estrutura de homologação. O inventário atual mostra **186 rotas** `/api/v1`, **78 modelos** Prisma e **53 arquivos de teste** `.test.ts`/`.test.py`; são contagens de arquivos, não cobertura ou aprovação. A documentação de integração institucional foi consultada em `/home/suporte/Work/integracao-edocbr/documentacao/ESTADO-ATUAL.md` (atualização parcial de 04/11), `README.md` e na skill operacional edocBR/CMM. Seu estado é específico daquele ambiente e deve ser reconfirmado antes de conectar serviços.

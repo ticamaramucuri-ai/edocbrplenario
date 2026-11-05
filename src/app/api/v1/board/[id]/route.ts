@@ -1,6 +1,6 @@
 /**
- * PATCH /api/v1/board/:id — encerrar vigência (endDate=now) ou transferir cargo
- * (encerra a vigência atual e designa novo parlamentar no mesmo cargo/legislatura).
+ * PATCH /api/v1/board/:id — confirmar posse, cancelar eleição, encerrar vigência
+ * ou transferir cargo no mesmo tenant/legislatura.
  * RBAC structure.write. Histórico nunca é apagado (append-only temporal).
  */
 import type { NextRequest } from 'next/server'
@@ -19,7 +19,7 @@ import { BOARD_ROLE_LABEL } from '@/lib/contracts'
 export const dynamic = 'force-dynamic'
 
 const patchSchema = z.object({
-  action: z.enum(['encerrar', 'transferir', 'confirmar_posse']),
+  action: z.enum(['encerrar', 'transferir', 'confirmar_posse', 'cancelar_eleicao']),
   parliamentarianId: z.string().min(1).optional(), // obrigatório em transferir
   startDate: z.string().datetime({ offset: true }).optional(),
   confirmationReference: z.string().min(5).max(200).optional(),
@@ -38,6 +38,31 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
   if (!current) throw notFound('Posição na Mesa Diretora não encontrada.')
   assertTenantScope(actor, current.tenantId)
 
+  if (body.action === 'cancelar_eleicao') {
+    const reference = body.confirmationReference?.trim()
+    if (current.status !== 'elected' || !reference) {
+      throw new DomainError('VALIDATION_ERROR', 422, 'Cancelamento inválido',
+        'A posição deve estar eleita e a referência do ato de cancelamento deve ser informada.')
+    }
+    const cancelled = await withTransaction(async (tx) => {
+      const changed = await tx.boardPosition.updateMany({ where: { id: current.id, status: 'elected' },
+        data: { status: 'cancelled' } })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Mesa alterada', 'Recarregue a composição antes de cancelar.')
+      const updated = await tx.boardPosition.findUniqueOrThrow({ where: { id: current.id },
+        include: { parliamentarian: true, legislature: true } })
+      await writeAudit(tx, { tenantId: current.tenantId, actor, action: 'board.election_cancelled',
+        aggregateType: 'board_position', aggregateId: current.id,
+        summary: `Eleição para ${BOARD_ROLE_LABEL[current.role]} cancelada: ${current.parliamentarian.name}.`,
+        before: { status: current.status }, after: { status: updated.status },
+        justification: reference, correlationId, ip: clientIp(req) })
+      await emitOutbox(tx, { tenantId: current.tenantId, eventType: 'structure.changed',
+        aggregateId: current.id, aggregateVersion: 2, correlationId, origin: 'operator',
+        internalPayload: { entity: 'board_position', event: 'election_cancelled', id: current.id } })
+      return updated
+    })
+    return Response.json({ position: toBoardPositionView(cancelled) })
+  }
+
   if (body.action === 'confirmar_posse') {
     const confirmationReference = body.confirmationReference?.trim()
     if (current.status !== 'elected' || !confirmationReference) {
@@ -52,16 +77,19 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
       const overlap = await tx.boardPosition.findFirst({ where: {
         tenantId: current.tenantId, legislatureId: current.legislatureId, role: current.role,
         id: { not: current.id }, status: 'confirmed',
-        startDate: { lte: current.endDate ?? undefined },
+        ...(current.endDate ? { startDate: { lte: current.endDate } } : {}),
         OR: [{ endDate: null }, { endDate: { gte: startDate } }],
       }, select: { id: true } })
       if (overlap) throw new DomainError('VALIDATION_ERROR', 409, 'Vigência sobreposta', 'Encerre a composição anterior antes de confirmar a posse.')
+      const changed = await tx.boardPosition.updateMany({ where: { id: current.id, status: 'elected' },
+        data: { status: 'confirmed', startDate } })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Mesa alterada', 'Recarregue a composição antes de confirmar a posse.')
       await tx.parliamentarian.updateMany({ where: {
         tenantId: current.tenantId, boardRole: current.role, id: { not: current.parliamentarianId },
       }, data: { boardRole: 'vereador' } })
       await tx.parliamentarian.update({ where: { id: current.parliamentarianId }, data: { boardRole: current.role } })
-      const updated = await tx.boardPosition.update({ where: { id: current.id },
-        data: { status: 'confirmed', startDate }, include: { parliamentarian: true, legislature: true } })
+      const updated = await tx.boardPosition.findUniqueOrThrow({ where: { id: current.id },
+        include: { parliamentarian: true, legislature: true } })
       await writeAudit(tx, { tenantId: current.tenantId, actor, action: 'board.inaugurated',
         aggregateType: 'board_position', aggregateId: current.id,
         summary: `Posse confirmada: ${BOARD_ROLE_LABEL[current.role]} ${current.parliamentarian.name}.`,

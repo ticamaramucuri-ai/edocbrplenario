@@ -545,7 +545,7 @@ export function toBoardPositionView(
     startDate: iso(bp.startDate) as string,
     endDate: iso(bp.endDate),
     current: bp.status === 'confirmed' && bp.startDate <= now && (bp.endDate === null || bp.endDate >= now),
-    status: bp.status as 'confirmed' | 'elected',
+    status: bp.status as 'confirmed' | 'elected' | 'cancelled',
   }
 }
 

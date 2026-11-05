@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Mesa Diretora permite registrar eleição futura por Câmara com período e referência do ato, confirmar posse ou cancelar a eleição sem apagar o histórico. Datas civis são convertidas no fuso da Câmara; registros eleitos não assumem automaticamente. Testes cobrem colisões, repetição de eleição cancelada, auditoria e posse.
 - Painel audiovisual destaca link publicado sem sinal/encaminhamento local confirmado e oferece retirada ao operador autorizado, com instrução de conferir a página externa.
 - App do Parlamentar conserva o comando de voto quando a resposta se perde e oferece repetição da mesma tentativa. O servidor confirma voto já gravado após o fechamento da votação e rejeita reutilização da chave por outro ator/valor; testes preservam auditoria única.
 - Portal ao vivo oculta o link de transmissão após o encerramento da sessão; o detalhe histórico preserva a referência da plataforma. Teste de publicação social cobre ambos os estados.
