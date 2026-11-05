@@ -85,6 +85,7 @@ Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arq
 | [053 — Cadastro público e vigências de Mucuri](053-cadastro-publico-mucuri-vigencias.md) | Incremento local concluído | 13 vereadores/mandatos, duas Mesas temporais e legislatura sem ordinal presumido | Conferência da Câmara e usuários nominais |
 | [053a — Contatos institucionais](053a-contatos-institucionais.md) | Incremento local concluído | Contatos por tenant e 11 campos públicos de Mucuri | Conferência institucional dos contatos |
 | [053b — Ciclo de eleição da Mesa](053b-ciclo-eleicao-mesa.md) | Incremento local concluído | Eleição futura, confirmação de posse e cancelamento com ato e auditoria | Ato de posse real e homologação da Câmara |
+| [053c — Fotos públicas de Mucuri](053c-fotos-publicas-mucuri.md) | Importação local concluída | 13 fotos do portal da Câmara com hash de origem e processamento local | Conferência institucional das fotos e emblemas partidários verificados |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
