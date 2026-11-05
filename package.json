@@ -43,6 +43,7 @@
     "db:backup:bundle": "python3 scripts/backup-bundle.py",
     "db:backup:prune": "python3 scripts/prune-local-backups.py",
     "test:recovery:drill": "python3 scripts/recovery-drill-local.py",
+    "test:recovery:image-http": "bash scripts/test-restored-image-http.sh",
     "db:demo-attachments:repair": "python3 scripts/repair-demo-attachments.py",
     "db:postgres:status": "python3 scripts/postgres-migrate.py status",
     "db:postgres:migrate": "python3 scripts/postgres-migrate.py apply",
