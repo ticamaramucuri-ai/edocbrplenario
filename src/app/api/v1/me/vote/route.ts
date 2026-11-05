@@ -52,6 +52,6 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
     },
     registeredCount: result.registeredCount,
     // Recibo verificável é emitido no encerramento da votação (Fase 18/ADR-019)
-    receiptPending: result.voting.mode === 'nominal',
+    receiptPending: result.voting.mode === 'nominal' && result.voting.status === 'open',
   })
 })

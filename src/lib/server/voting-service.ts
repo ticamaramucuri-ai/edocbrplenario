@@ -40,7 +40,7 @@ export type CastVoteArgs = {
 export type CastVoteResult = {
   vote: Vote & { parliamentarian: Parliamentarian }
   registeredCount: number
-  voting: Pick<Voting, 'id' | 'sessionId' | 'version' | 'hidePartial' | 'mode'>
+  voting: Pick<Voting, 'id' | 'sessionId' | 'version' | 'hidePartial' | 'mode' | 'status'>
 }
 
 export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
@@ -51,6 +51,25 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
   if (voting.session.official && voting.mode === 'secreto') {
     throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado até revisão independente do sigilo.')
   }
+  const parliamentarian = await loadParliamentarian(actor, parliamentarianId)
+  // A resposta pode se perder depois do commit. O mesmo comando confirma o
+  // registro existente mesmo se a Mesa encerrou a votação nesse intervalo.
+  const previousCommand = await db.vote.findUnique({
+    where: { votingId_commandId: { votingId: voting.id, commandId } },
+    include: { parliamentarian: true },
+  })
+  if (previousCommand) {
+    if (previousCommand.parliamentarianId !== parliamentarian.id ||
+        previousCommand.actorId !== actor.id || previousCommand.value !== value) {
+      throw new DomainError('VOTE_DUPLICATE_COMMAND', 409, 'Comando duplicado',
+        'O commandId informado já foi utilizado com outro ator, parlamentar ou valor nesta votação.')
+    }
+    return {
+      vote: previousCommand,
+      registeredCount: await db.vote.count({ where: { votingId: voting.id } }),
+      voting,
+    }
+  }
   if (voting.status !== 'open') {
     throw new DomainError(
       'VOTING_NOT_OPEN',
@@ -59,8 +78,6 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
       `A votação está "${voting.status}" — votos só são aceitos com ela aberta.`
     )
   }
-
-  const parliamentarian = await loadParliamentarian(actor, parliamentarianId)
 
   // Fase 18: o valor é validado contra as opções da votação — customizadas
   // (chaves de VotingOption) quando existem, padrão regimental caso contrário.
@@ -94,12 +111,13 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
       where: { votingId_commandId: { votingId: voting.id, commandId } },
       include: { parliamentarian: true },
     })
-    if (byCommand && (byCommand.parliamentarianId !== parliamentarian.id || byCommand.value !== value)) {
+    if (byCommand && (byCommand.parliamentarianId !== parliamentarian.id ||
+        byCommand.actorId !== actor.id || byCommand.value !== value)) {
       throw new DomainError(
         'VOTE_DUPLICATE_COMMAND',
         409,
         'Comando duplicado',
-        'O commandId informado já foi utilizado com outro parlamentar ou valor nesta votação.'
+        'O commandId informado já foi utilizado com outro ator, parlamentar ou valor nesta votação.'
       )
     }
 

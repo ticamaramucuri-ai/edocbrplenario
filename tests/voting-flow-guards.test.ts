@@ -5,6 +5,7 @@ import { POST as createVoting } from '@/app/api/v1/sessions/[id]/votings/route'
 import { POST as votingTransition } from '@/app/api/v1/votings/[id]/transition/route'
 import { POST as sessionTransition } from '@/app/api/v1/sessions/[id]/transition/route'
 import { POST as castVote } from '@/app/api/v1/votings/[id]/votes/route'
+import { POST as selfVote } from '@/app/api/v1/me/vote/route'
 
 afterAll(async () => { await db.$disconnect() })
 
@@ -21,6 +22,8 @@ test('cancelamento restaura pauta; sessão não suspende/encerra com votação i
     email: `admin-${suffix}@example.invalid`, role: 'tenant_admin' } })
   const operator = await db.user.create({ data: { tenantId: tenant.id, name: 'Operador',
     email: `operator-${suffix}@example.invalid`, role: 'session_operator' } })
+  const secondOperator = await db.user.create({ data: { tenantId: tenant.id, name: 'Segunda Operadora',
+    email: `operator2-${suffix}@example.invalid`, role: 'session_operator' } })
   const person = await db.parliamentarian.create({ data: { tenantId: tenant.id, name: 'Vereadora', party: 'SEM' } })
   const session = await db.session.create({ data: { tenantId: tenant.id, number: 1, year: 2026,
     status: 'open', scheduledAt: new Date(), openedAt: new Date() } })
@@ -77,6 +80,14 @@ test('cancelamento restaura pauta; sessão não suspende/encerra com votação i
   expect((await db.vote.findFirstOrThrow({ where: { votingId: secondId } })).value).toBe('sim')
   expect(await db.auditEvent.count({ where: { tenantId: tenant.id, action: 'vote.cast' } })).toBe(1)
   expect((await transitionVoting(secondId, 'close', 4)).status).toBe(200)
+  expect((await retry()).status).toBe(200)
+  expect((await castVote(request(`http://localhost/api/v1/votings/${secondId}/votes`, operator.id,
+    { parliamentarianId: person.id, value: 'nao', commandId }),
+  { params: Promise.resolve({ id: secondId }) })).status).toBe(409)
+  expect((await castVote(request(`http://localhost/api/v1/votings/${secondId}/votes`, secondOperator.id,
+    { parliamentarianId: person.id, value: 'sim', commandId }),
+  { params: Promise.resolve({ id: secondId }) })).status).toBe(409)
+  expect(await db.auditEvent.count({ where: { tenantId: tenant.id, action: 'vote.cast' } })).toBe(1)
   expect((await transitionSession('close', 3)).status).toBe(200)
   expect((await create()).status).toBe(409)
   expect(await db.auditEvent.count({ where: { tenantId: tenant.id, action: 'voting.cancelled' } })).toBe(1)
@@ -97,4 +108,31 @@ test('voto rejeitado se a sessão estiver suspensa mesmo quando a votação lega
     { parliamentarianId: person.id, value: 'sim', commandId: crypto.randomUUID() }),
   { params: Promise.resolve({ id: voting.id }) })
   expect(response.status).toBe(409)
+})
+
+test('app do parlamentar confirma comando após fechamento sem novo voto', async () => {
+  const suffix = crypto.randomUUID()
+  const tenant = await db.tenant.create({ data: { slug: `retry-${suffix}`, name: 'Câmara Teste', city: 'Teste', uf: 'BA' } })
+  const person = await db.parliamentarian.create({ data: { tenantId: tenant.id, name: 'Parlamentar', party: 'SEM' } })
+  const actor = await db.user.create({ data: { tenantId: tenant.id, name: 'Parlamentar',
+    email: `self-${suffix}@example.invalid`, role: 'parliamentarian', parliamentarianId: person.id } })
+  const session = await db.session.create({ data: { tenantId: tenant.id, number: 1, year: 2026,
+    status: 'open', scheduledAt: new Date(), openedAt: new Date() } })
+  const voting = await db.voting.create({ data: { sessionId: session.id, question: 'Aprovar?', status: 'open', mode: 'nominal' } })
+  await db.attendanceEvent.create({ data: { sessionId: session.id, parliamentarianId: person.id,
+    kind: 'check_in', status: 'presente', source: 'operador' } })
+  const commandId = crypto.randomUUID()
+  const send = (value: string, key: string) => selfVote(request('http://localhost/api/v1/me/vote', actor.id,
+    { votingId: voting.id, value, commandId: key }), { params: Promise.resolve({}) })
+  const initial = await send('sim', commandId)
+  expect(initial.status).toBe(200)
+  expect((await initial.json()).receiptPending).toBe(true)
+  await db.voting.update({ where: { id: voting.id }, data: { status: 'closed', closedAt: new Date() } })
+  const repeated = await send('sim', commandId)
+  expect(repeated.status).toBe(200)
+  expect((await repeated.json()).receiptPending).toBe(false)
+  expect((await send('nao', commandId)).status).toBe(409)
+  expect((await send('nao', crypto.randomUUID())).status).toBe(409)
+  expect(await db.vote.count({ where: { votingId: voting.id } })).toBe(1)
+  expect(await db.auditEvent.count({ where: { tenantId: tenant.id, action: 'vote.cast' } })).toBe(1)
 })

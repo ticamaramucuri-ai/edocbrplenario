@@ -30,7 +30,7 @@ import {
   Vote,
 } from 'lucide-react'
 
-import { api, signaturesApi, type MeContextViewExt, type MyVoteReceiptRow } from '@/lib/api-client'
+import { api, ApiRequestError, signaturesApi, type MeContextViewExt, type MyVoteReceiptRow } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
 import { useRealtime } from '@/hooks/use-realtime'
 import { fmtDateShort, fmtDateTime } from '@/lib/format'
@@ -312,10 +312,14 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
   const queryClient = useQueryClient()
   const [pending, setPending] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [failedAttempt, setFailedAttempt] = useState<{ votingId: string; value: string; commandId: string } | null>(null)
+  const retryableAttempt = failedAttempt?.votingId === active?.voting.id ? failedAttempt : null
 
   const voteMutation = useMutation({
-    mutationFn: (value: string) => api.meVote(active!.voting.id, value, crypto.randomUUID()),
+    mutationFn: (attempt: { votingId: string; value: string; commandId: string }) =>
+      api.meVote(attempt.votingId, attempt.value, attempt.commandId),
     onSuccess: (res) => {
+      setFailedAttempt(null)
       toast.success('Voto registrado', {
         description: res.receiptPending
           ? `Total de votos na mesa: ${res.registeredCount}. Recibo verificável será emitido no encerramento da votação.`
@@ -325,11 +329,30 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
       void queryClient.invalidateQueries({ queryKey: ['me-context'] })
       void queryClient.invalidateQueries({ queryKey: ['me-history'] })
     },
-    onError: () => {
+    onError: (error, attempt) => {
+      if (!(error instanceof ApiRequestError) || error.problem.status >= 500 || error.problem.status === 429) {
+        setFailedAttempt(attempt)
+      } else {
+        setFailedAttempt(null)
+        void queryClient.invalidateQueries({ queryKey: ['me-context'] })
+      }
       setPending(null)
     },
   })
 
+  const retryNotice = failedAttempt && (
+    <div role="alert" className="space-y-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+      <p>A resposta do voto não foi confirmada. Tente novamente com a mesma chave antes de escolher outra opção.</p>
+      <Button type="button" variant="outline" disabled={voteMutation.isPending}
+        onClick={() => voteMutation.mutate(failedAttempt)}>
+        {voteMutation.isPending ? 'Conferindo voto…' : 'Tentar novamente'}
+      </Button>
+    </div>
+  )
+
+  if (failedAttempt && failedAttempt.votingId !== active?.voting.id) {
+    return <Card><CardContent className="p-4">{retryNotice}</CardContent></Card>
+  }
   if (!active) return null
   const { voting, myVote, eligible } = active
   const secret = voting.mode === 'secreto'
@@ -358,6 +381,7 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
         )}
       </CardHeader>
       <CardContent className="space-y-3">
+        {retryableAttempt && retryNotice}
         {!voting.hidePartial && (
           <p className="text-xs text-muted-foreground">
             Votos registrados: <strong className="tabular-nums">{voting.registeredCount}</strong>
@@ -392,7 +416,7 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
                 key={opt.value}
                 type="button"
                 className={`h-14 min-h-11 text-base font-bold ${opt.className}`}
-                disabled={voteMutation.isPending || (!!myVote && !canChange)}
+                disabled={voteMutation.isPending || !!retryableAttempt || (!!myVote && !canChange)}
                 onClick={() => {
                   setPending(opt.value)
                   setConfirmOpen(true)
@@ -441,7 +465,9 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => pending && voteMutation.mutate(pending)}>
+              <AlertDialogAction onClick={() => pending && voteMutation.mutate({
+                votingId: voting.id, value: pending, commandId: crypto.randomUUID(),
+              })}>
                 Confirmar voto
               </AlertDialogAction>
             </AlertDialogFooter>
