@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- O ensaio de réplica PostgreSQL passa a auditar fotos e emblemas referenciados no snapshot antes da cópia; teste comprova recusa de imagem ausente.
 - Importação reproduzível das fotos públicas dos 13 parlamentares atuais de Mucuri, com hash de origem, processamento WebP, isolamento por Câmara e proteção contra substituição de foto cadastrada.
 - Mesa Diretora permite registrar eleição futura por Câmara com período e referência do ato, confirmar posse ou cancelar a eleição sem apagar o histórico. Datas civis são convertidas no fuso da Câmara; registros eleitos não assumem automaticamente. Testes cobrem colisões, repetição de eleição cancelada, auditoria e posse.
 - Painel audiovisual destaca link publicado sem sinal/encaminhamento local confirmado e oferece retirada ao operador autorizado, com instrução de conferir a página externa.

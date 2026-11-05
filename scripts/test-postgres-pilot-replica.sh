@@ -59,6 +59,8 @@ if [[ -n "${MEDIA_RECORDINGS_ROOT:-}" && -n "${MEDIA_REPLAY_ROOT:-}" ]]; then
   asset_args=(--recordings-root "$MEDIA_RECORDINGS_ROOT" --replay-root "$MEDIA_REPLAY_ROOT")
 fi
 python3 scripts/audit-external-assets.py --source "$temporary/source.db" --strict "${asset_args[@]}"
+image_root="${PARLIAMENTARIAN_IMAGES_ROOT:-$PWD/upload/parliamentarian-images}"
+python3 scripts/audit-parliamentarian-images.py --source "$temporary/source.db" --root "$image_root" --strict
 docker run -d --rm --name "$container" -p 127.0.0.1::5432 \
   -e POSTGRES_PASSWORD=replica-only postgres:16-alpine >/dev/null
 for attempt in {1..30}; do

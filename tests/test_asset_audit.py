@@ -2,6 +2,8 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import sqlite3
+import subprocess
 import tempfile
 import unittest
 
@@ -13,6 +15,30 @@ spec.loader.exec_module(audit)
 
 
 class AssetAuditTest(unittest.TestCase):
+    def test_pilot_image_audit_rejects_missing_referenced_photo(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / 'source.db'
+            images = root / 'images'
+            tenant = 'tenanttest12345'
+            image_dir = images / tenant
+            image_dir.mkdir(parents=True)
+            filename = '12345678-1234-4123-8123-123456789abc.webp'
+            url = f'/api/v1/public/parliamentarian-images/{tenant}/{filename}'
+            with sqlite3.connect(database) as db:
+                db.execute('CREATE TABLE Parliamentarian (tenantId TEXT, photoUrl TEXT, partyEmblemUrl TEXT)')
+                db.execute('CREATE TABLE Party (tenantId TEXT, emblemUrl TEXT)')
+                db.execute('INSERT INTO Parliamentarian VALUES (?, ?, NULL)', (tenant, url))
+            command = ['python3', str(module_path.with_name('audit-parliamentarian-images.py')),
+                       '--source', str(database), '--root', str(images), '--strict']
+            missing = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(missing.returncode, 1)
+            self.assertEqual(json.loads(missing.stdout)['counts']['missing_reference'], 1)
+            (image_dir / filename).write_bytes(b'webp-fixture')
+            present = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(present.returncode, 0)
+            self.assertEqual(json.loads(present.stdout)['counts']['referenced_file'], 1)
+
     def test_attachment_checks_file_hash_size_and_path(self):
         with tempfile.TemporaryDirectory() as directory:
             public = Path(directory)
