@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Painel audiovisual destaca link publicado sem sinal/encaminhamento local confirmado e oferece retirada ao operador autorizado, com instrução de conferir a página externa.
 - App do Parlamentar conserva o comando de voto quando a resposta se perde e oferece repetição da mesma tentativa. O servidor confirma voto já gravado após o fechamento da votação e rejeita reutilização da chave por outro ator/valor; testes preservam auditoria única.
 - Portal ao vivo oculta o link de transmissão após o encerramento da sessão; o detalhe histórico preserva a referência da plataforma. Teste de publicação social cobre ambos os estados.
 - Auto check-in do parlamentar reaproveita o UUID pendente após recarga da aba e envia a sessão esperada; mudança de sessão responde 409 sem presença indevida. Voto com chave idempotente reutilizada para outro valor responde 409. Testes cobrem repetição, isolamento, armazenamento bloqueado e auditoria única.

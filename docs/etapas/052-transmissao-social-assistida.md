@@ -12,4 +12,6 @@ O controle de fonte, destinos RTMPS, reconciliação, gravação e replay já ex
 
 **Ajuste funcional posterior:** a visão pública `/public/live` não apresenta a transmissão como ao vivo quando a sessão já foi encerrada. O detalhe histórico da sessão conserva o link da plataforma como referência de arquivo, se ainda publicado, e o replay local continua independente. O ensaio `test:media:public-link` cobre essa diferença. Isso não verifica se a plataforma externa preservou o vídeo.
 
+O painel do operador também destaca, durante o acompanhamento, um link publicado cujo sinal local ou encaminhamento RTMPS do destino não está confirmado. A ação sugerida é observar vídeo e áudio na plataforma por outra rede e retirar o link se a transmissão caiu; a retirada continua um comando explícito e auditado do operador. O alerta usa apenas os estados locais consultados a cada três segundos e não comprova indisponibilidade da rede social.
+
 **Próximo trabalho:** fase 053, piloto assistido de Mucuri, após decisões regimentais, operação PostgreSQL persistente e ensaio de transmissão externa; preparar dados fictícios e roteiro antes de inserir fatos oficiais.

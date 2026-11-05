@@ -161,8 +161,16 @@ export function TransmissionTab({ sessionId }: { sessionId: string }) {
 
   const { transmission, source } = data
   const forwarding = destinations.data?.destinations.filter((item) => item.desiredEnabled && item.syncStatus === 'applied' && item.enabled && item.state === 'forwarding') ?? []
+  const publishedDestinationForwarding = forwarding.some((item) => item.id === transmission.publicLink?.destinationId)
+  const publicLinkAtRisk = !!transmission.publicLink && transmission.status === 'monitoring' &&
+    (!source.ready || destinations.isError || (!!destinations.data && !publishedDestinationForwarding))
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {publicLinkAtRisk && <div role="alert" className="lg:col-span-2 rounded-lg border border-amber-400 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+        <p className="font-semibold">Link público exige conferência imediata</p>
+        <p className="mt-1">O sinal local ou o encaminhamento do destino publicado não está confirmado. Abra a página da plataforma em outra rede e confira vídeo e áudio; retire o link se a transmissão não estiver disponível.</p>
+        {can('media.manage') && <Button className="mt-3" size="sm" variant="outline" disabled={busy} onClick={() => void setPublicLink('withdraw')}>Retirar link público</Button>}
+      </div>}
       <Card className="lg:col-span-2">
         <CardHeader><h2 className="text-base font-semibold leading-none">Prontidão da sessão</h2></CardHeader>
         <CardContent className="space-y-3 text-sm">
