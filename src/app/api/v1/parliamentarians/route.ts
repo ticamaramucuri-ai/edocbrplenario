@@ -32,7 +32,7 @@ const createSchema = z.object({
   name: z.string().min(3, 'Nome obrigatório.').max(120),
   party: z.string().min(1, 'Partido obrigatório.').max(20),
   bloc: z.string().max(60).optional(),
-  boardRole: z.enum(['presidente', 'vice_presidente', 'primeiro_secretario', 'vereador']).optional(),
+  boardRole: z.enum(['presidente', 'vice_presidente', 'primeiro_secretario', 'segundo_secretario', 'vereador']).optional(),
   committee: z.string().max(120).optional(),
   email: z.string().email().optional(),
   phone: z.string().max(30).optional(),

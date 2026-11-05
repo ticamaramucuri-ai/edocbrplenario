@@ -23,7 +23,7 @@ const patchSchema = z.object({
   name: z.string().min(3).max(120).optional(),
   party: z.string().min(1).max(20).optional(),
   bloc: z.string().max(60).nullable().optional(),
-  boardRole: z.enum(['presidente', 'vice_presidente', 'primeiro_secretario', 'vereador']).optional(),
+  boardRole: z.enum(['presidente', 'vice_presidente', 'primeiro_secretario', 'segundo_secretario', 'vereador']).optional(),
   committee: z.string().max(120).nullable().optional(),
   email: z.string().email().nullable().optional(),
   phone: z.string().max(30).nullable().optional(),
