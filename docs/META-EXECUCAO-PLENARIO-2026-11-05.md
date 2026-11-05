@@ -15,7 +15,7 @@
 | Marco | Estado em 05/11 | Entrega e prova exigida | Dependência para conclusão |
 |---|---|---|---|
 | M0 — base e jornada SaaS | Ensaiado localmente em partes | Layout desktop/móvel; criação de sessão, pauta, votação, ata e portal em jornada reproduzível; papéis e tenants separados; CI coerente com o plano | Revisão visual humana e fechamento das lacunas da jornada |
-| M1 — acervo e recuperação | Ensaiado localmente em partes | Restaurar banco e arquivos juntos; servir foto e documento por HTTP com hash íntegro; provar isolamento, adulteração e ausência; ensaiar replay e medir recuperação | Volume/host separado para prova operacional final |
+| M1 — acervo e recuperação | Banco, foto, PDF e replay ensaiados localmente | Restaurar banco e arquivos juntos; servir foto e documento por HTTP com hash íntegro; provar isolamento, adulteração e ausência; ensaiar replay e medir recuperação | Volume/host separado para RTO/RPO e prova operacional final |
 | M2 — deliberação confiável | Ensaio local concluído em parte | Casos fictícios de presença, suplência, impedimento, empate, votação nominal/simbólica e anulação; resultado esperado calculado independentemente do serviço; relatório e ata conciliados; cruzamento de tenant recusado | Matriz regimental, empate nominal, presença variável, PostgreSQL multi-instância e aceite institucional |
 | M3 — audiovisual em laboratório | Ensaio sintético repetido | Dois destinos simulados, vídeo e áudio, perda/retorno de um destino, gravação/replay sob carga de sessão; portal só exibe link conferido; deliberação segue independente da mídia | Equipamentos, canal e observador externos para homologação |
 | M4 — pacote de homologação | Roteiro preparado | Implantação parametrizada, checklist por papel, comandos de diagnóstico, roteiro de ensaio longo e matriz de evidências/aceites | Host, responsáveis e contas institucionais para execução |
@@ -33,4 +33,4 @@
 - [x] Transmissão com dois destinos simulados e replay sob carga (M3, ensaio sintético).
 - [x] Pacote de execução documental de homologação (M4, preparação local).
 
-Os cinco itens acima são incrementos locais: documentos e replay restaurados, host separado, matriz regimental, canal social e aceite institucional continuam em aberto nos marcos correspondentes. O próximo trabalho independente é aprofundar portabilidade do acervo e ensaiar casos deliberativos ainda fora da matriz; a execução de **M5** requer as entradas institucionais. As integrações Nextcloud/Alfresco começam em **M6**, após o piloto.
+Os cinco itens acima são incrementos locais: foto, PDF e replay foram restaurados em instância descartável. Host separado, matriz regimental, canal social e aceite institucional continuam em aberto nos marcos correspondentes. O próximo trabalho independente é ampliar casos deliberativos ainda fora da matriz; a execução de **M5** requer as entradas institucionais. As integrações Nextcloud/Alfresco começam em **M6**, após o piloto.

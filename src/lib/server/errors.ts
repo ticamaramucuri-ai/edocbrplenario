@@ -69,6 +69,7 @@ export type ApiErrorCode =
   | 'MEDIA_ARCHIVE_INVALID'
   | 'MEDIA_ARCHIVE_UNAVAILABLE'
   | 'MEDIA_ARCHIVE_TAMPERED'
+  | 'DOCUMENT_INTEGRITY_FAILED'
   | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR'
 
@@ -130,6 +131,7 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   MEDIA_ARCHIVE_INVALID: 'media-archive-invalid',
   MEDIA_ARCHIVE_UNAVAILABLE: 'media-archive-unavailable',
   MEDIA_ARCHIVE_TAMPERED: 'media-archive-tampered',
+  DOCUMENT_INTEGRITY_FAILED: 'document-integrity-failed',
   DATABASE_UNAVAILABLE: 'database-unavailable',
   INTERNAL_ERROR: 'internal-error',
 }
