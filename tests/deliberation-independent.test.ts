@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { POST as changeImpediment } from '@/app/api/v1/votings/[id]/impediments/route'
 import { POST as transition } from '@/app/api/v1/votings/[id]/transition/route'
 import { POST as castVote } from '@/app/api/v1/votings/[id]/votes/route'
+import { POST as attendancePost } from '@/app/api/v1/sessions/[id]/attendance/route'
 import { POST as symbolicTally } from '@/app/api/v1/votings/[id]/symbolic-tally/route'
 import { GET as publicSession } from '@/app/api/v1/public/sessions/[id]/route'
 import { GET as ataReport } from '@/app/api/v1/reports/session/[id]/ata/route'
@@ -189,4 +190,61 @@ test('livro de papel: empate simbólico confirmado, anulação e isolamento entr
     headers: { 'x-actor-id': clerk.id },
   }), ctx(session.id))
   expect((await ata.json()).ata.votings[0]).toMatchObject({ result: 'anulado', counts: null })
+})
+
+test('livro de papel: saída após abertura muda presença, mantém base e produz empate nominal', async () => {
+  const suffix = crypto.randomUUID()
+  const tenant = await db.tenant.create({ data: { slug: `paper-presence-${suffix}`,
+    name: 'Câmara Fictícia de Presença', city: 'Teste', uf: 'BA',
+    settings: JSON.stringify({ quorumMinimum: 2 }) } })
+  const admin = await db.user.create({ data: { tenantId: tenant.id, name: 'Mesa',
+    email: `paper-presence-admin-${suffix}@example.invalid`, role: 'tenant_admin' } })
+  const operator = await db.user.create({ data: { tenantId: tenant.id, name: 'Operador',
+    email: `paper-presence-op-${suffix}@example.invalid`, role: 'session_operator' } })
+  const people: Parliamentarian[] = []
+  for (let i = 0; i < 4; i++) people.push(await db.parliamentarian.create({ data: {
+    tenantId: tenant.id, name: `Parlamentar ${i}`, party: 'SEM', order: i,
+  } }))
+  const session = await db.session.create({ data: { tenantId: tenant.id, number: 1,
+    year: 2026, scheduledAt: new Date('2026-11-05T17:00:00Z'), status: 'open',
+    agendaPublished: true } })
+  for (const person of people) await db.attendanceEvent.create({ data: { sessionId: session.id,
+    parliamentarianId: person.id, kind: 'check_in', status: 'presente', source: 'operador' } })
+  const voting = await db.voting.create({ data: { sessionId: session.id, question: 'Empate nominal',
+    mode: 'nominal', status: 'ready', rule: 'maioria_simples', requiredQuorum: 2 } })
+  expect((await act(voting.id, admin.id, { action: 'open', version: 1 })).status).toBe(200)
+  const opened = await db.voting.findUniqueOrThrow({ where: { id: voting.id } })
+  expect(opened).toMatchObject({ memberBaseAtOpen: 4, presentAtOpen: 4, quorumAtOpen: 2 })
+  const checkout = await attendancePost(new NextRequest(
+    `http://localhost/api/v1/sessions/${session.id}/attendance`, { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-actor-id': admin.id },
+      body: JSON.stringify({ parliamentarianId: people[3].id, action: 'check_out',
+        commandId: crypto.randomUUID() }),
+    }), ctx(session.id))
+  expect(checkout.status).toBe(200)
+  expect((await castVote(post(voting.id, 'votes', operator.id, {
+    parliamentarianId: people[3].id, value: 'sim', commandId: crypto.randomUUID(),
+  }), ctx(voting.id))).status).toBe(409)
+  for (const [person, value] of [[people[0], 'sim'], [people[1], 'nao']] as const) {
+    expect((await castVote(post(voting.id, 'votes', operator.id, {
+      parliamentarianId: person.id, value, commandId: crypto.randomUUID(),
+    }), ctx(voting.id))).status).toBe(200)
+  }
+  expect((await act(voting.id, admin.id, { action: 'close', version: opened.version })).status).toBe(200)
+  const paper = paperResult(['sim', 'nao'], 3, 4, 2, 'maioria_simples')
+  expect(paper).toMatchObject({ resultStatus: 'empate', counts: { naoRegistraram: 1 } })
+  const closed = await db.voting.findUniqueOrThrow({ where: { id: voting.id } })
+  expect(closed).toMatchObject({ memberBaseAtOpen: 4, presentAtClose: 3, resultStatus: 'empate' })
+  expect(JSON.parse(closed.resultCounts ?? '{}')).toEqual(paper.counts)
+  const nominal = JSON.parse(closed.resultDetail ?? '[]') as Array<{ name: string; value: string }>
+  expect(nominal).toHaveLength(3)
+  expect(nominal).toContainEqual(expect.objectContaining({ name: people[2].name, value: 'nao_registrado' }))
+  const ata = await ataReport(new NextRequest(`http://localhost/api/v1/reports/session/${session.id}/ata`, {
+    headers: { 'x-actor-id': admin.id },
+  }), ctx(session.id))
+  expect((await ata.json()).ata.votings[0]).toMatchObject({ result: paper.resultStatus, counts: paper.counts })
+  const publicView = await publicSession(new NextRequest(
+    `http://localhost/api/v1/public/sessions/${session.id}?tenant=${tenant.slug}`), ctx(session.id))
+  expect((await publicView.json()).votings[0]).toMatchObject({ resultStatus: paper.resultStatus,
+    resultCounts: paper.counts })
 })
