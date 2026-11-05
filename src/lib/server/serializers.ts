@@ -520,6 +520,7 @@ export function toBlocView(b: BlocRow): BlocView {
 export function toBoardPositionView(
   bp: BoardPositionRow & { parliamentarian: ParlRow; legislature: LegislatureRow }
 ): BoardPositionView {
+  const now = new Date()
   return {
     id: bp.id,
     legislatureId: bp.legislatureId,
@@ -530,7 +531,8 @@ export function toBoardPositionView(
     parliamentarianParty: bp.parliamentarian.party,
     startDate: iso(bp.startDate) as string,
     endDate: iso(bp.endDate),
-    current: bp.endDate === null,
+    current: bp.status === 'confirmed' && bp.startDate <= now && (bp.endDate === null || bp.endDate >= now),
+    status: bp.status as 'confirmed' | 'elected',
   }
 }
 

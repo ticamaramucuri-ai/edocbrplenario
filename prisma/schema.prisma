@@ -259,7 +259,7 @@ model User {
 model Legislature {
   id        String  @id @default(cuid())
   tenantId  String
-  number    Int
+  number    Int?
   startYear Int
   endYear   Int
   current   Boolean @default(false)
@@ -892,6 +892,7 @@ model BoardPosition {
   parliamentarianId String
   startDate         DateTime
   endDate           DateTime?
+  status            String    @default("confirmed") // confirmed|elected
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

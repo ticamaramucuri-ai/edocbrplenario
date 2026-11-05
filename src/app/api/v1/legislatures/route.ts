@@ -12,6 +12,7 @@ import { requirePermission } from '@/lib/server/rbac'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { toLegislatureView } from '@/lib/server/serializers'
+import { legislatureLabel } from '@/lib/legislature-label'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,7 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
 })
 
 const createSchema = z.object({
-  number: z.number().int().min(1).max(999),
+  number: z.number().int().min(1).max(999).nullable(),
   startYear: z.number().int().min(1990).max(2100),
   endYear: z.number().int().min(1990).max(2100),
   current: z.boolean().optional(),
@@ -49,7 +50,10 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
 
   const legislature = await withTransaction(async (tx) => {
     const dup = await tx.legislature.findFirst({
-      where: { tenantId, number: body.number },
+      where: { tenantId, OR: [
+        { startYear: body.startYear, endYear: body.endYear },
+        ...(body.number === null ? [] : [{ number: body.number }]),
+      ] },
       select: { id: true },
     })
     if (dup) {
@@ -57,7 +61,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         'VALIDATION_ERROR',
         422,
         'Dados inválidos',
-        `Legislatura nº ${body.number} já existe neste tenant.`
+        `${legislatureLabel(body.number, body.startYear, body.endYear)} já existe nesta Câmara.`
       )
     }
     const created = await tx.legislature.create({
@@ -80,7 +84,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       action: 'legislature.created',
       aggregateType: 'legislature',
       aggregateId: created.id,
-      summary: `Legislatura nº ${created.number} (${created.startYear}–${created.endYear}) criada.`,
+      summary: `${legislatureLabel(created.number, created.startYear, created.endYear)} (${created.startYear}–${created.endYear}) criada.`,
       after: { number: created.number, startYear: created.startYear, endYear: created.endYear },
       correlationId,
       ip: clientIp(req),

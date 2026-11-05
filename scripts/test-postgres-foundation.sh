@@ -36,6 +36,7 @@ source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flag
 source = re.sub(r'\nmodel MediaPublicObservation \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MailDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel DisplayState \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'(model Legislature \{.*?\n\s*number\s+)Int\?', r'\1Int', source, count=1, flags=re.S)
 for model, fields, indexes in [
     ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries', 'displayStates'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
@@ -46,6 +47,7 @@ for model, fields, indexes in [
     ('Transmission', ['publicObservationId', 'observations'], []),
     ('CitizenSubscription', ['mailDeliveries'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
+    ('BoardPosition', ['status'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),
     ('WebhookDelivery', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, nextAttemptAt']),

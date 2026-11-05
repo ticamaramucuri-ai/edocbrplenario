@@ -19,9 +19,10 @@ import { BOARD_ROLE_LABEL } from '@/lib/contracts'
 export const dynamic = 'force-dynamic'
 
 const patchSchema = z.object({
-  action: z.enum(['encerrar', 'transferir']),
+  action: z.enum(['encerrar', 'transferir', 'confirmar_posse']),
   parliamentarianId: z.string().min(1).optional(), // obrigatório em transferir
   startDate: z.string().datetime({ offset: true }).optional(),
+  confirmationReference: z.string().min(5).max(200).optional(),
 })
 
 export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => {
@@ -37,12 +38,50 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
   if (!current) throw notFound('Posição na Mesa Diretora não encontrada.')
   assertTenantScope(actor, current.tenantId)
 
-  if (current.endDate !== null) {
+  if (body.action === 'confirmar_posse') {
+    const confirmationReference = body.confirmationReference?.trim()
+    if (current.status !== 'elected' || !confirmationReference) {
+      throw new DomainError('VALIDATION_ERROR', 422, 'Posse não confirmada',
+        'A posição deve estar eleita e a referência do ato de posse deve ser informada.')
+    }
+    const startDate = body.startDate ? new Date(body.startDate) : current.startDate
+    if (startDate > new Date()) {
+      throw new DomainError('VALIDATION_ERROR', 422, 'Data futura', 'A posse só pode ser confirmada após a data efetiva.')
+    }
+    const confirmed = await withTransaction(async (tx) => {
+      const overlap = await tx.boardPosition.findFirst({ where: {
+        tenantId: current.tenantId, legislatureId: current.legislatureId, role: current.role,
+        id: { not: current.id }, status: 'confirmed',
+        startDate: { lte: current.endDate ?? undefined },
+        OR: [{ endDate: null }, { endDate: { gte: startDate } }],
+      }, select: { id: true } })
+      if (overlap) throw new DomainError('VALIDATION_ERROR', 409, 'Vigência sobreposta', 'Encerre a composição anterior antes de confirmar a posse.')
+      await tx.parliamentarian.updateMany({ where: {
+        tenantId: current.tenantId, boardRole: current.role, id: { not: current.parliamentarianId },
+      }, data: { boardRole: 'vereador' } })
+      await tx.parliamentarian.update({ where: { id: current.parliamentarianId }, data: { boardRole: current.role } })
+      const updated = await tx.boardPosition.update({ where: { id: current.id },
+        data: { status: 'confirmed', startDate }, include: { parliamentarian: true, legislature: true } })
+      await writeAudit(tx, { tenantId: current.tenantId, actor, action: 'board.inaugurated',
+        aggregateType: 'board_position', aggregateId: current.id,
+        summary: `Posse confirmada: ${BOARD_ROLE_LABEL[current.role]} ${current.parliamentarian.name}.`,
+        before: { status: current.status, startDate: current.startDate },
+        after: { status: updated.status, startDate: updated.startDate },
+        justification: confirmationReference, correlationId, ip: clientIp(req) })
+      await emitOutbox(tx, { tenantId: current.tenantId, eventType: 'structure.changed',
+        aggregateId: current.id, aggregateVersion: 2, correlationId, origin: 'operator',
+        internalPayload: { entity: 'board_position', event: 'inaugurated', id: current.id } })
+      return updated
+    })
+    return Response.json({ position: toBoardPositionView(confirmed) })
+  }
+
+  if (current.startDate > new Date() || (current.endDate !== null && current.endDate < new Date())) {
     throw new DomainError(
       'VALIDATION_ERROR',
       422,
       'Vigência encerrada',
-      'Esta posição já possui vigência encerrada — o histórico não é alterado.'
+      'Esta posição não está vigente; o histórico e as designações futuras não são alterados por esta ação.'
     )
   }
   if (body.action === 'transferir' && !body.parliamentarianId) {
@@ -85,6 +124,7 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
           role: current.role,
           parliamentarianId: successor.id,
           startDate: body.startDate ? new Date(body.startDate) : now,
+          endDate: current.endDate,
         },
         include: { parliamentarian: true, legislature: true },
       })

@@ -13,6 +13,7 @@ import { requirePermission } from '@/lib/server/rbac'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { toMandateView } from '@/lib/server/serializers'
+import { legislatureLabel } from '@/lib/legislature-label'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         'VALIDATION_ERROR',
         422,
         'Dados inválidos',
-        `${parliamentarian.name} já possui mandato na Legislatura nº ${legislature.number}.`
+        `${parliamentarian.name} já possui mandato em ${legislatureLabel(legislature.number, legislature.startYear, legislature.endYear)}.`
       )
     }
     const created = await tx.mandate.create({
@@ -86,7 +87,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       action: 'mandate.create',
       aggregateType: 'mandate',
       aggregateId: created.id,
-      summary: `Mandato de ${parliamentarian.name} na Legislatura nº ${legislature.number} registrado.`,
+      summary: `Mandato de ${parliamentarian.name} em ${legislatureLabel(legislature.number, legislature.startYear, legislature.endYear)} registrado.`,
       after: { parliamentarian: parliamentarian.name, legislature: legislature.number, votes: created.votes },
       correlationId,
       ip: clientIp(req),

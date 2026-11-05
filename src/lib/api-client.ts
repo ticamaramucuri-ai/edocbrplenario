@@ -407,12 +407,12 @@ export const api = {
 
   // ─── Fase 5: Estrutura institucional ──────────────────────────────────────
   listLegislatures: () => request<{ legislatures: LegislatureView[] }>('/legislatures'),
-  createLegislature: (data: { number: number; startYear: number; endYear: number; current?: boolean }) =>
+  createLegislature: (data: { number: number | null; startYear: number; endYear: number; current?: boolean }) =>
     request<{ legislature: LegislatureView }>('/legislatures', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  updateLegislature: (id: string, data: { number?: number; startYear?: number; endYear?: number; current?: boolean }) =>
+  updateLegislature: (id: string, data: { number?: number | null; startYear?: number; endYear?: number; current?: boolean }) =>
     request<{ legislature: LegislatureView }>(`/legislatures/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

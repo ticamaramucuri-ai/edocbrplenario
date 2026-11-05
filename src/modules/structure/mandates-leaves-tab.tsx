@@ -21,6 +21,7 @@ import {
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
 import { fmtDateShort } from '@/lib/format'
+import { legislatureLabel } from '@/lib/legislature-label'
 import {
   LEAVE_KIND_LABEL,
   type LeaveView,
@@ -116,7 +117,7 @@ export default function MandatesLeavesTab() {
             <SelectContent>
               {legislatures.map((l) => (
                 <SelectItem key={l.id} value={l.id}>
-                  {l.number}ª Legislatura ({l.startYear}–{l.endYear}){l.current ? ' · atual' : ''}
+                  {legislatureLabel(l.number, l.startYear, l.endYear)} ({l.startYear}–{l.endYear}){l.current ? ' · atual' : ''}
                 </SelectItem>
               ))}
             </SelectContent>

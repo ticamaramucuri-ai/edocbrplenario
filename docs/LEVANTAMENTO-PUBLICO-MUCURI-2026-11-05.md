@@ -2,7 +2,7 @@
 
 **Consulta e importação local:** 05/11/2026. As fontes abaixo são páginas públicas da própria Câmara. A composição, os partidos e os cargos precisam de conferência institucional antes da homologação.
 
-**Execução:** tenant `camara-mucuri-ba` já existente; cadastrados 7 partidos e 13 parlamentares na base SQLite local por `bun scripts/import-mucuri-public-roster.ts --apply`, após backup `db/custom.db.backup.mucuri-public-roster-20261105T210908Z`. Os quatro cargos da Mesa exibida atualmente foram preenchidos em `Parliamentarian.boardRole`. A segunda execução foi idempotente: 0 novos registros. A API de parlamentar passou a aceitar `segundo_secretario`, já previsto na interface. Nenhum usuário, sessão, mandato, legislatura ordinal ou `BoardPosition` foi criado. O pré-voo segue com `automaticReady: false`.
+**Execução:** tenant `camara-mucuri-ba` já existente; cadastrados 7 partidos e 13 parlamentares na base SQLite local por `bun scripts/import-mucuri-public-roster.ts --apply`, após backup `db/custom.db.backup.mucuri-public-roster-20261105T210908Z`. Os quatro cargos da Mesa exibida atualmente foram preenchidos em `Parliamentarian.boardRole`. A segunda execução foi idempotente: 0 novos registros. A API de parlamentar passou a aceitar `segundo_secretario`, já previsto na interface. Na sequência, `bun scripts/import-mucuri-terms.ts --apply` cadastrou uma legislatura 2025–2028 sem número ordinal, 13 mandatos e 8 posições temporais da Mesa (4 confirmadas para 2025–2026 e 4 eleitas para 2027–2028, ainda sem posse). As duas execuções foram repetidas sem duplicar registros. Antes das mudanças do modelo e da base, foram criados os backups `db/custom.db.backup.mucuri-terms-20261105T212317Z` e `db/custom.db.backup.mucuri-board-status-20261105T212615Z`. Nenhum usuário ou sessão foi criado. O pré-voo segue com `automaticReady: false`.
 
 ## 1. Identificação e atendimento
 
@@ -20,6 +20,8 @@
 | Legislatura | 2025–2028 | Período candidato; **número ordinal não encontrado nessa página** |
 
 Fonte: [portal institucional](https://camaramucuri.ba.gov.br/) e [página de vereadores](https://camaramucuri.ba.gov.br/vereadores/). O `slug` interno `camara-mucuri-ba` é escolha técnica do projeto, não dado extraído do portal. O fuso já configurado é `America/Bahia` e deve ser confirmado na implantação. O modelo atual de tenant não possui campos próprios para endereço, telefones e e-mails institucionais; esses contatos permanecem registrados neste levantamento até o desenvolvimento desses campos.
+
+A [notícia oficial da Prefeitura sobre a posse de 01/01/2025](https://mucuri.ba.gov.br/posse-historica-robertinho-e-empossado-na-prefeitura-de-mucuri-pela-4a-vez/) confirma a posse dos 13 vereadores e a eleição da Mesa atual nessa data. É a fonte das datas iniciais dos mandatos e da Mesa cadastrados.
 
 ## 2. Vereadores da legislatura 2025–2028
 
@@ -68,4 +70,4 @@ Fontes: [portal institucional](https://camaramucuri.ba.gov.br/) e [notícia ofic
 6. Homologar canais oficiais, URL pública e autorização para transmissão; cadastrar chaves de ingestão em armazenamento de segredos.
 7. Reexecutar o pré-voo do piloto e registrar o aceite dos responsáveis.
 
-Até essa validação, o cadastro local serve como **base de conferência**, sem declarar o piloto institucional pronto. A criação de legislatura e mandatos depende do número ordinal oficial exigido pelo modelo atual; preencher esse número por suposição produziria um registro incorreto. Os quatro cargos futuros da Mesa 2027–2028 também ficam apenas documentados até haver estrutura de vigência formal e confirmação da posse.
+Até essa validação, o cadastro local serve como **base de conferência**, sem declarar o piloto institucional pronto. O número ordinal segue `null` e aparece na interface apenas como período. A Mesa eleita para 2027–2028 está marcada como `elected`: não passa a ser vigente pela passagem do tempo; sua posse requer confirmação com referência ao ato. As datas finais representam os limites dos biênios/quadriênio publicados e precisam ser revistas se houver afastamento, substituição ou alteração. O pré-voo ainda aponta responsável institucional, política de votação, aprovação, usuários, PostgreSQL, SMTP e mídia pendentes.

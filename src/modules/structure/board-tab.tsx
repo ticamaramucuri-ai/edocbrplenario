@@ -13,7 +13,8 @@ import { ArrowRightLeft, CalendarCheck2, Gavel, History, UserRoundCheck, UserRou
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
 import { initials, fmtDateShort } from '@/lib/format'
-import { BOARD_ROLE_LABEL, type BoardPositionView, type ParliamentarianView } from '@/lib/contracts'
+import { legislatureLabel } from '@/lib/legislature-label'
+import { BOARD_ROLE_LABEL, type BoardPositionView, type ParliamentarianView, type LegislatureView } from '@/lib/contracts'
 import { EmptyState } from '@/components/app/page-header'
 import { PartyBadge } from '@/components/app/badges'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -98,7 +99,7 @@ export default function BoardTab() {
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 {currentLegislature
-                  ? `${currentLegislature.number}ª Legislatura (${currentLegislature.startYear}–${currentLegislature.endYear})`
+                  ? `${legislatureLabel(currentLegislature.number, currentLegislature.startYear, currentLegislature.endYear)} (${currentLegislature.startYear}–${currentLegislature.endYear})`
                   : 'Cadastre uma legislatura para designar a Mesa.'}
               </p>
             </div>
@@ -187,7 +188,7 @@ export default function BoardTab() {
       <Card>
         <CardContent className="space-y-3 p-4 sm:p-6">
           <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <History className="size-4" /> Histórico da Mesa
+            <History className="size-4" /> Histórico e próximas composições da Mesa
           </h3>
           {boardQ.isLoading ? (
             <div className="space-y-2">
@@ -197,7 +198,7 @@ export default function BoardTab() {
             </div>
           ) : history.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Sem vigências encerradas — o histórico aparece aqui conforme transferências e encerramentos.
+              Nenhuma composição encerrada ou futura cadastrada.
             </p>
           ) : (
             <div className="max-h-96 overflow-y-auto custom-scroll rounded-lg border">
@@ -215,9 +216,11 @@ export default function BoardTab() {
                     <TableRow key={p.id}>
                       <TableCell className="text-sm">{BOARD_ROLE_LABEL[p.role] ?? p.role}</TableCell>
                       <TableCell className="text-sm font-medium">{p.parliamentarianName}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{p.legislatureNumber}ª</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{p.legislatureNumber === null ? 'Número pendente' : `${p.legislatureNumber}ª`}</TableCell>
                       <TableCell className="text-sm tabular-nums text-muted-foreground">
                         {fmtDateShort(p.startDate)} → {fmtDateShort(p.endDate)}
+                        {p.status === 'elected' && <Badge variant="outline" className="ml-2">Eleita · posse pendente</Badge>}
+                        {p.status === 'confirmed' && new Date(p.startDate) > new Date() && <Badge variant="outline" className="ml-2">Programada</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -286,7 +289,7 @@ function DesignateDialog({
   open: boolean
   onOpenChange: (v: boolean) => void
   parliamentarians: ParliamentarianView[]
-  legislatures: Array<{ id: string; number: number }>
+  legislatures: LegislatureView[]
   defaultLegislatureId: string | null
   occupiedRoles: string[]
 }) {
@@ -342,7 +345,7 @@ function DesignateDialog({
               <SelectContent>
                 {legislatures.map((l) => (
                   <SelectItem key={l.id} value={l.id}>
-                    {l.number}ª Legislatura
+                    {legislatureLabel(l.number, l.startYear, l.endYear)}
                   </SelectItem>
                 ))}
               </SelectContent>

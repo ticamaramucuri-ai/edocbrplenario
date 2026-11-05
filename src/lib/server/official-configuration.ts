@@ -13,7 +13,7 @@ export async function inspectOfficialConfiguration(db: Reader, tenantId: string)
     db.legislature.findMany({ where: { tenantId }, orderBy: { id: 'asc' } }),
     db.parliamentarian.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, name: true, active: true, party: true } }),
     db.mandate.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, parliamentarianId: true, legislatureId: true, startDate: true, endDate: true } }),
-    db.boardPosition.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, legislatureId: true, parliamentarianId: true, role: true, startDate: true, endDate: true } }),
+    db.boardPosition.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, legislatureId: true, parliamentarianId: true, role: true, startDate: true, endDate: true, status: true } }),
     db.party.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, acronym: true, name: true, active: true } }),
     db.leave.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, parliamentarianId: true, substituteId: true, kind: true, startDate: true, endDate: true } }),
     db.bloc.findMany({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true, name: true, partyAcronyms: true, active: true } }),
@@ -27,7 +27,9 @@ export async function inspectOfficialConfiguration(db: Reader, tenantId: string)
   const parliamentarianIds = new Set(parliamentarians.map((item) => item.id))
   const currentMandates = mandates.filter((item) => item.legislatureId === legislature?.id && activeIds.has(item.parliamentarianId))
   const mandateIds = new Set(currentMandates.map((item) => item.parliamentarianId))
-  const currentBoard = boardPositions.filter((item) => item.legislatureId === legislature?.id && activeIds.has(item.parliamentarianId))
+  const now = new Date()
+  const currentBoard = boardPositions.filter((item) => item.legislatureId === legislature?.id && activeIds.has(item.parliamentarianId) &&
+    item.status === 'confirmed' && item.startDate <= now && (item.endDate === null || item.endDate >= now))
   const partyAcronyms = new Set(parties.filter((item) => item.active).map((item) => item.acronym.toUpperCase()))
   const settings = tenantSettings(tenant, active.length)
   const checks: OfficialCheck[] = [

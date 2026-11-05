@@ -13,6 +13,7 @@ import { requirePermission } from '@/lib/server/rbac'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { toBoardPositionView } from '@/lib/server/serializers'
+import { legislatureLabel } from '@/lib/legislature-label'
 import { BOARD_ROLE_LABEL } from '@/lib/contracts'
 
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,8 @@ const createSchema = z.object({
   role: z.enum(['presidente', 'vice_presidente', 'primeiro_secretario', 'segundo_secretario']),
   parliamentarianId: z.string().min(1, 'Parlamentar obrigatório.'),
   startDate: z.string().datetime({ offset: true }).optional(),
+  endDate: z.string().datetime({ offset: true }).nullable().optional(),
+  status: z.enum(['confirmed', 'elected']).optional(),
 })
 
 export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => {
@@ -49,19 +52,27 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
   const parliamentarian = await db.parliamentarian.findUnique({ where: { id: body.parliamentarianId } })
   if (!parliamentarian) throw notFound('Parlamentar não encontrado.')
   assertTenantScope(actor, parliamentarian.tenantId)
+  const startDate = body.startDate ? new Date(body.startDate) : new Date()
+  const endDate = body.endDate ? new Date(body.endDate) : null
+  if (endDate && endDate < startDate) {
+    throw new DomainError('VALIDATION_ERROR', 422, 'Vigência inválida', 'A data final não pode anteceder a inicial.')
+  }
 
   const position = await withTransaction(async (tx) => {
-    // Cargo com vigência aberta para a mesma legislatura? Bloqueia duplicidade.
-    const openSameRole = await tx.boardPosition.findFirst({
-      where: { tenantId, legislatureId: legislature.id, role: body.role, endDate: null },
+    // Intervalos do mesmo cargo não podem se sobrepor, inclusive designações futuras.
+    const overlappingRole = await tx.boardPosition.findFirst({
+      where: { tenantId, legislatureId: legislature.id, role: body.role,
+        ...(endDate ? { startDate: { lte: endDate } } : {}),
+        OR: [{ endDate: null }, { endDate: { gte: startDate } }],
+      },
       select: { id: true, parliamentarian: { select: { name: true } } },
     })
-    if (openSameRole) {
+    if (overlappingRole) {
       throw new DomainError(
         'VALIDATION_ERROR',
         422,
         'Cargo ocupado',
-        `O cargo de ${BOARD_ROLE_LABEL[body.role]} já possui vigência aberta (${openSameRole.parliamentarian.name}). Encerre ou transfira antes de designar.`
+        `O cargo de ${BOARD_ROLE_LABEL[body.role]} já possui vigência sobreposta (${overlappingRole.parliamentarian.name}).`
       )
     }
     const created = await tx.boardPosition.create({
@@ -70,7 +81,9 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
         legislatureId: legislature.id,
         role: body.role,
         parliamentarianId: parliamentarian.id,
-        startDate: body.startDate ? new Date(body.startDate) : new Date(),
+        startDate,
+        endDate,
+        status: body.status ?? 'confirmed',
       },
       include: { parliamentarian: true, legislature: true },
     })
@@ -80,7 +93,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       action: 'board.designated',
       aggregateType: 'board_position',
       aggregateId: created.id,
-      summary: `${BOARD_ROLE_LABEL[body.role]}: ${parliamentarian.name} designado na Legislatura nº ${legislature.number}.`,
+      summary: `${BOARD_ROLE_LABEL[body.role]}: ${parliamentarian.name} designado em ${legislatureLabel(legislature.number, legislature.startYear, legislature.endYear)}.`,
       after: { role: created.role, parliamentarian: parliamentarian.name, legislatureId: legislature.id, startDate: created.startDate },
       correlationId,
       ip: clientIp(req),

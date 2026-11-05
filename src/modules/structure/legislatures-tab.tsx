@@ -12,6 +12,7 @@ import { CalendarRange, CheckCircle2, Landmark, Pencil, Plus } from 'lucide-reac
 import { api } from '@/lib/api-client'
 import { useApp } from '@/lib/store'
 import type { LegislatureView } from '@/lib/contracts'
+import { legislatureLabel } from '@/lib/legislature-label'
 import { EmptyState } from '@/components/app/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -111,7 +112,7 @@ export default function LegislaturesTab() {
               <TableBody>
                 {legislatures.map((l) => (
                   <TableRow key={l.id}>
-                    <TableCell className="font-semibold">{`${l.number}ª Legislatura`}</TableCell>
+                    <TableCell className="font-semibold">{legislatureLabel(l.number, l.startYear, l.endYear)}</TableCell>
                     <TableCell className="tabular-nums text-muted-foreground">{period(l)}</TableCell>
                     <TableCell>
                       {l.current ? (
@@ -135,7 +136,7 @@ export default function LegislaturesTab() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Editar legislatura ${l.number}`}
+                            aria-label={`Editar ${legislatureLabel(l.number, l.startYear, l.endYear)}`}
                             onClick={() => {
                               setEditing(l)
                               setDialogOpen(true)
@@ -164,7 +165,7 @@ export default function LegislaturesTab() {
       <AlertDialog open={!!markingCurrent} onOpenChange={(v) => !v && setMarkingCurrent(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Marcar {markingCurrent?.number}ª Legislatura como atual?</AlertDialogTitle>
+            <AlertDialogTitle>Marcar {markingCurrent && legislatureLabel(markingCurrent.number, markingCurrent.startYear, markingCurrent.endYear)} como atual?</AlertDialogTitle>
             <AlertDialogDescription>
               As demais legislaturas serão desmarcadas automaticamente. A alteração é auditada e reflete nos
               cadastros de mandatos, comissões e Mesa Diretora.
@@ -202,7 +203,7 @@ function LegislatureDialog({
 
   const mutation = useMutation({
     mutationFn: () => {
-      const payload = { number: Number(number), startYear: Number(startYear), endYear: Number(endYear) }
+      const payload = { number: number.trim() ? Number(number) : null, startYear: Number(startYear), endYear: Number(endYear) }
       return editing ? api.updateLegislature(editing.id, payload) : api.createLegislature({ ...payload, current: false })
     },
     onSuccess: () => {
@@ -214,7 +215,7 @@ function LegislatureDialog({
 
   const submit = () => {
     const errs: Record<string, string> = {}
-    if (!Number.isInteger(Number(number)) || Number(number) < 1) errs.number = 'Informe um número válido.'
+    if (number.trim() && (!Number.isInteger(Number(number)) || Number(number) < 1)) errs.number = 'Informe um número válido.'
     if (!/^\d{4}$/.test(startYear)) errs.startYear = 'Ano inicial inválido (4 dígitos).'
     if (!/^\d{4}$/.test(endYear)) errs.endYear = 'Ano final inválido (4 dígitos).'
     if (Number(endYear) < Number(startYear)) errs.endYear = 'Ano final menor que o inicial.'
@@ -227,16 +228,16 @@ function LegislatureDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{editing ? `Editar ${editing.number}ª Legislatura` : 'Nova legislatura'}</DialogTitle>
+          <DialogTitle>{editing ? `Editar ${legislatureLabel(editing.number, editing.startYear, editing.endYear)}` : 'Nova legislatura'}</DialogTitle>
           <DialogDescription>
             {editing
               ? 'Ajuste o número ou o período. Marcá-la como atual é feito na listagem, com confirmação.'
-              : 'Cadastre o período da legislatura (ex.: 2025–2028). A numeração segue a ordem histórica.'}
+              : 'Cadastre o período da legislatura (ex.: 2025–2028). Deixe o número em branco se ainda não foi confirmado.'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="grid gap-2">
-            <Label htmlFor="leg-number">Número</Label>
+            <Label htmlFor="leg-number">Número ordinal (opcional)</Label>
             <Input
               id="leg-number"
               type="number"

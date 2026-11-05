@@ -686,7 +686,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 export type LegislatureView = {
   id: string
-  number: number
+  number: number | null
   startYear: number
   endYear: number
   current: boolean
@@ -711,7 +711,7 @@ export type BlocView = {
 export type BoardPositionView = {
   id: string
   legislatureId: string
-  legislatureNumber: number
+  legislatureNumber: number | null
   role: string // presidente|vice_presidente|primeiro_secretario|segundo_secretario
   parliamentarianId: string
   parliamentarianName: string
@@ -719,6 +719,7 @@ export type BoardPositionView = {
   startDate: string
   endDate: string | null
   current: boolean
+  status: 'confirmed' | 'elected'
 }
 
 export type CommitteeView = {
@@ -772,7 +773,7 @@ export type MandateView = {
   parliamentarianName: string
   parliamentarianParty: string
   legislatureId: string
-  legislatureNumber: number
+  legislatureNumber: number | null
   startDate: string
   endDate: string | null
   votes: number | null
