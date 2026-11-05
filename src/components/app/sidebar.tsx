@@ -121,9 +121,9 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <nav aria-label="Módulos do sistema" className="flex h-full flex-col">
       <div className="border-b border-sidebar-border px-3 py-4">
         <BrandLogo inverse compact />
-        {tenant && <div className="mt-3 flex items-center gap-2 border-t border-white/15 pt-3 text-[11px] text-sidebar-foreground/85">
+        {tenant && <div className="mt-3 flex min-w-0 items-center gap-2 border-t border-white/15 pt-3 text-sidebar-foreground">
           <TenantCrest logoUrl={tenant.logoUrl} name={tenant.name} className="size-8 rounded bg-white p-0.5" />
-          <span className="line-clamp-2">{tenant.name}</span>
+          <span className="min-w-0 flex-1 break-words text-xs font-semibold leading-snug" title={tenant.name}>{tenant.name}</span>
         </div>}
       </div>
 

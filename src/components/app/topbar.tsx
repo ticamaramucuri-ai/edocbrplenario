@@ -418,7 +418,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   return (
     <div className="sticky top-0 z-30 print:hidden">
       <ImpersonationBanner />
-      <header className="flex h-14 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur sm:px-4">
+      <header className="flex h-14 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur sm:px-4 lg:pl-64">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobileNav} aria-label="Abrir menu">
         <Menu className="size-5" />
       </Button>

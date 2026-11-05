@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Corrigido o cabeçalho em telas largas para iniciar após a barra lateral; o nome da Câmara no bloco institucional da sidebar ganhou leitura em múltiplas linhas, sem corte.
 - Ensaio integral da réplica PostgreSQL repetido com as fotos de Mucuri: 78 tabelas e 526 linhas conciliadas, 14 imagens verificadas, jornada de escrita e recuperação HTTP concluídas no laboratório local.
 - O ensaio de réplica PostgreSQL passa a auditar fotos e emblemas referenciados no snapshot antes da cópia; teste comprova recusa de imagem ausente.
 - Importação reproduzível das fotos públicas dos 13 parlamentares atuais de Mucuri, com hash de origem, processamento WebP, isolamento por Câmara e proteção contra substituição de foto cadastrada.
