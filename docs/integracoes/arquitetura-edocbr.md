@@ -1,5 +1,7 @@
 # Integração do edocBR Plenário com Nextcloud e Alfresco
 
+> Este contrato permanece planejado para depois do piloto. A ordem atual e os gates estão no [plano de 05/11/2026](../PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md). O inventário institucional deve ser reconfirmado na fase 054.
+
 **Estado em 11/10/2026:** arquitetura proposta e inventário inicial, reservados para a **fase final do projeto**, após o piloto funcional do Plenário. Nenhuma conexão com os serviços reais foi ativada. Este documento é um contrato de trabalho para a Câmara de Mucuri, sujeito à validação dos fluxos, permissões e ambiente disponíveis.
 
 ## Papel de cada sistema

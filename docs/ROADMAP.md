@@ -4,8 +4,8 @@ Documento histórico de ondas do produto, consultável também no módulo Planej
 Roadmap. A **Onda 5 (fases 21–24) foi entregue na v0.13.0**, com 26 módulos; os
 quadros de tarefas de §12 preservam o planejamento original. A **Onda 6 (§14) é
 planejada**. Este documento preserva a história das ondas; para o estado verificado em
-04/11/2026, a ordem de conclusão 045–057 e os gates institucionais, consulte o
-[plano integral](PLANO-INTEGRAL-2026-11-04.md) e a
+05/11/2026, a ordem de conclusão 045–057 e os gates institucionais, consulte o
+[plano atualizado](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) e a
 [matriz de rastreabilidade](MATRIZ-RASTREABILIDADE-2026-11-04.md).
 
 > Fonte de requisitos: `upload/PROMPT_MESTRE_RECONSTRUCAO_SAAS_LEGISLATIVA.md` (plano de

@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade — edocBR Plenário
 
-**Data:** 04/11/2026. Relaciona requisitos críticos ao código, aos testes e à prova de aceite. A coluna “estado” distingue teste local de homologação. Atualizar quando a respectiva fase fechar; não substituir prova institucional por arquivo de teste.
+**Revisada em:** 05/11/2026. Relaciona requisitos críticos ao código, aos testes e à prova de aceite. A coluna “estado” distingue teste local de homologação. Atualizar quando a respectiva fase fechar; não substituir prova institucional por arquivo de teste.
 
 | Fluxo/requisito | Implementação principal | Teste automatizado principal | Evidência e estado | Próximo gate |
 |---|---|---|---|---|
@@ -15,7 +15,7 @@
 | Ata, assinatura interna, publicação e portal | `src/modules/reports/`, `src/modules/publications/`, `src/modules/portal/`, `src/lib/server/document-signatures.ts` | `tests/official-closure.test.ts` | Etapa 051: local | Texto, assinatura e publicação aprovados pela Câmara |
 | Transmissão, destinos, gravação e replay | `src/modules/plenary/transmission-tab.tsx`, `src/lib/server/media-*.ts`, `recording-archive.ts` | `tests/media-control.test.ts`, `tests/media-reconciliation.test.ts`, `tests/media-public-link.test.ts`, `tests/recording-archive.test.ts` | Etapas 025–028, 032, 052: sintético/local | Canal institucional, áudio/vídeo externo e falha/retorno |
 | PostgreSQL, workers e recuperação | `prisma/postgres/`, `mini-services/`, `deploy/staging/`, `scripts/backup-bundle.py` | `tests/postgres-services-e2e.test.ts`, `tests/tenant-health-postgres.test.ts`, `scripts/recovery-drill-local.py`, `scripts/test-postgres-pilot-replica.sh` | Etapas 030–041 e 045: réplica integral local de 78 tabelas, escrita e recuperação HTTP | Host separado, armazenamento durável, RTO/RPO medidos |
-| Piloto Mucuri | `scripts/pilot-preflight.ts`, `scripts/import-mucuri-terms.ts`; Mesa com vigência e eleição futura | `tests/pilot-preflight.test.ts`, `tests/legislature-optional-number.test.ts` | Etapas 053–053b: cadastro público local; pré-voo segue `automaticReady: false` | Regras, usuários, infraestrutura, canal e aceite da Câmara |
+| Piloto Mucuri | `scripts/pilot-preflight.ts`, `scripts/import-mucuri-terms.ts`, `scripts/import-mucuri-photos.ts`; Mesa com vigência e eleição futura | `tests/pilot-preflight.test.ts`, `tests/legislature-optional-number.test.ts` | Etapas 053–053c: cadastro público e fotos locais; pré-voo segue `automaticReady: false` | Regras, usuários, infraestrutura, canal e aceite da Câmara |
 | Nextcloud/Alfresco eDocBR | `docs/integracoes/arquitetura-edocbr.md`; API/webhooks/outbox genéricos | Sem teste de adaptador institucional | Planejado, fases 054–056 | Contratos/ACLs, leitura, escrita autorizada e reconciliação |
 
-**Gates comuns:** `bun run lint`, `bun run typecheck`, CI e teste da fase em banco descartável; para operação, medir falha e recuperação; para ato oficial, comparar com conferência humana e registrar aprovação. Consultar o [plano integral](PLANO-INTEGRAL-2026-11-04.md) para ordem e dependências.
+**Gates comuns:** `bun run lint`, `bun run typecheck`, CI e teste da fase em banco descartável; para operação, medir falha e recuperação; para ato oficial, comparar com conferência humana e registrar aprovação. Consultar o [plano atualizado](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) para ordem e dependências.

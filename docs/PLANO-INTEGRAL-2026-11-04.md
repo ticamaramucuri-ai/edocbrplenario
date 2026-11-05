@@ -1,5 +1,7 @@
 # edocBR Plenário — diagnóstico e plano integral de conclusão
 
+> Revisão histórica de 04/11/2026. Para estado e ordem de trabalho após o cadastro público de Mucuri e os ensaios de 05/11, usar o [plano atualizado](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md).
+
 **Revisão:** 04/11/2026. **Escopo:** produto SaaS multi-Câmara, piloto assistido de Mucuri/BA e integração posterior ao ecossistema edocBR. Este documento atualiza a prioridade dos planos anteriores; os registros numerados em `docs/etapas/` continuam sendo a prova de cada entrega. Uma implementação local não equivale a homologação institucional.
 
 **Atualização local de 05/11/2026:** a base de Mucuri recebeu 13 vereadores, partidos, legislatura 2025–2028 sem ordinal presumido, mandatos, Mesa atual e Mesa eleita para 2027–2028 com posse pendente, além de contatos institucionais e 13 fotos públicas com origem verificada. O ciclo de eleição futura, confirmação e cancelamento foi concluído na interface e API ([etapa 053b](etapas/053b-ciclo-eleicao-mesa.md)); a importação das fotos está na [etapa 053c](etapas/053c-fotos-publicas-mucuri.md). Emblemas de partido aguardam arquivos verificáveis. O pré-voo segue negativo por regras regimentais/aprovação, responsáveis, infraestrutura e canal social; nenhuma sessão oficial ou integração externa foi ativada.

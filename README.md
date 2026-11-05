@@ -13,11 +13,10 @@ dentro do produto, com o progresso rastreável da Onda 5 (Fases 21–24) e a pr�
 Onda 6**. Piloto **v0.13.0** (26 módulos).
 
 > Piloto funcional em ambiente local. A Câmara Municipal de Mucuri/BA está
-> cadastrada com identidade institucional, ainda sem usuários, legislatura,
-> sessões ou dados oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
+> cadastrada com identidade, 13 parlamentares/mandatos, partidos, Mesa, contatos e fotos de fontes públicas; ainda não há usuários institucionais, regras aprovadas nem sessões oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
 > continuam disponíveis exclusivamente para demonstração.
 
-O [plano integral de 04/11/2026](docs/PLANO-INTEGRAL-2026-11-04.md) é a referência
+O [plano atualizado de 05/11/2026](docs/PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) é a referência
 atual para a ordem das fases; a [matriz de rastreabilidade](docs/MATRIZ-RASTREABILIDADE-2026-11-04.md)
 liga funções, código, testes e evidências. O número v0.13.0 e os 26 módulos acima
 descrevem a versão histórica do núcleo do produto, não a homologação do piloto. A
