@@ -17,7 +17,9 @@ Onda 6**. Piloto **v0.13.0** (26 módulos).
 > continuam disponíveis exclusivamente para demonstração.
 
 O [plano atualizado de 05/11/2026](docs/PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) é a referência
-atual para a ordem das fases; a [matriz de rastreabilidade](docs/MATRIZ-RASTREABILIDADE-2026-11-04.md)
+atual para a ordem das fases; a [meta de execução](docs/META-EXECUCAO-PLENARIO-2026-11-05.md)
+acompanha os marcos e o [pacote de homologação](docs/HOMOLOGACAO-PACOTE-EXECUCAO.md)
+organiza a futura prova institucional. A [matriz de rastreabilidade](docs/MATRIZ-RASTREABILIDADE-2026-11-04.md)
 liga funções, código, testes e evidências. O número v0.13.0 e os 26 módulos acima
 descrevem a versão histórica do núcleo do produto, não a homologação do piloto. A
 [etapa 045](docs/etapas/045-fundacao-operacional-saas.md) permanece aberta:
