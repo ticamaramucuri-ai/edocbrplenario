@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Ensaio de navegador passou a verificar o nome da Câmara e o recuo do cabeçalho em desktop e menu móvel; build descartável passou sem corte ou sobreposição e a auditoria de oito telas permaneceu sem violação impeditiva.
 - Diagnóstico e plano de desenvolvimento revistos em 05/11: estado por capacidade, provas locais, gates institucionais, fila executável sem host e sequência de integração final com Nextcloud/Alfresco.
 - Corrigido o cabeçalho em telas largas para iniciar após a barra lateral; o nome da Câmara no bloco institucional da sidebar ganhou leitura em múltiplas linhas, sem corte.
 - Ensaio integral da réplica PostgreSQL repetido com as fotos de Mucuri: 78 tabelas e 526 linhas conciliadas, 14 imagens verificadas, jornada de escrita e recuperação HTTP concluídas no laboratório local.

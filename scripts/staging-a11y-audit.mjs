@@ -88,6 +88,7 @@ async function esperar(condicao, rotulo, limite = 20000) {
 }
 
 const auditorias = []
+const layout = []
 
 async function auditar(pagina, rotulo, viewport) {
   const resultado = await new AxeBuilder({ page: pagina }).withTags(REGRAS).analyze()
@@ -160,6 +161,42 @@ try {
 
   const bootstrap = await (await api.get(`${base}/api/v1/bootstrap`)).json()
   const tenantSlug = bootstrap.tenant.slug
+
+  // A marca da Câmara precisa caber na sidebar e o cabeçalho não pode começar
+  // atrás dela. No móvel, a mesma identificação deve aparecer no menu aberto.
+  const desktop = await contextoAutenticado(navegador, {
+    email: OPERADOR, viewport: { width: 1366, height: 768 }, modulo: 'dashboard',
+  })
+  const nomeCasa = bootstrap.tenant.name
+  const faixaCasa = desktop.pagina.locator('aside nav span[title]').filter({ hasText: nomeCasa })
+  await faixaCasa.waitFor()
+  const geometria = await desktop.pagina.evaluate((nome) => {
+    const aside = document.querySelector('aside')
+    const header = document.querySelector('header')
+    const titulo = [...(header?.querySelectorAll('p') ?? [])].find((elemento) => elemento.textContent?.trim() === nome)
+    const faixa = [...(aside?.querySelectorAll('span[title]') ?? [])].find((elemento) => elemento.getAttribute('title') === nome)
+    if (!aside || !header || !titulo || !faixa) return null
+    return {
+      sidebarRight: aside.getBoundingClientRect().right,
+      headerNameLeft: titulo.getBoundingClientRect().left,
+      sidebarNameClipped: faixa.scrollHeight > faixa.clientHeight + 1 || faixa.scrollWidth > faixa.clientWidth + 1,
+    }
+  }, nomeCasa)
+  if (!geometria || geometria.headerNameLeft < geometria.sidebarRight || geometria.sidebarNameClipped) {
+    throw new Error(`Identificação da Câmara no desktop sobreposta ou cortada: ${JSON.stringify(geometria)}`)
+  }
+  layout.push({ viewport: '1366×768', ...geometria })
+  await desktop.contexto.close()
+
+  const mobile = await contextoAutenticado(navegador, {
+    email: OPERADOR, viewport: { width: 390, height: 844 }, modulo: 'dashboard',
+  })
+  await mobile.pagina.getByRole('button', { name: 'Abrir menu' }).click()
+  const nomeNoMenu = mobile.pagina.getByRole('navigation', { name: 'Módulos do sistema' }).getByText(nomeCasa, { exact: true })
+  await nomeNoMenu.waitFor()
+  if (!await nomeNoMenu.isVisible()) throw new Error('Nome da Câmara não está visível no menu móvel.')
+  layout.push({ viewport: '390×844', menuInstitutionNameVisible: true })
+  await mobile.contexto.close()
 
   const parlamentares = (await (await prep.get(`${base}/api/v1/parliamentarians`)).json()).parliamentarians
     .filter((p) => p.active)
@@ -309,6 +346,7 @@ try {
     tenant: tenantSlug,
     navegador: origem,
     operador: operadorAtor.role,
+    layout,
     telas: auditorias.length,
     sequenciaDeFoco: teclado,
     auditorias,
