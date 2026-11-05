@@ -26,6 +26,7 @@ const OPERADOR = process.env.A11Y_OPERATOR_EMAIL || 'marcos.vieira@vilanova.mg.l
 const PARLAMENTAR = process.env.A11Y_MEMBER_EMAIL || 'carla.mendes@vilanova.mg.leg.br'
 // `session.create` é de tenant_admin/legislative_admin; a condução é do operador.
 const LEGISLATIVO = process.env.A11Y_LEGISLATIVE_EMAIL || 'paula.andrade@vilanova.mg.leg.br'
+const PUBLICADOR = process.env.A11Y_PUBLISHER_EMAIL || 'ana.ribeiro@vilanova.mg.leg.br'
 
 const argumentos = process.argv.slice(2)
 function opcao(nome, padrao) {
@@ -201,22 +202,39 @@ try {
   const parlamentares = (await (await prep.get(`${base}/api/v1/parliamentarians`)).json()).parliamentarians
     .filter((p) => p.active)
   if (parlamentares.length < 3) throw new Error('Base sem parlamentares ativos suficientes para o ensaio.')
-  const presidente = parlamentares[0]
 
-  const agendada = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-  const criada = await prep.post(`${base}/api/v1/sessions`, {
-    data: {
-      type: 'ordinaria',
-      scheduledAt: agendada,
-      presidentId: presidente.id,
-      secretaryName: 'Secretaria do ensaio',
-      location: 'Plenário (ensaio de acessibilidade)',
-      notes: 'Sessão sintética do ensaio de acessibilidade — não é ato oficial.',
-    },
+  const preparacao = await contextoAutenticado(navegador, {
+    email: LEGISLATIVO, viewport: { width: 1366, height: 768 }, modulo: 'sessions',
   })
-  if (!criada.ok()) throw new Error(`Criação da sessão falhou: ${criada.status()} ${await criada.text()}`)
+  await preparacao.pagina.getByRole('button', { name: 'Nova sessão' }).click()
+  const formularioSessao = preparacao.pagina.getByRole('dialog', { name: 'Nova sessão' })
+  const agendada = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
+  await formularioSessao.getByLabel('Data e hora *').fill(agendada)
+  await formularioSessao.getByLabel('Secretário(a)').fill('Secretaria do ensaio')
+  await formularioSessao.getByLabel('Local da sessão *').fill('Plenário (ensaio de acessibilidade)')
+  await formularioSessao.getByLabel('Observações').fill('Sessão sintética do ensaio de acessibilidade — não é ato oficial.')
+  const respostaCriacao = preparacao.pagina.waitForResponse((resposta) =>
+    resposta.url().endsWith('/api/v1/sessions') && resposta.request().method() === 'POST')
+  await formularioSessao.getByRole('button', { name: 'Salvar rascunho' }).click()
+  const criada = await respostaCriacao
+  if (!criada.ok()) throw new Error(`Criação da sessão pela interface falhou: ${criada.status()} ${await criada.text()}`)
   let sessao = (await criada.json()).session
   sessionId = sessao.id
+  await preparacao.contexto.close()
+
+  const agendador = await contextoAutenticado(navegador, {
+    email: OPERADOR, viewport: { width: 1366, height: 768 }, modulo: 'sessions', sessionId,
+  })
+  const linhaSessao = agendador.pagina.getByRole('row').filter({ hasText: `${sessao.number}/${sessao.year}` }).first()
+  await linhaSessao.getByRole('button', { name: `Ações da sessão ${sessao.number}/${sessao.year}` }).click()
+  await agendador.pagina.getByRole('menuitem', { name: 'Agendar e publicar pauta' }).click()
+  const respostaPauta = agendador.pagina.waitForResponse((resposta) =>
+    resposta.url().endsWith(`/api/v1/sessions/${sessionId}/transition`) && resposta.request().method() === 'POST')
+  await agendador.pagina.getByRole('button', { name: 'Publicar pauta' }).click()
+  const pauta = await respostaPauta
+  if (!pauta.ok()) throw new Error(`Publicação da pauta pela interface falhou: ${pauta.status()} ${await pauta.text()}`)
+  sessao = (await pauta.json()).session
+  await agendador.contexto.close()
 
   async function transicao(acao, extra = {}) {
     const resposta = await api.post(`${base}/api/v1/sessions/${sessionId}/transition`, {
@@ -227,7 +245,6 @@ try {
     return sessao
   }
 
-  await transicao('schedule')
   await transicao('open_checkin')
 
   // ─── 1. Presença: check-in e quórum ────────────────────────────────────────
@@ -338,6 +355,60 @@ try {
   await auditar(app.pagina, 'app do parlamentar', '390×844')
   await app.contexto.close()
 
+  // ─── 5. Encerramento e publicação em papéis distintos ──────────────────────
+  const encerrarOculta = await api.post(`${base}/api/v1/votings/${oculta.id}/transition`, {
+    data: { action: 'close', version: 2 },
+  })
+  if (!encerrarOculta.ok()) throw new Error(`Encerramento da votação oculta falhou: ${encerrarOculta.status()} ${await encerrarOculta.text()}`)
+  await transicao('close')
+
+  const tituloAta = `Ata do ensaio navegável ${sessionId.slice(-8)}`
+  const textoAta = `Ata fictícia da sessão ${sessao.number}/${sessao.year}. Presença, votação e encerramento conferidos neste ensaio descartável.`
+  const revisor = await contextoAutenticado(navegador, {
+    email: LEGISLATIVO, viewport: { width: 1366, height: 768 }, modulo: 'publications', sessionId,
+  })
+  await revisor.pagina.getByRole('button', { name: 'Nova publicação' }).first().click()
+  const formulario = revisor.pagina.getByRole('dialog', { name: 'Nova publicação' })
+  await formulario.getByLabel('Título (5 a 200 caracteres)').fill(tituloAta)
+  await formulario.getByRole('combobox', { name: 'Sessão vinculada' }).click()
+  await revisor.pagina.getByRole('option', { name: new RegExp(`nº ${sessao.number}/${sessao.year}`) }).click()
+  await formulario.getByLabel('Conteúdo').fill(textoAta)
+  await formulario.getByRole('button', { name: 'Criar rascunho' }).click()
+  await formulario.waitFor({ state: 'hidden' })
+  const lista = await (await prep.get(`${base}/api/v1/publications?q=${encodeURIComponent(tituloAta)}`)).json()
+  const ataCriada = lista.publications?.find((row) => row.title === tituloAta)
+  if (!ataCriada?.id || ataCriada.sessionId !== sessionId) throw new Error('Ata fictícia não vinculada à sessão encerrada.')
+  const linhaRevisor = revisor.pagina.getByRole('row').filter({ hasText: tituloAta })
+  await linhaRevisor.getByRole('button', { name: `Ações da publicação ${ataCriada.numberLabel}` }).click()
+  await revisor.pagina.getByRole('menuitem', { name: 'Revisar ata' }).click()
+  await revisor.pagina.getByLabel('Referência da conferência').fill('Ensaio descartável de revisão')
+  await revisor.pagina.getByRole('button', { name: 'Confirmar revisão' }).click()
+  await esperar(async () => (await linhaRevisor.innerText()).includes('Revisada'), 'ata revisada no painel')
+  await revisor.contexto.close()
+
+  const publicador = await contextoAutenticado(navegador, {
+    email: PUBLICADOR, viewport: { width: 1366, height: 768 }, modulo: 'publications', sessionId,
+  })
+  const linhaPublicador = publicador.pagina.getByRole('row').filter({ hasText: tituloAta })
+  await linhaPublicador.getByRole('button', { name: `Ações da publicação ${ataCriada.numberLabel}` }).click()
+  await publicador.pagina.getByRole('menuitem', { name: 'Publicar', exact: true }).click()
+  await publicador.pagina.getByRole('button', { name: 'Publicar agora' }).click()
+  await esperar(async () => (await linhaPublicador.innerText()).includes('Publicada'), 'ata publicada no diário')
+  await publicador.contexto.close()
+
+  const ataPublica = await contextoApi.request.get(`${base}/api/v1/public/documents/ata/${sessionId}?tenant=${tenantSlug}`)
+  if (!ataPublica.ok()) throw new Error(`Ata pública indisponível: ${ataPublica.status()}`)
+  const provaAta = await ataPublica.json()
+  if (provaAta.publicationId !== ataCriada.id || !provaAta.contentSha256Valid || !provaAta.chainValid) {
+    throw new Error('Ata pública divergiu da publicação revisada ou falhou na integridade.')
+  }
+  const portal = await contextoAutenticado(navegador, {
+    email: OPERADOR, viewport: { width: 1366, height: 768 }, modulo: 'portal', sessionId,
+  })
+  await portal.pagina.getByRole('tab', { name: 'Publicações' }).click()
+  await portal.pagina.getByRole('row').filter({ hasText: tituloAta }).waitFor()
+  await portal.contexto.close()
+
   console.log(JSON.stringify({
     ok: true,
     sintetico: true,
@@ -346,9 +417,11 @@ try {
     tenant: tenantSlug,
     navegador: origem,
     operador: operadorAtor.role,
+    preparacao: { draftViaUI: true, agendaPublishedViaUI: true },
     layout,
     telas: auditorias.length,
     sequenciaDeFoco: teclado,
+    publicacao: { sessionId, publicationId: ataCriada.id, integrityVerified: true, visibleInPortal: true },
     auditorias,
   }, null, 2))
   await contextoApi.close()

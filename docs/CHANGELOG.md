@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Ensaio descartável de navegador passou a percorrer encerramento da sessão, criação/revisão da ata por conta legislativa, publicação por outra conta e verificação da integridade e visibilidade no portal.
 - Ensaio de navegador passou a verificar o nome da Câmara e o recuo do cabeçalho em desktop e menu móvel; build descartável passou sem corte ou sobreposição e a auditoria de oito telas permaneceu sem violação impeditiva.
 - Diagnóstico e plano de desenvolvimento revistos em 05/11: estado por capacidade, provas locais, gates institucionais, fila executável sem host e sequência de integração final com Nextcloud/Alfresco.
 - Corrigido o cabeçalho em telas largas para iniciar após a barra lateral; o nome da Câmara no bloco institucional da sidebar ganhou leitura em múltiplas linhas, sem corte.
