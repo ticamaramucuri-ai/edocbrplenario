@@ -13,8 +13,9 @@ tempo real, webhooks, scheduler e, sob perfil, correio de laboratório.
 
 ## Serviços
 
-Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA Git completo de
-`HEAD` **antes de construir a imagem**. Use `python3 scripts/staging-build.py`
+Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA Git completo do
+commit que deseja implantar **antes de construir a imagem**. Esse commit precisa
+estar disponível no repositório local. Use `python3 scripts/staging-build.py`
 para exportar exatamente esse commit via `git archive` e construir a imagem;
 `stack-up` chama esse mesmo roteiro. Alterações locais não entram no build
 versionado. `--check` valida o SHA sem construir. Para ensaios com o diretório

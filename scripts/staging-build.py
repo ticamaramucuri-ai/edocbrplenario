@@ -32,11 +32,11 @@ def source_commit(version: str) -> str | None:
         return None
     if not re.fullmatch(r'[0-9a-f]{40}', version):
         raise RuntimeError('STAGE_BUILD_VERSION deve ser um SHA Git completo ou local-unversioned.')
-    head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, check=True,
-                          capture_output=True, text=True).stdout.strip()
-    if version != head:
-        raise RuntimeError('STAGE_BUILD_VERSION difere de HEAD; ajuste a versão antes do build.')
-    return head
+    kind = subprocess.run(['git', 'cat-file', '-t', version], cwd=ROOT,
+                          capture_output=True, text=True)
+    if kind.returncode != 0 or kind.stdout.strip() != 'commit':
+        raise RuntimeError('STAGE_BUILD_VERSION não identifica um commit Git disponível.')
+    return version
 
 
 def build(version: str, commit: str | None) -> None:
