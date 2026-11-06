@@ -23,12 +23,6 @@ services:
 
   app:
     image: edocbr-plenario-staging:local
-    build:
-      context: ../..
-      dockerfile: deploy/staging/Dockerfile
-      args:
-        NEXT_PUBLIC_REALTIME_URL: ""
-        STAGE_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
     restart: unless-stopped
     depends_on:
       postgres:

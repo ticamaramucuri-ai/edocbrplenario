@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import os
 from pathlib import Path
 import re
 import stat
@@ -12,7 +11,6 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / 'deploy/staging/.env'
-COMPOSE = ROOT / 'deploy/staging/compose.yaml'
 IMAGE = 'edocbr-plenario-staging:local'
 
 
@@ -43,8 +41,10 @@ def source_commit(version: str) -> str | None:
 
 def build(version: str, commit: str | None) -> None:
     if commit is None:
-        subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
-                        'build', 'app'], cwd=ROOT, check=True)
+        subprocess.run(['docker', 'build', '--file', str(ROOT / 'deploy/staging/Dockerfile'),
+                        '--tag', IMAGE, '--build-arg', 'NEXT_PUBLIC_REALTIME_URL=',
+                        '--build-arg', 'STAGE_BUILD_VERSION=local-unversioned', str(ROOT)],
+                       cwd=ROOT, check=True)
         return
 
     with tempfile.TemporaryDirectory(prefix='edocbr-stage-source-') as temporary:

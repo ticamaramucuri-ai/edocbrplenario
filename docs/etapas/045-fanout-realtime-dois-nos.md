@@ -7,7 +7,7 @@ O mini-serviço Socket.IO aceita `REALTIME_REDIS_URL` quando usa PostgreSQL. Nes
 `bun scripts/staging-realtime-fanout.ts` exige que a base contenha somente `staging-example`, inicia o segundo nó, conecta um cliente interno e um público em cada nó, grava um evento na outbox e exige que os quatro recebam o mesmo `eventId`. O campo interno não aparece nos dois clientes públicos. A prova interrompe o Redis, espera health degradado nos dois nós, grava outro evento, confirma que ele continua `pending`, restaura o Redis e exige entrega aos quatro clientes e estado `published`. O script para o nó de laboratório e religa o Redis em `finally`.
 
 ```bash
-docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yaml build app
+python3 scripts/staging-build.py
 docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yaml up -d --no-build redis realtime
 bun scripts/staging-realtime-fanout.ts
 ```
