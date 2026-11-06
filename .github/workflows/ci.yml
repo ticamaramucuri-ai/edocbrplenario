@@ -12,6 +12,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
+      - name: Install FFmpeg for recording archive tests
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: bun install --frozen-lockfile
       - run: bun install --cwd mini-services/realtime --frozen-lockfile
       - run: bun run db:generate
