@@ -13,7 +13,10 @@ RUN sed -i 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma
     && bunx prisma generate
 
 ARG NEXT_PUBLIC_REALTIME_URL=""
+ARG STAGE_BUILD_VERSION=local-unversioned
 ENV NEXT_PUBLIC_REALTIME_URL=${NEXT_PUBLIC_REALTIME_URL}
+ENV EDOCBR_BUILD_VERSION=${STAGE_BUILD_VERSION}
+LABEL org.opencontainers.image.revision=${STAGE_BUILD_VERSION}
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN bun run build
 

@@ -28,6 +28,7 @@ services:
       dockerfile: deploy/staging/Dockerfile
       args:
         NEXT_PUBLIC_REALTIME_URL: ""
+        STAGE_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -35,7 +36,6 @@ services:
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       PORT: 3000
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
       DEFAULT_TENANT_SLUG: staging-example
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
       REALTIME_HEALTH_URL: http://realtime:3003/health
@@ -83,7 +83,6 @@ services:
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       REALTIME_DATABASE_PROVIDER: postgresql
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
       REALTIME_REDIS_URL: redis://redis:6379
     ports:
@@ -106,7 +105,6 @@ services:
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       REALTIME_DATABASE_PROVIDER: postgresql
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
       REALTIME_AUTH_SECRET: ${STAGE_REALTIME_SECRET:?}
       REALTIME_REDIS_URL: redis://redis:6379
     ports:
@@ -127,7 +125,6 @@ services:
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       WEBHOOKS_DATABASE_PROVIDER: postgresql
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
     command: ["bun", "mini-services/webhooks/index.ts"]
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3004/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -148,7 +145,6 @@ services:
     environment:
       DATABASE_URL: postgresql://edocbr_stage:${STAGE_DB_PASSWORD}@postgres:5432/edocbr_stage
       REALTIME_HEALTH_URL: http://realtime:3003/health
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
       WEBHOOKS_HEALTH_URL: http://webhooks:3004/health
     command: ["bun", "mini-services/scheduler/postgres.ts"]
     healthcheck:
@@ -203,7 +199,6 @@ services:
       SMTP_TLS_CA_FILE: /certs/mailpit.crt
       PUBLIC_BASE_URL: http://127.0.0.1:${STAGE_APP_PORT:-3100}
       MAIL_WORKER_HEALTH_HOST: 0.0.0.0
-      EDOCBR_BUILD_VERSION: ${STAGE_BUILD_VERSION:-local-unversioned}
     volumes:
       - ./mail-lab/certs:/certs:ro
     command: ["bun", "scripts/mail-worker.ts"]

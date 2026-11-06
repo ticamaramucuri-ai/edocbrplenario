@@ -260,7 +260,7 @@ def main(argv: list[str]) -> int:
         'maiorDivergenciaDeRelogioSegundos': maior_divergencia,
         'limiteDeDivergenciaSegundos': opcoes.max_clock_skew,
         'limites': [
-            'Versão local-unversioned não identifica um build implantado; configure EDOCBR_BUILD_VERSION no deploy.',
+            'Versão local-unversioned não identifica um build implantado; configure STAGE_BUILD_VERSION antes de construir a imagem.',
             'O cabeçalho Date tem resolução de 1 s: mede desacordo grosseiro, não sincronia fina.',
         ] + ([] if remoto else ['Alvo em loopback: não é verificação de fora do host.']),
     }

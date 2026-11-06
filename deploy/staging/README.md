@@ -14,9 +14,11 @@ tempo real, webhooks, scheduler e, sob perfil, correio de laboratório.
 ## Serviços
 
 Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA do commit ou a
-identificação imutável do build antes de subir a stack. App e workers expõem esse
-valor em `/api/v1/health` ou `/health`; `local-unversioned` indica ensaio sem
-identificação de versão. A sonda remota registra a versão observada, mas só
+identificação imutável do build **antes de construir a imagem**. O Dockerfile
+grava a revisão na imagem e app e workers a expõem em `/api/v1/health` ou
+`/health`; alterar o `.env` depois do build não altera a versão do binário.
+`local-unversioned` indica ensaio sem identificação de versão. A sonda remota
+registra a versão observada, mas só
 uma execução em host separado constitui a prova operacional da fase 045.
 
 | Serviço | Porta publicada | Papel | Perfil |
