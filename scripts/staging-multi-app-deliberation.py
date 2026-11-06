@@ -64,8 +64,7 @@ if query("SELECT role FROM \"User\" WHERE email='stage-vote-operator@example.inv
 
 name = f'edocbr-stage-app-peer-{uuid4().hex[:12]}'
 peer = None
-session_id = None
-voting_id = None
+session_ids = []
 try:
     started = subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                               'run', '-d', '--no-deps', '--name', name,
@@ -112,6 +111,7 @@ try:
         'presidentId': members[0], 'notes': 'Ensaio fictício de duas instâncias HTTP',
     }), 201, 'criar sessão')
     session_id = created['session']['id']
+    session_ids.append(session_id)
     require(call(admin_b, peer_base, f'/api/v1/sessions/{session_id}/transition',
                  {'action': 'schedule', 'version': 1}), 200, 'agendar por B')
     require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/transition',
@@ -177,14 +177,123 @@ try:
         raise RuntimeError('Portal da primeira instância divergiu da apuração independente.')
     require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/transition',
                  {'action': 'close', 'version': 4}), 200, 'encerrar sessão')
-    print(json.dumps({'ok': True, 'synthetic': True, 'official': False, 'sameHost': True,
+    # A configuração regimental institucional não existe neste laboratório. O
+    # segundo caso cria apenas o estado inicial fictício; os atos de conferência
+    # e encerramento continuam passando pelas APIs reais das duas instâncias.
+    tenant_id = query("SELECT id FROM \"Tenant\" WHERE slug='staging-example'")
+    chair_email = 'stage-symbolic-chair@example.invalid'
+    chair_id = query(f"SELECT id FROM \"User\" WHERE email='{chair_email}'")
+    if not chair_id:
+        chair_id = uuid4().hex
+        query('INSERT INTO "User" (id, "tenantId", name, email, role, "passwordHash", active, "createdAt", "updatedAt") '
+              f"SELECT '{chair_id}', '{tenant_id}', 'Presidência fictícia', '{chair_email}', "
+              "'presiding_officer', \"passwordHash\", true, now(), now() FROM \"User\" "
+              "WHERE email='stage-admin@example.invalid' AND \"passwordHash\" IS NOT NULL")
+    if query(f"SELECT role FROM \"User\" WHERE id='{chair_id}'") != 'presiding_officer':
+        raise RuntimeError('Conta de conferência sintética inválida.')
+    chair_b = client()
+    require(call(chair_b, peer_base, '/api/v1/auth/login', {
+        'email': chair_email, 'password': values['STAGE_ADMIN_PASSWORD']}), 200, 'login da Presidência fictícia')
+
+    symbolic_session = uuid4().hex
+    symbolic_voting = uuid4().hex
+    number = int(query(f'SELECT COALESCE(MAX(number), 0) + 1 FROM "Session" '
+                       f'WHERE "tenantId"=\'{tenant_id}\' AND year=2039'))
+    query('INSERT INTO "Session" (id, "tenantId", number, year, type, "scheduledAt", "openedAt", status, '
+          'official, version, "createdAt", "updatedAt") '
+          f"VALUES ('{symbolic_session}', '{tenant_id}', {number}, 2039, 'ordinaria', now(), now(), "
+          "'open', true, 4, now(), now())")
+    session_ids.append(symbolic_session)
+    for index, person in enumerate(members):
+        opener, base = (admin_a, BASE) if index % 2 == 0 else (admin_b, peer_base)
+        require(call(opener, base, f'/api/v1/sessions/{symbolic_session}/attendance', {
+            'parliamentarianId': person, 'action': 'check_in', 'commandId': str(uuid4()),
+        }), 200, f'presença simbólica {index}')
+    eligible = json.dumps(members).replace("'", "''")
+    query('INSERT INTO "Voting" (id, "sessionId", question, mode, status, rule, "requiredQuorum", '
+          '"openedAt", "presentAtOpen", "quorumAtOpen", "memberBaseAtOpen", '
+          '"eligibleVoterIdsAtOpen", version, "createdAt", "updatedAt") '
+          f"VALUES ('{symbolic_voting}', '{symbolic_session}', 'Deliberação simbólica fictícia?', "
+          f"'simbolico', 'open', 'maioria_simples', 2, now(), 7, 7, 7, '{eligible}', 2, now(), now())")
+    symbolic_path = f'/api/v1/votings/{symbolic_voting}'
+    require(call(operator_a, BASE, symbolic_path + '/transition', {
+        'action': 'close', 'version': 2}), 409, 'fechamento sem conferência')
+    proposal_payload = {'action': 'propose', 'version': 2, 'sim': 3, 'nao': 3, 'abstencoes': 1}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(call, operator_a, BASE, symbolic_path + '/symbolic-tally', proposal_payload)
+        second = pool.submit(call, admin_b, peer_base, symbolic_path + '/symbolic-tally', proposal_payload)
+        proposals = [first.result(), second.result()]
+    proposal_statuses = sorted(response[0] for response in proposals)
+    if proposal_statuses != [200, 409]:
+        raise RuntimeError(f'Propostas simbólicas concorrentes inesperadas: {proposal_statuses}')
+    proposed = next(body for status_code, body in proposals if status_code == 200)
+    revision_id = proposed['revision']['id']
+    if proposed['version'] != 3:
+        raise RuntimeError('Revisão simbólica não avançou para a versão 3.')
+    require(call(operator_a, BASE, symbolic_path + '/symbolic-tally', {
+        'action': 'confirm', 'version': 3, 'revisionId': revision_id,
+    }), 403, 'mesma identidade não confirma')
+    require(call(operator_b, peer_base, symbolic_path + '/transition', {
+        'action': 'close', 'version': 3}), 409, 'fechamento antes da confirmação')
+    confirmed = require(call(chair_b, peer_base, symbolic_path + '/symbolic-tally', {
+        'action': 'confirm', 'version': 3, 'revisionId': revision_id,
+    }), 200, 'confirmação independente por B')
+    if confirmed['version'] != 4 or confirmed['revision']['confirmedById'] != chair_id:
+        raise RuntimeError('Revisão simbólica não recebeu a segunda identidade.')
+    require(call(operator_a, BASE, symbolic_path + '/transition', {
+        'action': 'close', 'version': 4, 'sim': 4, 'nao': 3, 'abstencoes': 0,
+    }), 422, 'contagem avulsa recusada')
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(call, operator_a, BASE, symbolic_path + '/transition',
+                            {'action': 'close', 'version': 4})
+        second = pool.submit(call, admin_b, peer_base, symbolic_path + '/transition',
+                             {'action': 'close', 'version': 4})
+        symbolic_close = sorted([first.result()[0], second.result()[0]])
+    if symbolic_close != [200, 409]:
+        raise RuntimeError(f'Fechamento simbólico concorrente inesperado: {symbolic_close}')
+    symbolic_row = query(f'SELECT "resultStatus", "resultCounts" FROM "Voting" WHERE id=\'{symbolic_voting}\'')
+    symbolic_status, symbolic_counts_json = symbolic_row.split('|')
+    symbolic_counts = json.loads(symbolic_counts_json)
+    symbolic_expected = {'sim': 3, 'nao': 3, 'abstencoes': 1, 'naoRegistraram': 0, 'presentes': 7}
+    if symbolic_status != 'empate' or symbolic_counts != symbolic_expected:
+        raise RuntimeError('Contagem simbólica PostgreSQL divergiu da revisão confirmada.')
+    revision_row = query(f'SELECT count(*), min("proposedById"), min("confirmedById") '
+                         f'FROM "SymbolicTallyRevision" WHERE "votingId"=\'{symbolic_voting}\'')
+    revision_count, proposer, confirmer = revision_row.split('|')
+    if int(revision_count) != 1 or proposer == confirmer or confirmer != chair_id:
+        raise RuntimeError('Conferência simbólica perdeu a segregação de identidades.')
+    tally_audits = query(f"SELECT action, count(*) FROM \"AuditEvent\" WHERE \"aggregateId\"='{symbolic_voting}' "
+                         "AND action IN ('voting.symbolic_tally.proposed', 'voting.symbolic_tally.confirmed') "
+                         'GROUP BY action ORDER BY action').splitlines()
+    if tally_audits != ['voting.symbolic_tally.confirmed|1', 'voting.symbolic_tally.proposed|1']:
+        raise RuntimeError(f'Auditoria de conferência duplicada ou incompleta: {tally_audits}')
+    symbolic_ata = require(call(admin_a, BASE, f'/api/v1/reports/session/{symbolic_session}/ata'), 200, 'ata simbólica por A')
+    if symbolic_ata['ata']['votings'][0]['result'] != 'empate' or symbolic_ata['ata']['votings'][0]['counts'] != symbolic_expected:
+        raise RuntimeError('Ata simbólica divergiu da revisão confirmada.')
+    symbolic_public = require(call(admin_b, peer_base,
+                                   f'/api/v1/public/sessions/{symbolic_session}?tenant=staging-example'),
+                              200, 'portal simbólico por B')
+    if (symbolic_public['votings'][0]['resultStatus'] != 'empate' or
+            symbolic_public['votings'][0]['resultCounts'] != symbolic_expected):
+        raise RuntimeError('Portal simbólico divergiu da revisão confirmada.')
+    require(call(admin_a, BASE, f'/api/v1/sessions/{symbolic_session}/transition',
+                 {'action': 'close', 'version': 4}), 200, 'encerrar sessão simbólica')
+    print(json.dumps({'ok': True, 'synthetic': True, 'sameHost': True,
                       'appContainers': 2, 'votes': votes, 'receipts': receipts,
                       'auditEvents': audits, 'duplicateStatuses': duplicate_statuses,
                       'closeStatuses': close_statuses, 'resultStatus': status,
-                      'counts': counts}, sort_keys=True))
+                      'counts': counts, 'symbolicOfficialFixture': True,
+                      'symbolicRevisionCount': int(revision_count),
+                      'symbolicTallyAuditEvents': 2,
+                      'symbolicProposalStatuses': proposal_statuses,
+                      'symbolicCloseStatuses': symbolic_close,
+                      'symbolicResultStatus': symbolic_status,
+                      'symbolicCounts': symbolic_counts}, sort_keys=True))
 finally:
     try:
-        if session_id and re.fullmatch(r'[a-zA-Z0-9_-]+', session_id):
+        for session_id in session_ids:
+            if not re.fullmatch(r'[a-zA-Z0-9_-]+', session_id):
+                continue
             # Se o ensaio falhar, não deixe uma sessão fictícia ativa na stack.
             query(f"UPDATE \"Voting\" SET status='cancelled' WHERE \"sessionId\"='{session_id}' AND status IN ('ready','open','paused')")
             query(f"UPDATE \"Session\" SET status='closed', \"closedAt\"=now() WHERE id='{session_id}' AND status IN ('check_in','open','suspended','resumed')")
