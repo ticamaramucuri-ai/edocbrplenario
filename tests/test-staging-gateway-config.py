@@ -20,5 +20,6 @@ for name, service in services.items():
     for port in service.get('ports', []):
         assert port['host_ip'] == '127.0.0.1', (name, port)
 assert services['gateway']['ports'][0]['target'] == 80
-assert services['app']['build']['args']['NEXT_PUBLIC_REALTIME_URL'] == ''
+assert services['app']['image'] == 'edocbr-plenario-staging:local'
+assert 'build' not in services['app'], 'O Compose não pode reconstruir uma árvore diferente do SHA fixado.'
 print('Gateway, app, banco e demais portas vinculados somente ao loopback.')
