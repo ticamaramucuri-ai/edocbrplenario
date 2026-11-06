@@ -1,0 +1,8 @@
+edocbrplenario.com.br {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3181
+}
+
+www.edocbrplenario.com.br {
+	redir https://edocbrplenario.com.br{uri} permanent
+}

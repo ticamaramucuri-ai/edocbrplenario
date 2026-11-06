@@ -67,6 +67,7 @@ jobs:
           bun-version: 1.4.2
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client sqlite3
       - run: bun install --frozen-lockfile
+      - run: bun install --cwd mini-services/realtime --frozen-lockfile
       - run: bun run test:postgres:foundation
 
   media-smoke:
