@@ -140,13 +140,8 @@ def main() -> None:
         migrate(config)
         subprocess.run(['python3', str(ROOT / 'scripts/staging-build.py')], check=True, cwd=ROOT)
         compose('up', '-d', '--wait', 'redis')
-        services = ['app', 'realtime', 'webhooks', 'scheduler']
-        profile = ['--profile', 'mail-lab'] if mail_worker_running() else []
-        if profile:
-            services.append('mail_worker')
-        compose(*profile, 'up', '-d', '--wait', '--no-build', '--no-deps',
-                '--force-recreate', *services)
-        compose('up', '-d', '--no-build', 'gateway')
+        # O bootstrap do app só responde 200 depois de existir um tenant.
+        # Semear antes do healthcheck evita um impasse na primeira instalação.
         subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                         'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',
                         '-e', 'STAGE_ADMIN_PASSWORD', '-e', 'STAGE_MONITOR_PASSWORD',
@@ -154,6 +149,13 @@ def main() -> None:
                        check=True, cwd=ROOT,
                        env={**os.environ, 'STAGE_ADMIN_PASSWORD': config['STAGE_ADMIN_PASSWORD'],
                             'STAGE_MONITOR_PASSWORD': config['STAGE_MONITOR_PASSWORD']})
+        services = ['app', 'realtime', 'webhooks', 'scheduler']
+        profile = ['--profile', 'mail-lab'] if mail_worker_running() else []
+        if profile:
+            services.append('mail_worker')
+        compose(*profile, 'up', '-d', '--wait', '--no-build', '--no-deps',
+                '--force-recreate', *services)
+        compose('up', '-d', '--no-build', 'gateway')
         result = {**status(config), 'stackStarted': True,
                   'appUrl': f"http://127.0.0.1:{config.get('STAGE_GATEWAY_PORT', '3181')}/",
                   'syntheticTenant': 'staging-example', 'adminEmail': 'stage-admin@example.invalid',

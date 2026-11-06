@@ -3,13 +3,11 @@
 Esta stack existe para ensaio sintético: PostgreSQL, Redis, app, dois nós de
 tempo real, webhooks, scheduler e, sob perfil, correio de laboratório.
 
-> **Hoje ela roda na própria máquina de desenvolvimento.** Isso **não** é
-> homologação fora do host. A trilha B de
-> [`PLANO-CONTINUIDADE-2026-10-20.md`](../../docs/PLANO-CONTINUIDADE-2026-10-20.md)
-> — prova de operação em host separado, recuperação medida e matriz de falhas
-> com observador externo — segue **bloqueada por falta de host**, e nenhum
-> ensaio local a substitui. Este documento é a preparação: quando houver host,
-> a topologia já está desenhada e os pontos de decisão, nomeados.
+> Uma VPS dedicada foi disponibilizada em 06/11/2026 para a homologação fora
+> da máquina de desenvolvimento. O preparo e as provas desse ambiente são
+> registrados em [045 — VPS dedicada](../../docs/etapas/045-vps-dedicada.md).
+> As medições de recuperação, a matriz de falhas e o observador externo ainda
+> precisam ser concluídos antes de liberar o piloto institucional.
 
 ## Serviços
 
@@ -127,7 +125,7 @@ Provado (sintético, nesta máquina):
 - [Carga mista de voto, portal e replay](../../docs/etapas/045-carga-mista-voto-portal-replay.md).
 - [Deliberação PostgreSQL em duas instâncias HTTP](../../docs/etapas/049-deliberacao-postgres-duas-instancias.md) — chave simultânea, apuração e fechamento concorrente.
 
-**Não** provado, e que exige host separado (tarefas 7 a 10 da trilha B):
+**Pendente de prova completa no host separado** (tarefas 7 a 10 da trilha B):
 
 1. Segredos rotacionados no host de destino, nunca os do desenvolvimento.
 2. Isolamento de rede conferido **de fora**: só a porta do app responde; banco e Redis recusam conexão externa.
@@ -135,5 +133,5 @@ Provado (sintético, nesta máquina):
 4. Backup conjunto de banco **e** arquivos, restaurado em ambiente limpo, com RPO e RTO observados.
 5. Matriz de falhas induzidas (Redis, PostgreSQL, worker de tempo real, worker de e-mail, rede, reinício do host) com o observador **fora** do host.
 
-Enquanto esses cinco não existirem, a fase 045 continua aberta e nenhum número
-medido aqui pode ser apresentado como capacidade institucional.
+Enquanto essas provas não existirem, a fase 045 continua aberta e nenhum número
+medido apenas no desenvolvimento pode ser apresentado como capacidade institucional.
