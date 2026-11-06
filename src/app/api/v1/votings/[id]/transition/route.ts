@@ -136,8 +136,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           `Quórum insuficiente para abrir a votação: ${quorum.present} presente(s) de ${quorum.total} membros (mínimo regimental: ${required}).`
         )
       }
-      const updated = await tx.voting.update({
-        where: { id: voting.id },
+      const opened = await tx.voting.updateMany({
+        where: { id: voting.id, version: voting.version, status: voting.status },
         data: {
           status: 'open',
           openedAt: voting.openedAt ?? now,
@@ -146,9 +146,12 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           memberBaseAtOpen: memberBase,
           eligibleVoterIdsAtOpen: JSON.stringify(eligibleIds),
           impedimentPolicyAtOpen: impediments.length > 0 ? policy : null,
-          version: voting.version + 1,
+          version: { increment: 1 },
         },
       })
+      if (opened.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão',
+        'A votação foi alterada durante a abertura. Atualize antes de tentar novamente.')
+      const updated = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
       await writeAudit(tx, {
         tenantId: session.tenantId,
         actor,
@@ -168,10 +171,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
     // ── pause / resume ──────────────────────────────────────────────────
     if (body.action === 'pause' || body.action === 'resume') {
-      const updated = await tx.voting.update({
-        where: { id: voting.id },
-        data: { status: transition.to, version: voting.version + 1 },
+      const moved = await tx.voting.updateMany({
+        where: { id: voting.id, version: voting.version, status: voting.status },
+        data: { status: transition.to, version: { increment: 1 } },
       })
+      if (moved.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão',
+        'A votação foi alterada durante a transição. Atualize antes de tentar novamente.')
+      const updated = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
       await writeAudit(tx, {
         tenantId: session.tenantId,
         actor,
@@ -189,9 +195,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
 
     // ── cancel: votação pronta, sem abertura ou votos ─────────────────────
     if (body.action === 'cancel') {
-      const updated = await tx.voting.update({ where: { id: voting.id }, data: {
-        status: 'cancelled', justification: body.justification, version: { increment: 1 },
-      } })
+      const cancelled = await tx.voting.updateMany({
+        where: { id: voting.id, version: voting.version, status: voting.status },
+        data: { status: 'cancelled', justification: body.justification, version: { increment: 1 } },
+      })
+      if (cancelled.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão',
+        'A votação foi alterada durante o cancelamento. Atualize antes de tentar novamente.')
+      const updated = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
       if (voting.agendaItemId) {
         const before = voting.agendaBefore
           ? JSON.parse(voting.agendaBefore) as { status: string; resultSummary: string | null }

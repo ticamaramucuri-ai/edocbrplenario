@@ -123,13 +123,47 @@ try:
         }), 200, f'presença {index}')
     require(call(admin_b, peer_base, f'/api/v1/sessions/{session_id}/transition',
                  {'action': 'open_session', 'version': 3}), 200, 'abrir sessão por B')
+    cancelled = require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/votings', {
+        'question': 'Cancelar deliberação fictícia antes da abertura?',
+        'mode': 'nominal', 'rule': 'maioria_simples',
+    }), 201, 'criar votação descartável')
+    cancelled_id = cancelled['voting']['id']
+    cancel_payload = {'action': 'cancel', 'version': 1,
+                      'justification': 'Cancelamento fictício para prova de concorrência'}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(call, admin_a, BASE, f'/api/v1/votings/{cancelled_id}/transition', cancel_payload)
+        second = pool.submit(call, admin_b, peer_base, f'/api/v1/votings/{cancelled_id}/transition', cancel_payload)
+        cancel_statuses = sorted([first.result()[0], second.result()[0]])
+    if cancel_statuses != [200, 409]:
+        raise RuntimeError(f'Cancelamento concorrente inesperado: {cancel_statuses}')
+    cancel_audits = int(query(f"SELECT count(*) FROM \"AuditEvent\" WHERE \"aggregateId\"='{cancelled_id}' "
+                              "AND action='voting.cancelled'"))
+    if cancel_audits != 1:
+        raise RuntimeError('Cancelamento concorrente duplicou a auditoria.')
+    if query(f'SELECT status, version FROM "Voting" WHERE id=\'{cancelled_id}\'') != 'cancelled|2':
+        raise RuntimeError('Cancelamento concorrente alterou o estado ou versão além do esperado.')
     voting = require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/votings', {
         'question': 'Aprovar deliberação sintética em duas instâncias?',
         'mode': 'nominal', 'rule': 'maioria_simples',
     }), 201, 'criar votação')
     voting_id = voting['voting']['id']
-    require(call(admin_b, peer_base, f'/api/v1/votings/{voting_id}/transition',
-                 {'action': 'open', 'version': 1}), 200, 'abrir votação por B')
+    transition_statuses = {}
+    for action, version in [('open', 1), ('pause', 2), ('resume', 3)]:
+        payload = {'action': action, 'version': version}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(call, admin_a, BASE, f'/api/v1/votings/{voting_id}/transition', payload)
+            second = pool.submit(call, admin_b, peer_base, f'/api/v1/votings/{voting_id}/transition', payload)
+            statuses = sorted([first.result()[0], second.result()[0]])
+        if statuses != [200, 409]:
+            raise RuntimeError(f'Transição {action} concorrente inesperada: {statuses}')
+        transition_statuses[action] = statuses
+    transition_audits = query(f"SELECT action, count(*) FROM \"AuditEvent\" WHERE \"aggregateId\"='{voting_id}' "
+                              "AND action IN ('voting.opened', 'voting.paused', 'voting.resumed') "
+                              'GROUP BY action ORDER BY action').splitlines()
+    if transition_audits != ['voting.opened|1', 'voting.paused|1', 'voting.resumed|1']:
+        raise RuntimeError(f'Transições concorrentes duplicaram a auditoria: {transition_audits}')
+    if query(f'SELECT status, version FROM "Voting" WHERE id=\'{voting_id}\'') != 'open|4':
+        raise RuntimeError('Versão após abertura, pausa e retomada divergiu.')
 
     ballots = ['sim', 'sim', 'sim', 'sim', 'nao', 'nao', 'nao']
     commands = [{'parliamentarianId': person, 'value': value, 'commandId': str(uuid4())}
@@ -151,9 +185,9 @@ try:
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(call, admin_a, BASE, f'/api/v1/votings/{voting_id}/transition',
-                            {'action': 'close', 'version': 2})
+                            {'action': 'close', 'version': 4})
         second = pool.submit(call, admin_b, peer_base, f'/api/v1/votings/{voting_id}/transition',
-                             {'action': 'close', 'version': 2})
+                             {'action': 'close', 'version': 4})
         close_statuses = sorted([first.result()[0], second.result()[0]])
     if close_statuses != [200, 409]:
         raise RuntimeError(f'Fechamento concorrente inesperado: {close_statuses}')
@@ -177,7 +211,7 @@ try:
         raise RuntimeError('Portal da primeira instância divergiu da apuração independente.')
     require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/transition',
                  {'action': 'close', 'version': 4}), 200, 'encerrar sessão')
-    annul_payload = {'action': 'annul', 'version': 3,
+    annul_payload = {'action': 'annul', 'version': 5,
                      'justification': 'Anulação fictícia para ensaio de concorrência'}
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(call, admin_a, BASE, f'/api/v1/votings/{voting_id}/transition', annul_payload)
@@ -306,6 +340,9 @@ try:
     print(json.dumps({'ok': True, 'synthetic': True, 'sameHost': True,
                       'appContainers': 2, 'votes': votes, 'receipts': receipts,
                       'auditEvents': audits, 'duplicateStatuses': duplicate_statuses,
+                      'transitionStatuses': transition_statuses,
+                      'transitionAuditEvents': 3,
+                      'cancelStatuses': cancel_statuses, 'cancelAuditEvents': cancel_audits,
                       'closeStatuses': close_statuses, 'resultStatus': status,
                       'counts': counts, 'symbolicOfficialFixture': True,
                       'annulStatuses': annul_statuses, 'annulAuditEvents': annul_audits,
