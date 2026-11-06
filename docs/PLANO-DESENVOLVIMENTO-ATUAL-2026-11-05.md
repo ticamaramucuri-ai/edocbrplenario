@@ -1,6 +1,6 @@
 # edocBR Plenário — diagnóstico e plano de desenvolvimento atualizado
 
-**Revisão:** 05/11/2026. **Situação:** produto funcional em desenvolvimento local; piloto institucional ainda não homologado. Este é o plano corrente. O [plano de 04/11](PLANO-INTEGRAL-2026-11-04.md) e os documentos anteriores preservam decisões e histórico; as [etapas numeradas](etapas/README.md) preservam as evidências de cada entrega.
+**Revisão inicial:** 05/11/2026. **Atualização:** 06/11/2026. **Situação:** produto funcional em desenvolvimento local; piloto institucional ainda não homologado. Este é o plano corrente. O [plano de 04/11](PLANO-INTEGRAL-2026-11-04.md) e os documentos anteriores preservam decisões e histórico; as [etapas numeradas](etapas/README.md) preservam as evidências de cada entrega.
 
 A [meta de execução](META-EXECUCAO-PLENARIO-2026-11-05.md) acompanha os marcos, critérios de saída e dependências deste plano.
 
@@ -56,9 +56,9 @@ Usar três estados distintos em toda comunicação: **implementado** (código e 
 
 **Fase 050:** continua como restrição deliberada: não prometer voto secreto nem votação offline no piloto. Se a Câmara exigir essas modalidades, abrir projeto independente, modelo de ameaça, desenho criptográfico/autoridade local e revisão externa antes de habilitar.
 
-## 5. Próxima fila executável sem host ou conta institucional
+## 5. Entregas locais executadas sem host ou conta institucional
 
-Executar nesta ordem, em **Câmaras e dados fictícios**, registrando cada incremento em `docs/etapas/`:
+As entregas abaixo foram executadas nesta ordem, com **Câmaras e dados fictícios**, e cada incremento foi registrado em `docs/etapas/`:
 
 1. **Jornada de regressão do produto — ensaio local concluído:** a [prova de layout](etapas/045-regressao-layout-navegador.md) passou em desktop e móvel; a [jornada de ata pública](etapas/045-jornada-ata-publicacao-navegador.md) passou com criação do rascunho e publicação da pauta pela interface, papéis separados na revisão/publicação e verificação no portal. Alguns comandos intermediários usam API do ensaio. A configuração é fictícia e pré-carregada; documentos, canal externo e aceite institucional permanecem em fases posteriores.
 2. **Portabilidade do acervo e prontidão — ensaio local ampliado:** a [prova de foto restaurada por HTTP](etapas/045-restauracao-imagem-http.md) e a [prova de PDF e replay](etapas/045-restauracao-acervo-http.md) cobrem banco+arquivos, isolamento por tenant, hash, adulteração e ausência em instâncias descartáveis. A [recuperação conjunta repetida](etapas/045-recuperacao-stack-postgres.md) reconfirmou gravação, segmentos e volumes no PostgreSQL fictício e fortaleceu a limpeza dos marcadores. O [pré-voo de arquivos](etapas/045-prevoo-referencias-arquivos.md) aponta foto/anexo local ausente, caminho inválido e tamanho divergente por Câmara. Faltam volumes/host externos e RTO/RPO medidos; anexos por URL remota seguem sem verificação local.
@@ -66,7 +66,7 @@ Executar nesta ordem, em **Câmaras e dados fictícios**, registrando cada incre
 4. **Transmissão em laboratório — ensaio sintético repetido:** a [prova de 05/11](etapas/052-repeticao-laboratorio-transmissao-2026-11-05.md) repetiu dois destinos, áudio/vídeo, queda e retorno isolados, gravação e replay com carga legislativa. O painel alerta sobre perda e oferece retirada do link; a publicação oficial exige observação da página pública. Canal social e observador externos permanecem pendentes.
 5. **Pacote de homologação — roteiro preparado e sonda ensaiada localmente:** o [pacote de execução](HOMOLOGACAO-PACOTE-EXECUCAO.md) reúne checklist, diagnóstico, ensaio longo, matriz de evidências e decisão por área. A [sonda de saúde](etapas/045-verificacao-remota-de-saude.md) conferiu cinco serviços pelo gateway local com papel `platform_monitor` restrito; acesso a tenants, impersonações e sessões foi recusado. A [versão gravada na imagem](etapas/045-versao-nos-servicos.md) foi comparada ao SHA esperado nos cinco serviços, com teste negativo de divergência. Em 06/11, o build versionado passou a usar exclusivamente o arquivo do commit Git indicado; uma sonda local adicional confirmou que os cinco contêineres rodavam o mesmo ID de imagem, com revisão e saúde coerentes. O ensaio de `stack-up` encontrou contêineres antigos após um novo build e foi corrigido com recriação explícita; a repetição passou. A execução exige host, observador, responsáveis, contas e regras confirmadas; o documento não é aceite.
 
-Essa fila entrega engenharia local; não altera o `automaticReady: false` de Mucuri artificialmente. O próximo incremento é o pacote de homologação. A fase 045 em host separado e as decisões da Câmara podem avançar em paralelo quando os recursos forem disponibilizados.
+Essa fila entregou engenharia local; não altera o `automaticReady: false` de Mucuri artificialmente. A próxima ação da fase 045 é implantar a revisão fixada em host separado, conferir TLS e isolamento a partir de outra máquina e repetir saúde, falhas e recuperação com RTO/RPO observados. Em paralelo, a Câmara precisa conferir regimento, composição, responsáveis e contas antes da configuração oficial das fases 046–053. Nenhuma dessas entradas estava disponível nesta atualização; o pacote de [execução da homologação](HOMOLOGACAO-PACOTE-EXECUCAO.md) especifica as provas exigidas.
 
 ## 6. Decisões e dependências que exigem participantes externos
 
