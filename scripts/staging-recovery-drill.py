@@ -105,7 +105,7 @@ def main() -> None:
 
     started = time.monotonic()
     restored_db = 'edocbr_restore_' + secrets.token_hex(6)
-    marker = 'staging-recovery-proof.txt'
+    marker = f'staging-recovery-proof-{secrets.token_hex(8)}.txt'
     marker_bytes = secrets.token_bytes(128)
     digest = hashlib.sha256(marker_bytes).hexdigest()
     marker_paths = ['/data/images/' + marker, '/data/recordings/' + marker,
@@ -243,8 +243,9 @@ def main() -> None:
                 if stopped:
                     compose('up', '-d', '--no-build', *SERVICES)
             finally:
+                cleanup_app = compose('ps', '-q', 'app', capture=True) or app
                 for path in marker_paths:
-                    subprocess.run(['docker', 'exec', app, 'rm', '-f', path],
+                    subprocess.run(['docker', 'exec', cleanup_app, 'rm', '-f', path],
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
