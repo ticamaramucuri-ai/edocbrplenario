@@ -89,10 +89,10 @@ resolvedor de ator também restringe `platform_monitor` ao caminho
 `GET /api/v1/auth/sessions` retornou **403** no ensaio HTTP. Logout continua
 disponível por sua rota pública de revogação da própria sessão.
 `bun run test:security`, `bun run typecheck`, `bun run lint` e
-`python3 -I tests/test-staging-remote-check.py` passaram. A versão usada no
-ensaio local ainda é `local-unversioned`;
-um SHA de build e observador em outra máquina continuam obrigatórios no host
-de homologação.
+`python3 -I tests/test-staging-remote-check.py` passaram. A versão usada naquele
+ensaio inicial era `local-unversioned`. Em 06/11, uma imagem local identificada
+por SHA passou pela sonda dos cinco serviços, mas um observador em outra máquina
+continua obrigatório no host de homologação.
 
 ## Agendamento
 

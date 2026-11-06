@@ -112,6 +112,10 @@ docker compose --profile fanout-lab --env-file deploy/staging/.env \
 ```
 
 Nunca use `down -v`: apaga os volumes duráveis, inclusive o banco.
+`stack-up` recompila o commit fixado e recria app e workers, incluindo
+`mail_worker` quando já estiver em execução. Aguarda os healthchecks antes do
+seed; PostgreSQL e Redis mantêm seus volumes. A troca pode interromper por
+instantes as conexões do laboratório, portanto reserve a janela do ensaio.
 
 ## O que já foi provado aqui, e o que não
 

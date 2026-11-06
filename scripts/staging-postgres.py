@@ -60,6 +60,14 @@ def compose(*args: str) -> None:
                    check=True, cwd=ROOT)
 
 
+def mail_worker_running() -> bool:
+    result = subprocess.run(['docker', 'compose', '--profile', 'mail-lab',
+                             '--env-file', str(CONFIG), '-f', str(COMPOSE),
+                             'ps', '-q', 'mail_worker'], cwd=ROOT,
+                            check=True, capture_output=True, text=True)
+    return bool(result.stdout.strip())
+
+
 def pg_environment(config: dict[str, str]) -> dict[str, str]:
     return {**os.environ, 'PGHOST': '127.0.0.1', 'PGPORT': config['STAGE_DB_PORT'],
             'PGUSER': 'edocbr_stage', 'PGDATABASE': 'edocbr_stage',
@@ -131,7 +139,14 @@ def main() -> None:
         compose('up', '-d', '--wait', 'postgres')
         migrate(config)
         subprocess.run(['python3', str(ROOT / 'scripts/staging-build.py')], check=True, cwd=ROOT)
-        compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler', 'gateway')
+        compose('up', '-d', '--wait', 'redis')
+        services = ['app', 'realtime', 'webhooks', 'scheduler']
+        profile = ['--profile', 'mail-lab'] if mail_worker_running() else []
+        if profile:
+            services.append('mail_worker')
+        compose(*profile, 'up', '-d', '--wait', '--no-build', '--no-deps',
+                '--force-recreate', *services)
+        compose('up', '-d', '--no-build', 'gateway')
         subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                         'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',
                         '-e', 'STAGE_ADMIN_PASSWORD', '-e', 'STAGE_MONITOR_PASSWORD',
