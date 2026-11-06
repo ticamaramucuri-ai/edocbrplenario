@@ -56,6 +56,8 @@ Usar três estados distintos em toda comunicação: **implementado** (código e 
 
 **Fase 050:** continua como restrição deliberada: não prometer voto secreto nem votação offline no piloto. Se a Câmara exigir essas modalidades, abrir projeto independente, modelo de ameaça, desenho criptográfico/autoridade local e revisão externa antes de habilitar.
 
+**Proposta de arquitetura em análise (06/11):** o [ADR-027](adr/ADR-027-saas-nucleo-local-operacao-offline.md) descreve SaaS central para todas as Câmaras, um núcleo único por Câmara na LAN e clientes Windows/Linux. A proposta permite estudar continuidade de sessão com perda da internet, mas ainda não foi aprovada nem implementada. Se a votação offline entrar no primeiro piloto, a fase 050 passa a ser pré-requisito técnico e institucional para atos oficiais; até lá, permanece a contingência de suspensão.
+
 ## 5. Entregas locais executadas sem host ou conta institucional
 
 As entregas abaixo foram executadas nesta ordem, com **Câmaras e dados fictícios**, e cada incremento foi registrado em `docs/etapas/`:
