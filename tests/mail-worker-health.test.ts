@@ -21,7 +21,7 @@ test('worker SMTP expõe health só em loopback durante processamento', async ()
       throw new Error(`Worker não iniciou health: ${stderr.slice(0, 500)}`)
     }
     expect(response.status).toBe(200)
-    expect(await response.text()).toBe('ok')
+    expect(await response.json()).toMatchObject({ ok: true, service: 'mail', version: expect.any(String) })
     expect((await fetch(`http://127.0.0.1:${port}/unknown`)).status).toBe(404)
   } finally {
     worker.kill('SIGTERM')
