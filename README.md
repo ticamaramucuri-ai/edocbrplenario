@@ -23,8 +23,10 @@ organiza a futura prova institucional. A [matriz de rastreabilidade](docs/MATRIZ
 liga funções, código, testes e evidências. O número v0.13.0 e os 26 módulos acima
 descrevem a versão histórica do núcleo do produto, não a homologação do piloto. A
 [etapa 045](docs/etapas/045-fundacao-operacional-saas.md) permanece aberta:
-PostgreSQL, workers, SMTP de laboratório, fanout e recuperação sintética passaram
-em ensaios locais; implantação, correio e recuperação institucionais continuam pendentes.
+PostgreSQL e workers já rodam em uma [VPS dedicada de homologação](docs/etapas/045-vps-dedicada.md),
+com dados sintéticos e acesso por túnel SSH; correio e recuperação institucionais
+continuam pendentes. O [fluxo local → GitHub → VPS](docs/FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md)
+define a promoção de um commit com CI verde. O domínio público ainda aguarda DNS e TLS.
 
 ---
 
