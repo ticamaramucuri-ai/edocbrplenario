@@ -177,6 +177,31 @@ try:
         raise RuntimeError('Portal da primeira instância divergiu da apuração independente.')
     require(call(admin_a, BASE, f'/api/v1/sessions/{session_id}/transition',
                  {'action': 'close', 'version': 4}), 200, 'encerrar sessão')
+    annul_payload = {'action': 'annul', 'version': 3,
+                     'justification': 'Anulação fictícia para ensaio de concorrência'}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(call, admin_a, BASE, f'/api/v1/votings/{voting_id}/transition', annul_payload)
+        second = pool.submit(call, admin_b, peer_base, f'/api/v1/votings/{voting_id}/transition', annul_payload)
+        annul_statuses = sorted([first.result()[0], second.result()[0]])
+    if annul_statuses != [200, 409]:
+        raise RuntimeError(f'Anulação concorrente inesperada: {annul_statuses}')
+    annulled_row = query(f'SELECT status, "resultStatus", "resultCounts", "resultDetail" '
+                        f'FROM "Voting" WHERE id=\'{voting_id}\'')
+    if annulled_row != 'annulled|anulado||':
+        raise RuntimeError(f'Anulação não limpou o resultado anterior: {annulled_row}')
+    annul_audits = int(query(f"SELECT count(*) FROM \"AuditEvent\" WHERE \"aggregateId\"='{voting_id}' "
+                             "AND action='voting.annulled'"))
+    if annul_audits != 1:
+        raise RuntimeError('Anulação concorrente duplicou a auditoria.')
+    annul_ata = require(call(admin_b, peer_base, f'/api/v1/reports/session/{session_id}/ata'), 200, 'ata anulada por B')
+    annul_public = require(call(admin_a, BASE,
+                                f'/api/v1/public/sessions/{session_id}?tenant=staging-example'),
+                           200, 'portal anulado por A')
+    if (annul_ata['ata']['votings'][0]['result'] != 'anulado' or
+            annul_ata['ata']['votings'][0]['counts'] is not None or
+            annul_public['votings'][0]['resultStatus'] != 'anulado' or
+            annul_public['votings'][0]['resultCounts'] is not None):
+        raise RuntimeError('Ata ou portal não refletiu a anulação.')
     # A configuração regimental institucional não existe neste laboratório. O
     # segundo caso cria apenas o estado inicial fictício; os atos de conferência
     # e encerramento continuam passando pelas APIs reais das duas instâncias.
@@ -283,6 +308,7 @@ try:
                       'auditEvents': audits, 'duplicateStatuses': duplicate_statuses,
                       'closeStatuses': close_statuses, 'resultStatus': status,
                       'counts': counts, 'symbolicOfficialFixture': True,
+                      'annulStatuses': annul_statuses, 'annulAuditEvents': annul_audits,
                       'symbolicRevisionCount': int(revision_count),
                       'symbolicTallyAuditEvents': 2,
                       'symbolicProposalStatuses': proposal_statuses,

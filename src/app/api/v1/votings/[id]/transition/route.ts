@@ -535,17 +535,20 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       if (item.status !== expectedAgendaStatus) throw new DomainError('VOTING_INVALID_TRANSITION', 409,
         'Pauta alterada', 'O item de pauta mudou após esta votação. Revise a pauta antes de anular.')
     }
-    const updated = await tx.voting.update({
-      where: { id: voting.id },
+    const annulled = await tx.voting.updateMany({
+      where: { id: voting.id, version: voting.version, status: voting.status },
       data: {
         status: 'annulled',
         resultStatus: 'anulado',
         resultCounts: null,
         resultDetail: null,
         justification: body.justification ?? null,
-        version: voting.version + 1,
+        version: { increment: 1 },
       },
     })
+    if (annulled.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão',
+      'A votação foi alterada durante a anulação. Atualize antes de tentar novamente.')
+    const updated = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
     if (voting.matterId) {
       await tx.legislativeMatter.update({
         where: { id: voting.matterId },

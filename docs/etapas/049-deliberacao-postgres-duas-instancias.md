@@ -12,6 +12,8 @@
 
 O ensaio de duas propostas simultâneas revelou **[200, 500]**: ambas podiam ler a mesma revisão antes de disputar o índice único. A rota de conferência agora traduz somente conflitos de unicidade ou de transação concorrente do Prisma (`P2002`/`P2034`) em `CONFLICT_VERSION`/409. Recompilada a imagem, a prova passou com propostas **[200, 409]**, uma única revisão no banco, **um evento de proposta e um de confirmação** na auditoria, fechamento **[200, 409]** e resultado `empate` com os cinco campos de contagem corretos no banco, na ata e no portal. `bun run typecheck`, `bun run lint`, `bun run test:voting:flow-guards` e `bun run test:plenary:official-increments` passaram. A sessão fictícia é encerrada mesmo em falha e a segunda instância é removida.
 
+**Anulação concorrente:** o mesmo roteiro passou a anular a votação nominal encerrada em duas instâncias, depois de conferir o resultado aprovado. Antes da correção, dois comandos com a mesma versão retornavam **[200, 200]**, porque a atualização do registro não condicionava a escrita à versão lida. A anulação agora usa atualização condicional por ID, versão e estado; a transação perdedora retorna 409 e não registra auditoria extra. Após reconstruir a imagem, o ensaio passou duas vezes com **[200, 409]**, um único evento `voting.annulled`, `resultStatus=anulado`, contagens/detalhe removidos e ata/portal coerentes. Passaram também `bun run typecheck`, `bun run lint` e `bun run test:voting:annulment-integrity` (2 testes, 19 asserções).
+
 **Reprodução em stack fictícia exclusiva:**
 
 ```bash
