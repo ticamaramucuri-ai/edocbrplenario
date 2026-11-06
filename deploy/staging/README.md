@@ -13,8 +13,12 @@ tempo real, webhooks, scheduler e, sob perfil, correio de laboratório.
 
 ## Serviços
 
-Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA do commit ou a
-identificação imutável do build **antes de construir a imagem**. O Dockerfile
+Defina `STAGE_BUILD_VERSION` no `deploy/staging/.env` com o SHA Git completo de
+`HEAD` **antes de construir a imagem**. Use `python3 scripts/staging-build.py`
+para exportar exatamente esse commit via `git archive` e construir a imagem;
+`stack-up` chama esse mesmo roteiro. Alterações locais não entram no build
+versionado. `--check` valida o SHA sem construir. Para ensaios com o diretório
+atual, use `STAGE_BUILD_VERSION=local-unversioned`. O Dockerfile
 grava a revisão na imagem e app e workers a expõem em `/api/v1/health` ou
 `/health`; alterar o `.env` depois do build não altera a versão do binário.
 `local-unversioned` indica ensaio sem identificação de versão. A sonda remota

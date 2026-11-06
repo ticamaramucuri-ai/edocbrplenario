@@ -130,7 +130,7 @@ def main() -> None:
         config = private_config(create=True)
         compose('up', '-d', '--wait', 'postgres')
         migrate(config)
-        compose('build', 'app')
+        subprocess.run(['python3', str(ROOT / 'scripts/staging-build.py')], check=True, cwd=ROOT)
         compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler', 'gateway')
         subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                         'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',

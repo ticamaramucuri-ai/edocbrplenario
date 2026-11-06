@@ -20,7 +20,7 @@ O ensaio de duas propostas simultâneas revelou **[200, 500]**: ambas podiam ler
 
 ```bash
 python3 scripts/staging-postgres.py up
-docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yaml build app
+python3 scripts/staging-build.py
 docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yaml up -d --no-deps app
 bun run test:staging:multi-app-deliberation
 ```
