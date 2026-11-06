@@ -19,7 +19,8 @@ Registrar em uma ficha privada da rodada: identificador, data/hora, host e domí
 Os comandos de `staging-*` abaixo **escrevem ou interrompem a stack sintética** onde indicado; conferir a Câmara alvo e reservar a janela antes de executá-los. `staging-remote-check.py` deve rodar na máquina observadora, com credenciais de `platform_monitor` recebidas por `EDOCBR_PLATFORM_EMAIL` e `EDOCBR_PLATFORM_PASSWORD` em ambiente privado. O seed fictício cria `stage-platform-observer@example.invalid` para o laboratório. O serviço `mail` só deve constar em `--expect-services` após configurar SMTP/URL pública no app e iniciar o perfil `mail-lab`, conforme a [topologia de staging](../deploy/staging/README.md). Nunca passar senha na linha de comando nem publicar a saída integral do pré-voo sem revisão.
 
 ```bash
-git rev-parse HEAD
+python3 scripts/staging-build.py --check
+python3 scripts/staging-image-proof.py --include-mail
 python3 scripts/staging-postgres.py stack-status
 curl -fsS https://DOMINIO-DE-TESTE/api/v1/health?ready=1
 python3 scripts/staging-remote-check.py \
@@ -30,7 +31,7 @@ python3 scripts/staging-remote-check.py \
 bun run pilot:preflight --tenant=SLUG-DA-CAMARA
 ```
 
-O pré-voo usa `DATABASE_URL` já injetada pelo ambiente/gerenciador de segredos do host, sem deixar URL e senha no histórico do shell. Ele retorna **2** quando há bloqueio, como esperado hoje para Mucuri. Guardar o JSON em local privado, registrar apenas contagens e códigos de verificação no relatório compartilhável. Conferir a seção `asset_references` e os hashes do pacote banco+arquivos. A sonda externa tem saídas 0 (saudável), 1 (degradado) e 2 (inacessível ou não verificável); qualquer resultado diferente de 0 bloqueia a rodada.
+O primeiro comando mostra o commit **fixado para o build**, que pode diferir de `HEAD`. A prova de imagem confere esse SHA na imagem e nos contêineres em execução; ela é local e não substitui a sonda da máquina observadora. Use `--include-mail` somente quando o perfil de correio estiver ativo. O pré-voo usa `DATABASE_URL` já injetada pelo ambiente/gerenciador de segredos do host, sem deixar URL e senha no histórico do shell. Ele retorna **2** quando há bloqueio, como esperado hoje para Mucuri. Guardar o JSON em local privado, registrar apenas contagens e códigos de verificação no relatório compartilhável. Conferir a seção `asset_references` e os hashes do pacote banco+arquivos. A sonda externa tem saídas 0 (saudável), 1 (degradado) e 2 (inacessível ou não verificável); qualquer resultado diferente de 0 bloqueia a rodada.
 
 ## 3. Roteiro de ensaio longo, com dados fictícios
 

@@ -105,6 +105,7 @@ python3 scripts/staging-postgres.py stack-up      # banco, migrações, serviço
 docker compose --profile fanout-lab --env-file deploy/staging/.env \
   -f deploy/staging/compose.yaml up -d --no-build realtime_peer
 python3 scripts/staging-postgres.py stack-status
+python3 scripts/staging-image-proof.py --include-mail  # quando mail-lab estiver ativo
 curl -fsS http://127.0.0.1:3181/api/v1/health?ready=1
 docker compose --profile fanout-lab --env-file deploy/staging/.env \
   -f deploy/staging/compose.yaml stop                # para sem destruir volume
