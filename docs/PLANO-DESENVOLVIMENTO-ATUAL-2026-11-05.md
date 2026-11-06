@@ -56,7 +56,7 @@ Usar três estados distintos em toda comunicação: **implementado** (código e 
 
 **Fase 050:** continua como restrição deliberada: não prometer voto secreto nem votação offline no piloto. Se a Câmara exigir essas modalidades, abrir projeto independente, modelo de ameaça, desenho criptográfico/autoridade local e revisão externa antes de habilitar.
 
-**Proposta de arquitetura em análise (06/11):** o [ADR-027](adr/ADR-027-saas-nucleo-local-operacao-offline.md) descreve SaaS central para todas as Câmaras, um núcleo único por Câmara na LAN e clientes Windows/Linux. A proposta permite estudar continuidade de sessão com perda da internet, mas ainda não foi aprovada nem implementada. Se a votação offline entrar no primeiro piloto, a fase 050 passa a ser pré-requisito técnico e institucional para atos oficiais; até lá, permanece a contingência de suspensão.
+**Direção de arquitetura definida pelo usuário (06/11):** todas as sessões e seus documentos serão cadastrados na web. Um [app desktop servidor por Câmara](adr/ADR-027-saas-nucleo-local-operacao-offline.md), para Windows ou Linux, importará automaticamente as sessões completas, conduzirá a sessão e distribuirá estado, documentos e comandos aos tablets, celulares e notebooks dos parlamentares pela LAN. O desktop sincronizará os atos com o SaaS central quando houver internet. O desenho está especificado, mas ainda não foi implementado nem homologado. A fase 050 passa a incluir essa trilha; até aprovação e prova da operação offline, permanece a contingência de suspensão. Ainda falta decidir se ela é requisito do primeiro piloto de Mucuri.
 
 ## 5. Entregas locais executadas sem host ou conta institucional
 

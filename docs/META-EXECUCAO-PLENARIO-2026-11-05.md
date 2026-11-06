@@ -23,7 +23,9 @@
 | M6 — fases 054–056, integração | Planejado após M5 | Definir fonte de verdade e autoridade; conectores de leitura Nextcloud/Alfresco; publicação por outbox com ACK, hash, deduplicação, reconciliação e reversão; testes de ACL e tenant | Piloto aceito e contratos de integração aprovados |
 | M7 — fase 057, expansão SaaS | Planejado | Onboarding repetível, suporte, atualização por tenant, monitoramento, restauração periódica e critérios operacionais aceitos | Métricas e contrato de operação acordados |
 
-**Conclusão da meta:** M0–M7 demonstrados com evidências vinculadas, testes relevantes aprovados e aceites explícitos onde exigidos. O voto secreto oficial e a votação offline seguem fora do piloto; eventual inclusão requer projeto e revisão próprios.
+**Conclusão da meta:** M0–M7 demonstrados com evidências vinculadas, testes relevantes aprovados e aceites explícitos onde exigidos. O voto secreto oficial segue fora do piloto. A votação offline está desabilitada hoje; o usuário definiu o desktop servidor por Câmara e a sincronização automática como direção do produto. Ainda falta decidir se essa capacidade será gate do primeiro piloto ou entrega posterior. Qualquer uso oficial offline exige a nova trilha técnica e revisão institucional da fase 050.
+
+**Nova trilha de arquitetura:** todas as sessões e documentos de preparação são cadastrados no SaaS web e importados com versão e hash pelo app desktop Windows/Linux da Câmara. O desktop serve sessão, documentos e comandos aos dispositivos na LAN e envia os atos ao SaaS com confirmação e reconciliação. O [ADR-027](adr/ADR-027-saas-nucleo-local-operacao-offline.md) define a sequência de oito entregas e seus gates. Este requisito não transforma os ensaios locais atuais em operação offline homologada nem antecipa Nextcloud/Alfresco.
 
 ## Sequência imediata sem dependências institucionais
 
