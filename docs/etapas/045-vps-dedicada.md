@@ -58,7 +58,15 @@ Não executar `docker compose down -v`: isso remove o banco e a mídia persisten
 1. Configurar observador em máquina distinta, timer e histórico de indisponibilidade.
 2. Testar backup conjunto de banco, fotos, gravações e replay com restauração limpa; medir RPO/RTO.
 3. Executar matriz de falhas de serviços e reinício do host com medição externa.
-4. Definir domínio de homologação, proxy TLS e política de acesso antes de publicar a interface na Internet.
+4. Monitorar renovação do certificado e definir a política de acesso do laboratório; Full (strict) foi confirmado pelo administrador da zona.
 5. Validar, com a Câmara, dados regimentais, usuários e aceite do piloto. Integrações Nextcloud/Alfresco seguem para a etapa de integração, após estabilizar o núcleo.
 
 **Decisão:** este host passa a servir como laboratório dedicado de homologação. Ainda não é produção nem piloto oficial da Câmara de Mucuri.
+
+## Ativação do domínio em 06/11/2026
+
+Após delegação do DNS à Cloudflare, o Caddy oficial 2.11.9 foi instalado como serviço do host e configurado como proxy para o gateway local `127.0.0.1:3181`. Certificados Let's Encrypt foram emitidos para `edocbrplenario.com.br` e `www.edocbrplenario.com.br`; o serviço foi habilitado no boot. O modelo de configuração é [`deploy/vps/Caddyfile.example`](../../deploy/vps/Caddyfile.example).
+
+Provas externas: HTTPS do origin validado sem ignorar certificado, `GET /` e `GET /api/v1/health?ready=1` pela Cloudflare com HTTP 200, `www` com redirecionamento 301, conexão WebSocket do Socket.IO estabelecida. As portas 3100, 3103, 3181, 5432 e 55432 permaneceram fechadas externamente. O certificado do origin tem validade até 04/02/2027 e renovação automática gerida pelo Caddy.
+
+O domínio expõe **somente a stack sintética**. O cabeçalho `X-Robots-Tag: noindex, nofollow, noarchive` reduz a indexação durante a homologação. O administrador da zona confirmou o modo SSL/TLS **Full (strict)** na Cloudflare; essa configuração não foi lida diretamente por uma API nesta execução. Dados e aceite da Câmara, backup/restauração externa e matriz de falhas seguem pendentes.

@@ -1,8 +1,10 @@
 edocbrplenario.com.br {
 	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow, noarchive"
 	reverse_proxy 127.0.0.1:3181
 }
 
 www.edocbrplenario.com.br {
+	header X-Robots-Tag "noindex, nofollow, noarchive"
 	redir https://edocbrplenario.com.br{uri} permanent
 }

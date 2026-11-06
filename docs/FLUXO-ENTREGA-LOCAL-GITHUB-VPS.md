@@ -1,6 +1,6 @@
 # Fluxo de entrega — local → GitHub → VPS
 
-**Estado em 06/11/2026:** VPS de homologação sintética ativa; publicação pública do domínio pendente de DNS/TLS e dos ensaios da fase 045. Este fluxo não libera o piloto institucional.
+**Estado em 06/11/2026:** VPS de homologação sintética ativa e primeira promoção por GitHub comprovada. Domínio HTTPS ativo para ensaio; a fase 045 ainda exige recuperação externa e aceite institucional.
 
 ## Ambientes e responsabilidade
 
@@ -28,20 +28,20 @@ O comando recusa revisão diferente do `main` remoto, alterações rastreadas lo
 
 ## Domínio e HTTPS
 
-O nome escolhido é **`edocbrplenario.com.br`**. Na verificação de 06/11, os nameservers públicos ainda eram `cosmos.dns-parking.com` e `nova.dns-parking.com`; a página respondia como domínio estacionado na Hostinger. Portanto, a zona Cloudflare ainda não é a autoridade pública observável para esse domínio. Não alterar DNS nem publicar a stack sintética até confirmar a delegação e o acesso pretendido.
+O nome escolhido é **`edocbrplenario.com.br`**. Em 06/11, a delegação passou de nameservers de estacionamento para `jonah.ns.cloudflare.com` e `raquel.ns.cloudflare.com`. Caddy no host obteve certificados Let's Encrypt para o domínio principal e `www`; HTTPS, redirecionamento e WebSocket passaram em verificação externa. O [registro da fase 045](etapas/045-vps-dedicada.md) contém as provas. O conteúdo servido ainda é exclusivamente sintético.
 
-Quando a zona Cloudflare estiver delegada corretamente:
+Para manter e depois oficializar o domínio:
 
-1. Criar registros `A` para o domínio raiz e `www` apontando à VPS, com proxy da Cloudflare, e remover registros de estacionamento conflitantes. Não publicar AAAA sem IPv6 configurado na VPS.
-2. Habilitar **Full (strict)** na Cloudflare. Usar certificado válido no origin; o modelo de [Caddyfile](../deploy/vps/Caddyfile.example) está pronto para proxy reverso e HTTPS automático, mas deve ser ativado apenas quando DNS, portas 80/443 e emissão de certificado estiverem prontos.
-3. Provar HTTPS, redirecionamento `www`, WebSocket, sessão autenticada e saúde a partir de fora da VPS. Manter PostgreSQL, Redis e portas internas fora da Internet.
+1. Manter registros de `@` e `www` apontados à VPS, com proxy Cloudflare; não publicar IPv6 de origin sem interface IPv6 configurada na VPS.
+2. Manter **Full (strict)** na Cloudflare, conforme confirmação do administrador da zona. O origin apresenta certificado válido e renovação automática via [Caddyfile](../deploy/vps/Caddyfile.example); a configuração da conta não foi lida diretamente por API.
+3. Repetir periodicamente HTTPS, redirecionamento `www`, WebSocket, sessão autenticada e saúde a partir de fora da VPS. Manter PostgreSQL, Redis e portas internas fora da Internet.
 4. Definir se o domínio raiz servirá o ambiente institucional ou uma página de entrada. O tenant `staging-example` é de laboratório e não deve ser apresentado como Câmara oficial.
 
 O [modo Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/) valida o certificado do origin; [Caddy](https://caddyserver.com/docs/automatic-https) pode emitir e renovar automaticamente quando o domínio e as portas estiverem preparados.
 
 ## Próximos critérios
 
-- CI verde no novo SHA e primeira promoção VPS feita a partir do GitHub, sem bundle local.
+- Primeira promoção por GitHub comprovada no SHA `f100052ce751c52ae658a6d98c8138315807464b`, com CI verde e prova de imagem/saúde na VPS. Repetir para cada mudança.
 - Backup e restauração conjunta medidos fora do host, observador externo e matriz de falhas da fase 045.
-- Delegação DNS à Cloudflare, certificado válido no origin e teste HTTPS externo.
+- Monitorar o certificado, HTTPS externo e a configuração Full (strict) confirmada pelo administrador da zona.
 - Somente depois, dados regimentais e aceite institucional do piloto. Nextcloud e Alfresco permanecem na fase final de integração.

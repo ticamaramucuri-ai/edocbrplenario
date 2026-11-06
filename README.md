@@ -26,7 +26,8 @@ descrevem a versão histórica do núcleo do produto, não a homologação do pi
 PostgreSQL e workers já rodam em uma [VPS dedicada de homologação](docs/etapas/045-vps-dedicada.md),
 com dados sintéticos e acesso por túnel SSH; correio e recuperação institucionais
 continuam pendentes. O [fluxo local → GitHub → VPS](docs/FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md)
-define a promoção de um commit com CI verde. O domínio público ainda aguarda DNS e TLS.
+define a promoção de um commit com CI verde. O domínio `edocbrplenario.com.br` já
+serve o laboratório sintético por HTTPS; isso ainda não representa o piloto oficial.
 
 ---
 
