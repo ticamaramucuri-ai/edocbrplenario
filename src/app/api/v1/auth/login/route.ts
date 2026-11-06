@@ -20,7 +20,7 @@ import type { Role } from '@/lib/contracts'
 
 export const dynamic = 'force-dynamic'
 
-const PLATFORM_ROLES: Role[] = ['platform_owner', 'platform_support']
+const PLATFORM_ROLES: Role[] = ['platform_owner', 'platform_support', 'platform_monitor']
 
 const loginSchema = z.object({
   email: z.string().trim().email('E-mail inválido.'),

@@ -62,13 +62,32 @@ Ficam em `deploy/staging/.env`, que **não** é versionado (`.gitignore` cobre
 |---|---|
 | `STAGE_DB_PASSWORD` | postgres, app, workers |
 | `STAGE_REALTIME_SECRET` | app e os dois nós de tempo real (precisa ser o mesmo) |
-| `STAGE_ADMIN_PASSWORD` | ator sintético `stage-admin@example.invalid` |
+| `STAGE_ADMIN_PASSWORD` | administrador sintético `stage-admin@example.invalid` |
+| `STAGE_MONITOR_PASSWORD` | monitor sintético `stage-platform-observer@example.invalid`; distinta da senha do administrador |
 
 Regras que valem desde já:
 
 - Valor gerado **no host onde roda**, nunca reaproveitado do desenvolvimento.
 - Nunca impresso em log, documento, prova JSON ou mensagem de commit.
 - Rotação é parte da instalação em host novo, não uma tarefa posterior.
+
+O seed também cria `stage-platform-observer@example.invalid` com papel
+`platform_monitor`, sem vínculo com Câmara. Esse papel só recebe
+`system.status.read`; não recebe gestão, impersonação nem escopo global de
+dados das Câmaras. O resolvedor restringe a sessão do monitor ao endpoint
+de saúde. O administrador do tenant não tem esse acesso.
+Para a sonda, carregar `EDOCBR_PLATFORM_EMAIL` e `EDOCBR_PLATFORM_PASSWORD`
+em ambiente privado, sem passar senha em argumentos.
+
+O perfil opcional `mail-lab` só aparece no `system-status` do app quando o
+transporte de teste está configurado. Para incluí-lo na verificação completa,
+defina no `.env` privado `STAGE_SMTP_HOST=mailpit`,
+`STAGE_SMTP_FROM=laboratorio@edocbr.invalid` e
+`STAGE_PUBLIC_BASE_URL=http://127.0.0.1:3181` (a porta acompanha
+`STAGE_GATEWAY_PORT`). `STAGE_SMTP_PORT` usa 1025 por padrão. Inicie
+`mail_worker` e `mailpit` com `--profile mail-lab` e recrie o app após alterar
+essas variáveis. Sem transporte configurado, retire `mail` de
+`--expect-services`; o relatório deve registrar essa limitação.
 
 ## Subir e parar
 

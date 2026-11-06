@@ -48,6 +48,10 @@ def private_config(create: bool) -> dict[str, str]:
         values['STAGE_ADMIN_PASSWORD'] = secrets.token_urlsafe(24)
         with CONFIG.open('a') as stream:
             stream.write(f"STAGE_ADMIN_PASSWORD={values['STAGE_ADMIN_PASSWORD']}\n")
+    if create and not values.get('STAGE_MONITOR_PASSWORD'):
+        values['STAGE_MONITOR_PASSWORD'] = secrets.token_urlsafe(24)
+        with CONFIG.open('a') as stream:
+            stream.write(f"STAGE_MONITOR_PASSWORD={values['STAGE_MONITOR_PASSWORD']}\n")
     return values
 
 
@@ -130,12 +134,15 @@ def main() -> None:
         compose('up', '-d', '--no-build', 'app', 'realtime', 'webhooks', 'scheduler', 'gateway')
         subprocess.run(['docker', 'compose', '--env-file', str(CONFIG), '-f', str(COMPOSE),
                         'run', '--rm', '--no-deps', '-e', 'STAGING_SEED=synthetic-only',
-                        '-e', 'STAGE_ADMIN_PASSWORD', 'app', 'bun', 'scripts/staging-seed.ts'],
+                        '-e', 'STAGE_ADMIN_PASSWORD', '-e', 'STAGE_MONITOR_PASSWORD',
+                        'app', 'bun', 'scripts/staging-seed.ts'],
                        check=True, cwd=ROOT,
-                       env={**os.environ, 'STAGE_ADMIN_PASSWORD': config['STAGE_ADMIN_PASSWORD']})
+                       env={**os.environ, 'STAGE_ADMIN_PASSWORD': config['STAGE_ADMIN_PASSWORD'],
+                            'STAGE_MONITOR_PASSWORD': config['STAGE_MONITOR_PASSWORD']})
         result = {**status(config), 'stackStarted': True,
                   'appUrl': f"http://127.0.0.1:{config.get('STAGE_GATEWAY_PORT', '3181')}/",
-                  'syntheticTenant': 'staging-example', 'adminEmail': 'stage-admin@example.invalid'}
+                  'syntheticTenant': 'staging-example', 'adminEmail': 'stage-admin@example.invalid',
+                  'observerEmail': 'stage-platform-observer@example.invalid'}
     elif args.command == 'stack-status':
         config = private_config(create=False)
         compose('ps')

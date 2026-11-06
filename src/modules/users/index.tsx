@@ -168,6 +168,7 @@ const ROLES: Role[] = [
 const ROLE_BADGE: Record<Role, string> = {
   platform_owner: 'bg-primary/15 text-primary',
   platform_support: 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-300',
+  platform_monitor: 'bg-slate-500/15 text-slate-700 dark:text-slate-300',
   tenant_admin: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
   legislative_admin: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
   session_operator: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',

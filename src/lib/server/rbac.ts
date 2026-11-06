@@ -59,6 +59,7 @@ export const PERMISSIONS: Record<string, Role[]> = {
   'subscription.manage': ['tenant_admin', 'legislative_admin'],
   // Onda 4 / Fase 20 — Suporte da plataforma (leitura operacional + impersonação)
   'platform.read': ['platform_owner', 'platform_support'],
+  'system.status.read': ['platform_owner', 'platform_support', 'platform_monitor'],
   'impersonation.manage': ['platform_owner', 'platform_support'],
   // Onda 5 / Fase 23 — Chaves de API do tenant (emissão e revogação)
   'apikey.manage': ['tenant_admin'],

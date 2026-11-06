@@ -125,6 +125,7 @@ const RBAC: Record<string, Role[]> = {
   // Onda 4 — Fases 17–20
   'subscription.manage': ['tenant_admin', 'legislative_admin'],
   'platform.read': ['platform_owner', 'platform_support'],
+  'system.status.read': ['platform_owner', 'platform_support', 'platform_monitor'],
   'impersonation.manage': ['platform_owner', 'platform_support'],
   // Onda 5 — Fase 23: chaves de API (emissão/revogação pelo admin do tenant)
   'apikey.manage': ['tenant_admin'],

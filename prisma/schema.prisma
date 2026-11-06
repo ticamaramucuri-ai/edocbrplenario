@@ -249,7 +249,7 @@ model User {
   tenantId          String?
   name              String
   email             String         @unique
-  role              String // platform_owner|platform_support|tenant_admin|legislative_admin|session_operator|media_operator|presiding_officer|parliamentarian|auditor
+  role              String // platform_owner|platform_support|platform_monitor|tenant_admin|legislative_admin|session_operator|media_operator|presiding_officer|parliamentarian|auditor
   jobTitle          String?
   parliamentarianId String?        @unique
   passwordHash      String? // Fase 9: scrypt. O seed dá senha a todo usuário de demonstração; nulo só em usuário criado sem credencial.

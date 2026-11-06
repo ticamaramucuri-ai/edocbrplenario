@@ -20,6 +20,7 @@ import type { Role } from '@/lib/contracts'
 import {
   unauthenticated,
   forbiddenTenant,
+  forbiddenRole,
   forbiddenTenantInactive,
   notFound,
   trialExpired,
@@ -27,7 +28,17 @@ import {
 import { getSessionToken, resolveSessionToken } from './session'
 import { demoModeEnabled } from './demo-mode'
 
+// isPlatform concede escopo global de Câmara. O monitor autentica sem tenant,
+// mas não recebe esse escopo: sua única permissão é system.status.read.
 const PLATFORM_ROLES: Role[] = ['platform_owner', 'platform_support']
+const TENANTLESS_ROLES: Role[] = [...PLATFORM_ROLES, 'platform_monitor']
+
+function enforceMonitorEndpoint(req: Request, actor: ResolvedActor): void {
+  if (actor.role === 'platform_monitor' &&
+      new URL(req.url).pathname !== '/api/v1/platform/system-status') {
+    throw forbiddenRole('O monitor só acessa o estado operacional da plataforma.')
+  }
+}
 
 /** Métodos que MUTAM estado — único caso bloqueado pelo trial vencido. */
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
@@ -111,7 +122,7 @@ async function actorFromSession(req: Request): Promise<ResolvedActor | null> {
   const resolved = await resolveSessionToken(token)
   if (!resolved) return null
   const actor = toActor(resolved.user)
-  if (!actor.isPlatform && !actor.tenantId) return null
+  if (!TENANTLESS_ROLES.includes(actor.role) && !actor.tenantId) return null
   return actor
 }
 
@@ -120,6 +131,7 @@ export async function resolveActor(req: Request): Promise<ResolvedActor> {
   // 1) Autenticação real: cookie de sessão httpOnly (Fase 9) — tem prioridade.
   const sessionActor = await actorFromSession(req)
   if (sessionActor) {
+    enforceMonitorEndpoint(req, sessionActor)
     if (!sessionActor.isPlatform && sessionActor.tenantId) {
       const state = await tenantState(sessionActor.tenantId)
       if (!state.active) {
@@ -151,7 +163,8 @@ export async function resolveActor(req: Request): Promise<ResolvedActor> {
     throw unauthenticated('Ator demo não encontrado ou inativo (header x-actor-id).')
   }
   const actor = toActor(user)
-  if (!actor.isPlatform && !actor.tenantId) {
+  enforceMonitorEndpoint(req, actor)
+  if (!TENANTLESS_ROLES.includes(actor.role) && !actor.tenantId) {
     throw forbiddenTenant('Ator sem vínculo com um tenant.')
   }
   if (user.tenantId) {
@@ -176,6 +189,7 @@ export async function resolveTenantScope(
   req: Request,
   actor: ResolvedActor
 ): Promise<string> {
+  if (actor.role === 'platform_monitor') throw forbiddenTenant('Monitor não acessa dados de Câmara.')
   if (!actor.isPlatform) return actor.tenantId as string
   const slug = new URL(req.url).searchParams.get('tenant')
   if (slug) {
@@ -215,7 +229,7 @@ export async function tryResolveActor(req: Request): Promise<ResolvedActor | nul
   })
   if (!user || !user.active) return null
   const actor = toActor(user)
-  if (!actor.isPlatform && !actor.tenantId) return null
+  if (!TENANTLESS_ROLES.includes(actor.role) && !actor.tenantId) return null
   if (user.tenantId) {
     const state = await tenantState(user.tenantId)
     if (!state.active) return null

@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:media:smoke": "bash scripts/media-smoke.sh",
     "media:prepare-smoke": "bash scripts/prepare-media-smoke.sh",
-    "test:security": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/realtime-auth.test.ts tests/demo-mode.test.ts",
+    "test:security": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/realtime-auth.test.ts tests/demo-mode.test.ts tests/platform-monitor-boundary.test.ts",
     "test:unit": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/database-guard.test.ts tests/database-unavailable.test.ts tests/realtime-endpoint.test.ts",
     "test:images:parliamentarian": "DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/parliamentarian-images.test.ts",
     "test:display:state": "bash scripts/test-display-state.sh",

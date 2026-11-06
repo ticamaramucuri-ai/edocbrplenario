@@ -16,7 +16,7 @@ Registrar em uma ficha privada da rodada: identificador, data/hora, host e domí
 
 ## 2. Diagnóstico técnico, antes das mutações
 
-Os comandos de `staging-*` abaixo **escrevem ou interrompem a stack sintética** onde indicado; conferir a Câmara alvo e reservar a janela antes de executá-los. `staging-remote-check.py` deve rodar na máquina observadora, com credenciais de plataforma recebidas por variável de ambiente privada. Nunca passar senha na linha de comando nem publicar a saída integral do pré-voo sem revisão.
+Os comandos de `staging-*` abaixo **escrevem ou interrompem a stack sintética** onde indicado; conferir a Câmara alvo e reservar a janela antes de executá-los. `staging-remote-check.py` deve rodar na máquina observadora, com credenciais de `platform_monitor` recebidas por `EDOCBR_PLATFORM_EMAIL` e `EDOCBR_PLATFORM_PASSWORD` em ambiente privado. O seed fictício cria `stage-platform-observer@example.invalid` para o laboratório. O serviço `mail` só deve constar em `--expect-services` após configurar SMTP/URL pública no app e iniciar o perfil `mail-lab`, conforme a [topologia de staging](../deploy/staging/README.md). Nunca passar senha na linha de comando nem publicar a saída integral do pré-voo sem revisão.
 
 ```bash
 git rev-parse HEAD

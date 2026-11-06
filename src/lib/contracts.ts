@@ -8,6 +8,7 @@
 export type Role =
   | 'platform_owner'
   | 'platform_support'
+  | 'platform_monitor'
   | 'tenant_admin'
   | 'legislative_admin'
   | 'session_operator'
@@ -688,6 +689,7 @@ export const BOARD_ROLE_LABEL: Record<string, string> = {
 export const ROLE_LABEL: Record<Role, string> = {
   platform_owner: 'Operador da Plataforma',
   platform_support: 'Suporte da Plataforma',
+  platform_monitor: 'Monitor da Plataforma',
   tenant_admin: 'Administrador da Câmara',
   legislative_admin: 'Administração Legislativa',
   session_operator: 'Operador de Sessão',

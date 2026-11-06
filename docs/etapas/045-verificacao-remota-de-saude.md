@@ -70,6 +70,30 @@ O caso 5 só passou depois de corrigir o **teste**: o servidor falso emitia um
 `Date` próprio e o desvio simulado entrava como segundo cabeçalho, ignorado.
 Sem isso, o caso teria "passado" sem nunca exercitar a detecção.
 
+Em 05/11/2026, executei a sonda pelo gateway local contra os cinco serviços
+`app,realtime,webhooks,scheduler,mail`, depois de acrescentar ao seed a conta
+fictícia de `platform_monitor` e parametrizar o transporte SMTP opcional no
+app da stack. Com `STAGE_SMTP_HOST=mailpit`, remetente e URL pública local no
+`.env` privado, a sonda retornou **0**: os cinco serviços saudáveis, versão
+esperada conferida e `remoto: false`. O controle negativo com a conta
+`tenant_admin` retornou **2** e registrou 403 no `system-status`, sem expor
+os workers por porta pública. Depois separei `system.status.read` de
+`platform.read`: o papel de suporte existente também podia gerir impersonação,
+o que era excessivo para uma sonda. No ensaio HTTP, o monitor autenticou e leu
+`system-status` (200), mas recebeu **403** em tenants, impersonações e sessões.
+O seed agora gera `STAGE_MONITOR_PASSWORD` separado de `STAGE_ADMIN_PASSWORD`;
+usar a senha do administrador no login do monitor retornou **401**. A sonda
+com a credencial própria voltou a retornar **0** para os cinco serviços. O
+resolvedor de ator também restringe `platform_monitor` ao caminho
+`/api/v1/platform/system-status`, para não herdar outras leituras autenticadas;
+`GET /api/v1/auth/sessions` retornou **403** no ensaio HTTP. Logout continua
+disponível por sua rota pública de revogação da própria sessão.
+`bun run test:security`, `bun run typecheck`, `bun run lint` e
+`python3 -I tests/test-staging-remote-check.py` passaram. A versão usada no
+ensaio local ainda é `local-unversioned`;
+um SHA de build e observador em outra máquina continuam obrigatórios no host
+de homologação.
+
 ## Agendamento
 
 `deploy/systemd/legis-remote-check.{service,timer}.example`, a cada minuto com

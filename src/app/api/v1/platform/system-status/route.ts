@@ -6,8 +6,8 @@
  * sessões de hoje, último evento auditado), runtime (uptime, heap) e
  * `alerts[]` derivados com ação sugerida.
  *
- * Fase 20: RBAC passa a ser `platform.read` (platform_support também lê — o
- * suporte precisa enxergar a operação); os alertas derivados são PERSISTIDOS
+ * `system.status.read` admite owner, suporte e monitor de saúde, sem conceder
+ * ao monitor outras leituras ou impersonação; os alertas são PERSISTIDOS
  * em PlatformAlert com dedupe por kind aberto (upsert) e a resposta ganha
  * `platformAlerts[]` (abertos primeiro + reconhecidos recentes, máx 20)
  * MANTENDO o campo `alerts` derivado para compatibilidade. O ack continua
@@ -64,7 +64,7 @@ async function fileSizeBytes(path: string): Promise<number | null> {
 
 export const GET = apiHandler(async (req: Request, _ctx, _correlationId) => {
   const actor = await resolveActor(req)
-  requirePermission(actor, 'platform.read')
+  requirePermission(actor, 'system.status.read')
 
   // Serviços (paralelo) + banco de dados (fs) + filas/atividade (Prisma).
   const now = new Date()
