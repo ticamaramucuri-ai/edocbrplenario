@@ -1,6 +1,6 @@
 # Fluxo de entrega — local → GitHub → VPS
 
-**Estado em 07/11/2026:** VPS de homologação sintética ativa e promoção por GitHub comprovada no SHA `ceb885856cf160735dcb86401e5a0585279744b9`. Domínio HTTPS e observador externo ativo; a fase 045 ainda exige recuperação externa e aceite institucional.
+**Estado em 07/11/2026:** VPS de homologação sintética ativa e promoção por GitHub comprovada até o SHA `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b`. Domínio HTTPS e observador externo ativos; uma recuperação sintética em VPS passou, mas backup fora do host e aceite institucional seguem pendentes.
 
 ## Ambientes e responsabilidade
 
@@ -41,8 +41,8 @@ O [modo Full (strict)](https://developers.cloudflare.com/ssl/origin-configuratio
 
 ## Próximos critérios
 
-- Promoção por GitHub comprovada no SHA `ceb885856cf160735dcb86401e5a0585279744b9`, com CI verde, prova da imagem/saúde na VPS e verificação pública HTTPS. Repetir para cada mudança.
+- Promoções por GitHub comprovadas nos SHAs `ceb885856cf160735dcb86401e5a0585279744b9` e `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b`, com CI verde, prova da imagem/saúde e verificação pública HTTPS. Repetir para cada mudança.
 - Acompanhar o [observador público da fase 045](etapas/045-observador-publico-externo.md), cuja primeira execução em máquina fora da VPS passou.
-- Backup e restauração conjunta medidos fora do host, observador externo e matriz de falhas da fase 045.
+- Backup cifrado e restauração conjunta fora do host, monitor autenticado dos workers e matriz de falhas da fase 045. A restauração em DB/arquivos temporários na mesma VPS passou, sem medir RTO/RPO oficial.
 - Monitorar o certificado, HTTPS externo e a configuração Full (strict) confirmada pelo administrador da zona.
 - Somente depois, dados regimentais e aceite institucional do piloto. Nextcloud e Alfresco permanecem na fase final de integração.

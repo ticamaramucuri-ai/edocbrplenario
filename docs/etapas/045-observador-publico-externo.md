@@ -1,6 +1,6 @@
 # 045 — Observador público externo
 
-**Estado em 07/11/2026:** workflow publicado na branch padrão e primeira execução externa concluída com sucesso; agendamento de 15 minutos ativo.
+**Estado em 07/11/2026:** workflow publicado na branch padrão; duas execuções manuais externas aprovadas e agendamento de 15 minutos ativo.
 
 ## Objetivo
 
@@ -27,7 +27,7 @@ Na promoção de 06/11/2026, a partir do ambiente de desenvolvimento:
 - CI do SHA: sucesso nos três jobs (`application`, `postgres-foundation`, `media-smoke`);
 - VPS: checkout no mesmo SHA; app, realtime, webhooks e scheduler saudáveis.
 
-Essas verificações confirmam a promoção daquele commit, mas foram feitas no mesmo fluxo operacional. A prova de monitoramento independente começará quando o workflow estiver na branch padrão e tiver ao menos uma execução concluída no histórico do GitHub.
+Essas verificações iniciais confirmaram a promoção do commit `ceb8858` no mesmo fluxo operacional.
 
 Primeira execução independente, via workflow manual, em 07/11/2026:
 
@@ -38,10 +38,12 @@ Primeira execução independente, via workflow manual, em 07/11/2026:
 
 O agendamento periódico está instalado; a primeira passagem manual valida o workflow e o caminho externo, mas ainda não constitui histórico de disponibilidade nem prova de alertas.
 
+Após a promoção da versão `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b` e o ensaio de restauração, a segunda execução externa manual [42394264032](https://github.com/e-docBR/edocBRplenario/actions/runs/42394264032) também passou. O runner confirmou a versão `9ae0e77`, HTTPS, banco pronto, `noindex` e redirecionamento para o domínio principal.
+
 ## Próxima ação e limites
 
 1. Acompanhar execuções agendadas e definir destino para alertas de falha sem expor credenciais.
 2. Instalar ou escolher um coletor para a sonda autenticada de `platform_monitor`, em máquina independente, para verificar os cinco serviços internos sem abrir suas portas.
-3. Executar backup PostgreSQL + arquivos de sessão e fazer restauração limpa fora do volume ativo; medir RPO/RTO.
+3. Fazer backup criptografado fora da VPS e restaurar banco + arquivos em host/volume limpo; medir RPO/RTO acordados.
 
 O domínio continua sendo ambiente de staging sintético, marcado `noindex`. O workflow não configura produção nem constitui aceite institucional.

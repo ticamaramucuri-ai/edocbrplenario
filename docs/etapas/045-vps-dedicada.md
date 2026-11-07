@@ -78,3 +78,9 @@ O commit `ceb885856cf160735dcb86401e5a0585279744b9` foi aprovado nos três jobs 
 Verificação pública feita após a promoção: homepage HTTP 200; `/api/v1/health?ready=1` HTTP 200 com `ok=true`, `database=ready` e a versão acima; `X-Robots-Tag: noindex, nofollow, noarchive`. A [rotina do observador externo](045-observador-publico-externo.md) está publicada; sua primeira execução externa (run `42390489098`, em 07/11) aprovou HTTPS, prontidão, `noindex`, SHA e redirecionamento `www`.
 
 Esta é uma promoção de staging, não uma liberação de produção. Backup/restauração fora do host, alertas, sonda externa autenticada dos workers e ensaio da matriz de falhas ainda são necessários para fechar a fase 045.
+
+## Promoção e ensaio de recuperação em 07/11/2026
+
+O commit `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b` passou nos três jobs do CI e foi promovido com `scripts/promote-vps.sh`. A stack sintética manteve as 18 migrações aplicadas e todos os serviços saudáveis. O fixture audiovisual e o ensaio de recuperação completos estão em [045-recuperacao-stack-postgres.md](045-recuperacao-stack-postgres.md); a aplicação autenticada restaurada iniciou em 2,916 s e a base ativa permaneceu intacta. A sonda externa [42394264032](https://github.com/e-docBR/edocBRplenario/actions/runs/42394264032) confirmou que HTTPS e readiness voltaram com a nova revisão.
+
+Esse ensaio usa banco e armazenamento temporário na mesma VPS. O próximo gate é cópia cifrada fora do host, restauração em destino limpo, monitor externo dos workers e medição de RTO/RPO; ainda não é aceite de produção nem da Câmara.

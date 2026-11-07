@@ -1,6 +1,6 @@
 # Etapa 045 — Recuperação do stack de homologação
 
-**Estado:** ensaio local sintético aprovado; recuperação institucional ainda pendente.
+**Estado em 07/11/2026:** ensaio local e repetição na VPS sintética aprovados; recuperação independente e institucional ainda pendentes.
 
 `scripts/staging-recovery-drill.py` verifica que o banco contém somente `staging-example`, interrompe Next.js e os três trabalhadores, gera um pacote verificável com `pg_dump` e cópia dos volumes de fotos, gravações e replay, e restaura o pacote em um banco novo e diretórios temporários. Usa `pg_dump` e `pg_restore` do contêiner PostgreSQL 16 para evitar incompatibilidade de versão com ferramentas instaladas no host. O banco ativo não é substituído. O script remove marcadores temporários, elimina o banco restaurado de prova e religa os serviços mesmo diante de falha. O ensaio exige que não exista outro escritor ligado diretamente à porta 55432 durante o snapshot.
 
@@ -35,4 +35,14 @@ Em 05/11/2026, repeti `python3 scripts/staging-recovery-drill.py --require-media
 
 Esses tempos medem apenas a rotina sintética nesta máquina. Não incluem cópia para outro host, volume representativo, acordo de RTO/RPO nem aceite da operação institucional.
 
-**Incremento seguinte:** gravação/replay com mídia sintética referenciada pelo banco e falha controlada do PostgreSQL foram executados; veja [a prova de mídia e falha do banco](045-midia-referenciada-falha-banco.md). Ainda faltam carga representativa, correio em relay de homologação e pré-voo institucional antes do piloto acompanhado. Nextcloud e Alfresco seguem para as últimas fases.
+## Repetição na VPS dedicada em 07/11/2026
+
+Após promover o SHA `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b`, gerei uma sessão encerrada e uma gravação fictícias na Câmara sintética `staging-example`. A primeira execução da etapa de mídia revelou que o roteiro dependia de `ffmpeg` instalado no host; como ele só existe no contêiner da aplicação, o roteiro foi corrigido para gerar e limpar o arquivo temporário dentro desse contêiner. O ensaio de mídia então publicou um replay H.264/AAC de 60.810 bytes, conferiu hash e manifesto e recebeu HTTP 206 para leitura parcial.
+
+`python3 scripts/staging-recovery-drill.py --require-media` passou na VPS. O pacote reuniu 12 arquivos; restaurou um tenant, uma sessão, uma gravação, dois segmentos e três volumes, validou hashes e abriu uma segunda aplicação isolada ligada ao banco restaurado. Snapshot: **2,567 s**; restauração e verificação: **7,619 s**; app restaurado até bootstrap: **2,916 s**. A base ativa não foi substituída. A rotina parou brevemente app e workers enquanto produzia o snapshot e os religou ao final.
+
+Em seguida, `staging-worker-failure-drill.py` passou: o realtime foi interrompido com evento pendente e o publicou após reinício; webhooks e scheduler também reiniciaram, com app acessível em **6,551 s** de ensaio. A sonda externa do GitHub (run [42394264032](https://github.com/e-docBR/edocBRplenario/actions/runs/42394264032)) conferiu a nova versão `9ae0e77`, HTTPS, readiness PostgreSQL, `noindex` e redirecionamento de `www`.
+
+A [evidência estruturada](045-prova-recuperacao-vps-sintetica.json) registra os resultados e limites. Os arquivos de backup e o banco restaurado estavam no mesmo host físico e foram removidos ao fim do ensaio; não foi testada perda total da VPS, cópia off-host, restauração após falha global ou RTO/RPO institucional. Os tempos acima são medidas de laboratório, não metas contratadas.
+
+**Incremento seguinte:** destinar backup criptografado a armazenamento fora da VPS e restaurá-lo em host/volume limpo; definir e medir RTO/RPO com uma carga sintética representativa; instalar sonda autenticada externa dos cinco serviços e definir canal de alerta. Depois, ensaiar matriz de falhas completa e obter pré-voo/aceite institucional. Nextcloud e Alfresco seguem para as últimas fases.
