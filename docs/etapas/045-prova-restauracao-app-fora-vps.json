@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-07",
+  "scope": "synthetic staging only",
+  "sourceHost": "dedicated staging VPS",
+  "restoreHost": "independent local workstation",
+  "sourceVersion": "b8d137e304c1305782d91bc23880f6fb6c86e0af",
+  "bundle": {
+    "files": 12,
+    "manifestSha256": "f633c83edf75edf80ac1296bdbfdd5f1d44368bd76a66ae88a7bcb6d0dd4f4ef"
+  },
+  "encryptedTransfer": {
+    "protocol": "SSH",
+    "format": "OpenSSL CMS DER AES-256-CBC with temporary RSA certificate",
+    "sha256": "2de88fce7b33f5be61fc2120fbd6ebaf35823d39511ad0e0e80d9641faa55c3c",
+    "decryptedManifestMatched": true
+  },
+  "independentRestore": {
+    "postgresVersion": 16,
+    "appImageBuiltFromSourceCommit": true,
+    "isolatedDockerNetwork": true,
+    "databaseRestoreSeconds": 3.435,
+    "appBootstrapFromStartSeconds": 5.639,
+    "totalRestoreAndVerifySeconds": 5.882,
+    "tenant": "staging-example",
+    "authenticatedRole": "tenant_admin",
+    "authenticatedSessions": 2,
+    "recordingsVerified": 1,
+    "segmentsVerified": 2,
+    "replayHashVerified": true,
+    "appReadyDatabase": true,
+    "appVersionMatchedSource": true
+  },
+  "activeDatabasesReplaced": false,
+  "vpsSmokeAfterDrill": true,
+  "vpsPublicReadinessAfterDrill": true,
+  "externalObserverAfterDrill": "https://github.com/e-docBR/edocBRplenario/actions/runs/42400653773",
+  "temporaryMaterialAndImageRemoved": true,
+  "recurringBackupConfigured": false,
+  "operationalRtoRpoMeasured": false,
+  "institutionalDataUsed": false
+}
