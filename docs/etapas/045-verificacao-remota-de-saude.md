@@ -1,10 +1,11 @@
 # Etapa 045 — Verificação de saúde feita de fora da instalação
 
-**Data:** 21/10/2026 · **Estado:** ferramenta pronta e conferida; **execução contra host separado pendente** — não existe host.
+**Data inicial:** 21/10/2026 · **Atualização em 07/11/2026:** ferramenta executada de fora da VPS sintética e agendada no GitHub Actions para quatro serviços base; alerta a responsável e `mail` ainda pendentes.
 
 Tarefa 8 da trilha B de [`PLANO-CONTINUIDADE-2026-10-20.md`](../PLANO-CONTINUIDADE-2026-10-20.md).
-Entrega a ferramenta e o agendamento; o que falta é um host separado para
-apontá-la, que é o bloqueio declarado da trilha inteira.
+A VPS dedicada e o runner hospedado pelo GitHub passaram a fornecer o host
+separado para este ensaio sintético. A [prova atual](045-observador-publico-externo.md)
+substitui o estado anterior de ausência de host.
 
 ## Por que existe
 
@@ -103,16 +104,15 @@ dentro com outro nome. Documentado no runbook §4.1.
 
 ## Limites
 
-- **Não houve execução remota.** O alvo disponível é a stack em contêiner desta
-  máquina, em loopback. O próprio relatório marca `remoto: false` quando o alvo
-  é `127.0.0.1`, `localhost` ou `::1`, e acrescenta esse limite à lista de
-  limites do JSON. Nenhum número aqui prova operação fora do host.
+- A execução remota atual cobre `app,realtime,webhooks,scheduler` na VPS
+  sintética. `mail` depende de transporte e conta homologados; o relatório
+  continua marcando `remoto: false` para alvos de loopback.
 - App e mini-serviços agora expõem `EDOCBR_BUILD_VERSION`. O valor padrão
   `local-unversioned` é útil no laboratório, mas não identifica a revisão de um
   deploy; o host de homologação precisa definir `STAGE_BUILD_VERSION`.
-- A transição de incidente foi conferida com servidor falso local. Falta
-  apontar o timer e o coletor de eventos de um host **diferente** para a
-  instalação de homologação e provar detecção e recuperação reais.
+- A detecção e recuperação do worker de webhooks foram provadas externamente
+  na VPS sintética. Falta destinar eventos a um responsável e medir o aviso;
+  histórico do GitHub Actions sozinho não é canal operacional pactuado.
 - O [ensaio de corte app↔banco](045-corte-rede-app-banco.md) também confirmou
   localmente `degraded` → `recovered` com o mesmo `incidentId` enquanto a
   prontidão passou por 200 → 503 → 200.

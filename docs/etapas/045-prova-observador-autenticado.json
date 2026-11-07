@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-07",
+  "scope": "synthetic staging only",
+  "source": "external GitHub-hosted runner and independent local workstation",
+  "target": "https://edocbrplenario.com.br",
+  "deployedVersion": "b8d137e304c1305782d91bc23880f6fb6c86e0af",
+  "servicesExpected": ["app", "realtime", "webhooks", "scheduler"],
+  "servicesHealthyOnRunner": true,
+  "workerVersionsMatchedApp": true,
+  "runnerOnMain": "https://github.com/e-docBR/edocBRplenario/actions/runs/42399353559",
+  "privateRepositoryCheckoutPermission": "contents: read",
+  "controlledWebhookFailure": {
+    "beforeExitCode": 0,
+    "whileStoppedExitCode": 1,
+    "webhooksReportedUnhealthy": true,
+    "afterRestartExitCode": 0,
+    "appRemainedAccessible": true
+  },
+  "monitorCredentialInRepository": false,
+  "workerPortsPublic": false,
+  "mailIncluded": false,
+  "notificationChannelConfigured": false,
+  "institutionalDataUsed": false
+}
