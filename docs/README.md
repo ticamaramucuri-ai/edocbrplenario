@@ -12,7 +12,7 @@
 | Por que a arquitetura foi escolhida? | [ADRs](adr/) — sobretudo [núcleo local](adr/ADR-027-saas-nucleo-local-operacao-offline.md) | Decisão; criar novo ADR quando houver substituição |
 | O que a Câmara precisa aprovar? | [Formulários de aceite](aceite/README.md) e [pacote de homologação](HOMOLOGACAO-PACOTE-EXECUCAO.md) | Modelo/roteiro, não aceite preenchido |
 | Como entregar local → GitHub → VPS? | [Fluxo de entrega](FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md) e [topologia de staging](../deploy/staging/README.md) | Procedimento operacional da homologação sintética |
-| Como operar e recuperar? | [Runbook](runbook.md), [corte PostgreSQL](runbook-postgres-cutover.md) e provas da [etapa 045](etapas/045-recuperacao-stack-postgres.md) | O runbook geral contém trechos históricos de SQLite; verificar ambiente antes de executar |
+| Como operar e recuperar? | [Runbook](runbook.md), [corte PostgreSQL](runbook-postgres-cutover.md), [recuperação](etapas/045-recuperacao-stack-postgres.md) e [vault cifrado sintético](etapas/045-vault-offhost-sintetico.md) | O runbook geral contém trechos históricos de SQLite; verificar ambiente antes de executar |
 | Como funciona o produto para cada papel? | [Manual do usuário](user-manual.md) | **Requer revisão antes do piloto**: ainda usa nome/contas da demonstração antiga |
 | Como serão Nextcloud e Alfresco? | [Contrato de integração](integracoes/arquitetura-edocbr.md) | Proposta; ativação só após piloto e matriz de autoridade aprovada |
 | Como será a transmissão? | [Documentos de transmissão](transmissao/) e [etapa 052](etapas/052-transmissao-social-assistida.md) | Técnica ensaiada; canal institucional pendente |
