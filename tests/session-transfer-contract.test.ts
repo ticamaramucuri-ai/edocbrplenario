@@ -16,6 +16,8 @@ function fixture() {
     agendaSnapshot: [{ id: 'agenda-1', order: 1, matterId: 'matter-1', title: 'Projeto sintético' }],
     policySnapshot: { minimumAgendaMatters: 1, quorum: 7 },
     deliberationPolicySnapshot: { quorum: 7, majority: 'simples', secretBallotEnabled: false },
+    matterSnapshot: [{ matterId: 'matter-1', type: 'projeto_de_lei', number: 1, year: 2026,
+      ementa: 'Projeto sintético', authors: ['Pessoa Teste'], latestVersion: 1, latestText: 'Texto sintético' }],
     rosterSnapshot: [{ parliamentarianId: 'member-1', displayName: 'Pessoa Teste', party: 'ABC', active: true, boardRole: 'presidente' }],
     artifacts: [
       { id: 'document-1', source: 'session_document', sourceId: 'document-1', name: 'Pauta.pdf', mimeType: 'application/pdf', sizeBytes: document.length, sha256: sha(document) },
@@ -46,6 +48,7 @@ test('alteração de pauta, política ou assinatura é recusada', () => {
   expect(() => verify({ manifest: { ...manifest, agendaSnapshot: [{ id: 'outro' }] } })).toThrow('Assinatura')
   expect(() => verify({ manifest: { ...manifest, policySnapshot: { quorum: 1 } } })).toThrow('Assinatura')
   expect(() => verify({ manifest: { ...manifest, deliberationPolicySnapshot: { quorum: 1 } } })).toThrow('Assinatura')
+  expect(() => verify({ manifest: { ...manifest, matterSnapshot: [] } })).toThrow('Matéria referenciada')
   expect(() => verify({ signature: { ...signature, valueBase64: Buffer.alloc(64).toString('base64') } })).toThrow('Assinatura')
 })
 
