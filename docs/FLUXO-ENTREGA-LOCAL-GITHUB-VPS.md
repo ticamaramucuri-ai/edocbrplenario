@@ -1,6 +1,6 @@
 # Fluxo de entrega — local → GitHub → VPS
 
-**Estado em 06/11/2026:** VPS de homologação sintética ativa e primeira promoção por GitHub comprovada. Domínio HTTPS ativo para ensaio; a fase 045 ainda exige recuperação externa e aceite institucional.
+**Estado em 07/11/2026:** VPS de homologação sintética ativa e promoção por GitHub comprovada no SHA `ceb885856cf160735dcb86401e5a0585279744b9`. Domínio HTTPS ativo para ensaio; observador público foi preparado e aguarda publicação; a fase 045 ainda exige recuperação externa e aceite institucional.
 
 ## Ambientes e responsabilidade
 
@@ -41,7 +41,8 @@ O [modo Full (strict)](https://developers.cloudflare.com/ssl/origin-configuratio
 
 ## Próximos critérios
 
-- Primeira promoção por GitHub comprovada no SHA `f100052ce751c52ae658a6d98c8138315807464b`, com CI verde e prova de imagem/saúde na VPS. Repetir para cada mudança.
+- Promoção por GitHub comprovada no SHA `ceb885856cf160735dcb86401e5a0585279744b9`, com CI verde, prova da imagem/saúde na VPS e verificação pública HTTPS. Repetir para cada mudança.
+- Publicar o [observador público da fase 045](etapas/045-observador-publico-externo.md) e obter a primeira execução em máquina fora da VPS.
 - Backup e restauração conjunta medidos fora do host, observador externo e matriz de falhas da fase 045.
 - Monitorar o certificado, HTTPS externo e a configuração Full (strict) confirmada pelo administrador da zona.
 - Somente depois, dados regimentais e aceite institucional do piloto. Nextcloud e Alfresco permanecem na fase final de integração.
