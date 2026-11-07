@@ -1,5 +1,7 @@
 # Fases que podem avançar sem conta institucional de rede social
 
+> **Recorte histórico.** Consulte o [plano mestre](PLANO-MESTRE.md) para a sequência atual e o que ainda pode avançar sem dados ou contas institucionais.
+
 **Data:** 11/10/2026 · **Estado:** roteiro em execução. As etapas 028, 029 e 032 têm prova local; 030 e 031 continuam em andamento para homologação operacional.
 
 O ensaio local da etapa 027 comprovou RTMP→RTMPS, recuperação e segmentos H.264/AAC. A conta de YouTube, Facebook ou outra plataforma só é necessária para verificar ingestão, página pública, permissões, latência percebida e replay **nessa plataforma**. O desenvolvimento do núcleo legislativo, do SaaS e da gravação local pode continuar agora, usando Câmaras e sessões fictícias. O cadastro de Mucuri permanece institucional, sem inventar usuários ou fatos oficiais.

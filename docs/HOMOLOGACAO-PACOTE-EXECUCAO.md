@@ -1,6 +1,6 @@
 # Pacote de execução da homologação — edocBR Plenário
 
-**Preparado em:** 05/11/2026. **Estado:** roteiro pronto; execução externa e aceite não realizados. Referências: [plano corrente](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md), [meta](META-EXECUCAO-PLENARIO-2026-11-05.md), [topologia de staging](../deploy/staging/README.md), [piloto Mucuri](etapas/053-preparacao-piloto-mucuri.md) e [formulários institucionais](aceite/README.md).
+**Preparado em:** 05/11/2026. **Estado em 07/11:** roteiro pronto; provas sintéticas externas de monitoramento e restauração executadas, mas rodada integral e aceite institucional não realizados. Referências: [plano mestre](PLANO-MESTRE.md), [topologia de staging](../deploy/staging/README.md), [recuperação](etapas/045-recuperacao-stack-postgres.md), [piloto Mucuri](etapas/053-preparacao-piloto-mucuri.md) e [formulários institucionais](aceite/README.md).
 
 ## 1. Abertura da rodada
 

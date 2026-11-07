@@ -1,5 +1,7 @@
 # Contrato da API `/api/v1` — Legis SaaS
 
+> **Baseline histórica das ondas 1–4.** O código e os contratos versionados implementados prevalecem para rotas posteriores. A [matriz viva](MATRIZ-ENTREGA.md) aponta os gates atuais; pacote e sincronização desktop ainda exigem contrato próprio na fase P4.
+
 Fonte única de verdade compartilhada por backend e frontend. Tipos em `src/lib/contracts.ts`.
 Cobre as Ondas 1–4 (fases 0–20): **~75 grupos de rotas** (internas, de plataforma e
 públicas), a matriz RBAC completa, os eventos outbox e de auditoria e as regras de rate

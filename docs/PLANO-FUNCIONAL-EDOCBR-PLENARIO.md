@@ -1,5 +1,7 @@
 # Plano funcional de desenvolvimento — edocBR Plenário
 
+> **Referência funcional inicial.** O [plano mestre vigente](PLANO-MESTRE.md) incorpora a decisão posterior de preparar sessões na web e conduzi-las em servidor desktop local; estados e ordem deste arquivo são históricos.
+
 **Versão:** 1.0 · **Data:** 11/10/2026 · **Decisão de escopo:** concluir o ciclo próprio do plenário e a transmissão antes de integrar Nextcloud, Alfresco ou outros sistemas edocBR. **Câmara piloto:** Mucuri/BA, cujo cadastro atual é apenas institucional, sem fatos legislativos oficiais.
 
 Este é o roteiro de implementação e aceite. O [plano diretor](PLANO-DESENVOLVIMENTO-PLENARIO.md) explica arquitetura e riscos; os [registros numerados](etapas/README.md) comprovam o que foi entregue. A existência de uma rota ou tela não significa homologação para uso oficial.

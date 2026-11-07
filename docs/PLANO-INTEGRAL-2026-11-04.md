@@ -1,5 +1,7 @@
 # edocBR Plenário — diagnóstico e plano integral de conclusão
 
+> **Planejamento histórico.** Consulte o [plano mestre vigente](PLANO-MESTRE.md) para prioridades, estado e arquitetura com servidor desktop local.
+
 > Revisão histórica de 04/11/2026. Para estado e ordem de trabalho após o cadastro público de Mucuri e os ensaios de 05/11, usar o [plano atualizado](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md).
 
 **Revisão:** 04/11/2026. **Escopo:** produto SaaS multi-Câmara, piloto assistido de Mucuri/BA e integração posterior ao ecossistema edocBR. Este documento atualiza a prioridade dos planos anteriores; os registros numerados em `docs/etapas/` continuam sendo a prova de cada entrega. Uma implementação local não equivale a homologação institucional.

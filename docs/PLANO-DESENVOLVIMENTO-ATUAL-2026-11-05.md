@@ -1,6 +1,8 @@
 # edocBR Plenário — diagnóstico e plano de desenvolvimento atualizado
 
-**Revisão inicial:** 05/11/2026. **Atualização:** 07/11/2026. **Situação:** produto funcional em desenvolvimento, com staging HTTPS ativa em VPS dedicada e promoção GitHub→VPS comprovada; piloto institucional ainda não homologado. Este é o plano corrente. O [plano de 04/11](PLANO-INTEGRAL-2026-11-04.md) e os documentos anteriores preservam decisões e histórico; as [etapas numeradas](etapas/README.md) preservam as evidências de cada entrega.
+> **Registro histórico, substituído pelo [plano mestre](PLANO-MESTRE.md) em 07/11/2026.** Os fatos e provas datados abaixo permanecem úteis, mas a prioridade, a arquitetura desktop e os gates vigentes estão no plano mestre.
+
+**Revisão inicial:** 05/11/2026. **Atualização:** 07/11/2026. **Situação na revisão:** produto funcional em desenvolvimento, com staging HTTPS ativa em VPS dedicada e promoção GitHub→VPS comprovada; piloto institucional ainda não homologado. O [plano de 04/11](PLANO-INTEGRAL-2026-11-04.md) e os documentos anteriores preservam decisões e histórico; as [etapas numeradas](etapas/README.md) preservam as evidências de cada entrega.
 
 A [meta de execução](META-EXECUCAO-PLENARIO-2026-11-05.md) acompanha os marcos, critérios de saída e dependências deste plano.
 

@@ -1,5 +1,7 @@
 # Runbook Operacional — edocBR Plenário
 
+> **Atenção ao ambiente:** este runbook contém procedimentos históricos do laboratório SQLite. A VPS de homologação usa [PostgreSQL e contêineres](../deploy/staging/README.md); consulte o [fluxo de entrega](FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md), as [provas de recuperação](etapas/045-recuperacao-stack-postgres.md) e o [plano mestre](PLANO-MESTRE.md) antes de executar comandos. Revisão operacional completa é gate de P1/P10.
+
 Procedimentos para operar o ambiente (sandbox/piloto). Público: equipe técnica da
 plataforma e da Câmara.
 

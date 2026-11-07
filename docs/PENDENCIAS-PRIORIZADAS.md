@@ -1,5 +1,7 @@
 # Pendências priorizadas — edocBR Plenário
 
+> **Lista histórica de pendências.** A prioridade e os gates atuais estão no [plano mestre](PLANO-MESTRE.md); este registro não deve ser usado como backlog vigente sem reconciliação.
+
 > Lista histórica com últimas revisões de outubro. O estado e a fila corrente estão no [plano atualizado de 05/11/2026](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md); não interpretar os itens abaixo como inventário atual de Mucuri.
 
 Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). “Responsável” indica o papel que deve fechar a prova; nomes e aceites institucionais só serão preenchidos com a Câmara.

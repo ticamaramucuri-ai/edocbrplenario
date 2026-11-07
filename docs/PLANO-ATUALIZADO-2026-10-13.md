@@ -1,5 +1,7 @@
 # Plano atualizado de conclusão — edocBR Plenário
 
+> **Planejamento histórico de 13/10.** O [plano mestre vigente](PLANO-MESTRE.md) substitui esta sequência; as decisões e evidências datadas aqui permanecem como contexto.
+
 **Revisão:** 13/10/2026. Este documento atualiza o [diagnóstico de base](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md) com os incrementos executados depois da etapa 042. “Implementado” significa código e prova técnica local; “homologado” exige evidência e responsáveis da Câmara. A sequência 054–056 permanece no final, conforme a decisão de deixar Nextcloud e Alfresco para depois do plenário.
 
 ## Estado verificado

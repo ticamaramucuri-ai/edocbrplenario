@@ -1,5 +1,7 @@
 # Plano diretor do plenário eletrônico
 
+> **Plano diretor inicial.** Para escopo, status e sequência vigentes, use o [plano mestre](PLANO-MESTRE.md) e o [índice documental](README.md).
+
 **Versão:** 1.1 · **Data:** 11/10/2026 · **Base analisada:** código e documentação deste repositório.  
 **Objetivo:** transformar o piloto atual em uma plataforma confiável para condução e transmitir ao vivo sessões de Câmaras Municipais e, em seguida, integrá-la ao fluxo legislativo já usado pela organização.
 

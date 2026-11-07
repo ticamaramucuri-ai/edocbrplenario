@@ -1,6 +1,8 @@
 # Meta de execução — edocBR Plenário
 
-**Início:** 05/11/2026. **Atualização:** 07/11/2026. **Referência:** [plano de desenvolvimento corrente](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md). **Estado:** em execução. A staging sintética está ativa na VPS dedicada e a primeira promoção passou pela CI; o piloto institucional não está homologado. O objetivo é entregar um SaaS de plenário reproduzível para outras Câmaras, ensaiar o piloto de Mucuri com responsáveis institucionais e, depois dele, integrar o fluxo edocBR. Uma prova local ou em staging não constitui autorização para ato oficial.
+> **Registro histórico de marcos.** O [plano mestre](PLANO-MESTRE.md) é a referência vigente para ordem, gates e arquitetura desktop. Esta meta mostra como o trabalho era acompanhado em 05–07/11/2026.
+
+**Início:** 05/11/2026. **Atualização:** 07/11/2026. **Referência original:** [plano de desenvolvimento de 05/11](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md). **Estado naquela revisão:** em execução. A staging sintética estava ativa na VPS dedicada; o piloto institucional não estava homologado. O objetivo é entregar um SaaS de plenário reproduzível para outras Câmaras, ensaiar o piloto de Mucuri com responsáveis institucionais e, depois dele, integrar o fluxo edocBR. Uma prova local ou em staging não constitui autorização para ato oficial.
 
 ## Regras de execução
 

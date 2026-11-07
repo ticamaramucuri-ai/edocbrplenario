@@ -4,9 +4,12 @@ Cinco formulários para a Câmara preencher **escolhendo**, não redigindo. Cada
 opção listada é uma opção que o sistema já sabe cumprir: nada aqui depende de
 desenvolvimento novo, salvo onde está escrito `NÃO IMPLEMENTADO`.
 
-Nenhum dado é cadastrado no sistema antes da assinatura do formulário
-correspondente. Enquanto um formulário não voltar assinado, a fase que depende
-dele permanece aberta — ensaio técnico local não fecha pendência institucional.
+Dados públicos preparatórios de Mucuri já foram cadastrados para ensaio. **Nenhuma
+regra, composição, conta, canal ou ato é tratado como oficialmente aprovado**
+antes da conferência e do aceite institucional correspondente. Enquanto um
+formulário não voltar assinado, a fase que depende dele permanece aberta —
+ensaio técnico local não fecha pendência institucional. Consulte o
+[plano mestre](../PLANO-MESTRE.md) para ordem e gates vigentes.
 
 | Formulário | Assunto | Quem assina | Fase |
 |---|---|---|---:|

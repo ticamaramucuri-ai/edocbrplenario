@@ -12,22 +12,20 @@ plataforma com impersonação auditada** e **Planejamento e Roadmap — o plano 
 dentro do produto, com o progresso rastreável da Onda 5 (Fases 21–24) e a prévia da
 Onda 6**. Piloto **v0.13.0** (26 módulos).
 
-> Piloto funcional em ambiente local. A Câmara Municipal de Mucuri/BA está
-> cadastrada com identidade, 13 parlamentares/mandatos, partidos, Mesa, contatos e fotos de fontes públicas; ainda não há usuários institucionais, regras aprovadas nem sessões oficiais. Os dados fictícios de Vila Nova/MG e Serra Azul/SP
-> continuam disponíveis exclusivamente para demonstração.
+> **Estado atual:** desenvolvimento local e homologação sintética em VPS, sem
+> sessão oficial. Mucuri/BA tem cadastro preparatório com dados públicos;
+> regimento, responsáveis, contas e equipamentos ainda exigem conferência e
+> aceite da Câmara. O domínio `edocbrplenario.com.br` serve o laboratório
+> fictício por HTTPS.
 
-O [plano atualizado de 05/11/2026](docs/PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) é a referência
-atual para a ordem das fases; a [meta de execução](docs/META-EXECUCAO-PLENARIO-2026-11-05.md)
-acompanha os marcos e o [pacote de homologação](docs/HOMOLOGACAO-PACOTE-EXECUCAO.md)
-organiza a futura prova institucional. A [matriz de rastreabilidade](docs/MATRIZ-RASTREABILIDADE-2026-11-04.md)
-liga funções, código, testes e evidências. O número v0.13.0 e os 26 módulos acima
-descrevem a versão histórica do núcleo do produto, não a homologação do piloto. A
-[etapa 045](docs/etapas/045-fundacao-operacional-saas.md) permanece aberta:
-PostgreSQL e workers já rodam em uma [VPS dedicada de homologação](docs/etapas/045-vps-dedicada.md),
-com dados sintéticos e acesso por túnel SSH; correio e recuperação institucionais
-continuam pendentes. O [fluxo local → GitHub → VPS](docs/FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md)
-define a promoção de um commit com CI verde. O domínio `edocbrplenario.com.br` já
-serve o laboratório sintético por HTTPS; isso ainda não representa o piloto oficial.
+O [plano mestre](docs/PLANO-MESTRE.md) define a sequência vigente, incluindo o
+**servidor desktop local Windows/Linux** que importará sessões e documentos
+criados na web e servirá os dispositivos na LAN. Essa parte ainda não está
+implementada. A [matriz de entrega](docs/MATRIZ-ENTREGA.md) liga capacidades,
+testes, provas e gates; o [índice documental](docs/README.md) identifica os
+planos históricos. O número v0.13.0 e os 26 módulos acima descrevem uma versão
+histórica do núcleo web, não a homologação do piloto. O [fluxo local → GitHub →
+VPS](docs/FLUXO-ENTREGA-LOCAL-GITHUB-VPS.md) define a promoção após CI verde.
 
 ---
 
@@ -177,51 +175,19 @@ entrar:
 
 ## Documentação (índice)
 
-O pacote de validação institucional — cinco formulários para a Câmara preencher escolhendo — está em
-[`docs/aceite/README.md`](docs/aceite/README.md). Nenhum dado oficial é cadastrado antes da assinatura.
+O [índice documental](docs/README.md) é a entrada para planos, decisões,
+evidências, runbooks e formulários. O [plano mestre](docs/PLANO-MESTRE.md) é a
+referência vigente para escopo, estado e ordem de desenvolvimento; documentos
+datados anteriores permanecem como histórico. A decisão de incluir um
+**servidor desktop por Câmara**, que importa as sessões da web e serve os
+dispositivos na LAN, está no [ADR-027](docs/adr/ADR-027-saas-nucleo-local-operacao-offline.md).
 
-| Documento | Conteúdo |
-|---|---|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Plano de continuidade: mapa de funcionalidades/menus/páginas, fases 5–20 entregues, **Onda 5 entregue (§12), Onda 6 planejada (§14) e fases 043–057 no diagnóstico** |
-| [`docs/user-manual.md`](docs/user-manual.md) | Manual do usuário por perfil (todos os 26 módulos) |
-| [`docs/api-contract.md`](docs/api-contract.md) | Contrato REST `/api/v1` (~76 grupos de rotas) + eventos de tempo real (fonte única de verdade) |
-| [`docs/runbook.md`](docs/runbook.md) | Operação: subir ambiente, health checks, backup/restauração, incidentes |
-| [`docs/migration-importer.md`](docs/migration-importer.md) | Guia do importador PainelDeskLegis 8.1 (pipeline, homologação, rollback) |
-| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Histórico de entregas por fase |
-| [`docs/test-report.md`](docs/test-report.md) | Testes reais executados, defeitos corrigidos, riscos remanescentes |
-| `docs/adr/ADR-001..021` | Decisões de arquitetura entregues |
-| `docs/adr/ADR-022..025` | Decisões de arquitetura da Onda 5 entregue |
-| [`docs/adr/ADR-026-configuracao-por-camara.md`](docs/adr/ADR-026-configuracao-por-camara.md) | Diretriz SaaS para políticas por Câmara, snapshots e isolamento |
-
-### ADRs
-
-| ADR | Decisão |
-|---|---|
-| 001 | Adaptação da arquitetura ao sandbox (SQLite/Next/mini-serviços) |
-| 002 | Motor de sessão e votação (máquinas de estado, idempotência, snapshots) |
-| 003 | Tempo real via outbox transacional + serialização de escritas SQLite |
-| 004 | Auditoria append-only com cadeia de hash verificável |
-| 005 | RBAC demo via `x-actor-id` (matriz idêntica à de produção) |
-| 006 | IA assistiva: rastreabilidade total e revisão humana obrigatória |
-| 007 | Webhooks HMAC com retentativa exponencial e dead-letter |
-| 008 | Importador de migração com pipeline auditável de 8 estágios |
-| 009 | App do parlamentar e endpoints `/me` (identidade do vínculo, nunca do payload) |
-| 010 | Autenticação real (scrypt + sessão httpOnly) coexistindo com o modo demo |
-| 011 | Faturamento simulado do SaaS (faturas, ciclo, dunning) |
-| 012 | Publicações oficiais + participação popular com moderação |
-| 013 | Analytics/BI como camada somente-leitura (voto secreto excluído) |
-| 014 | Agenda Legislativa e pesquisa unificada (agregação somente-leitura + ⌘K) |
-| 015 | Modelos de documento versionados por tenant (append-only + render server-side) |
-| 016 | Central de Ajuda in-app versionada com o código |
-| 017 | Observabilidade on-demand, exportação integral e encerramento seguro do tenant |
-| 018 | Desfechos da matéria (sanção/veto) e relacionamentos como fatos auditados |
-| 019 | Recibos de voto verificáveis (HMAC por tenant) e opções regimentais |
-| 020 | Participação e confiança pública (assinaturas, verificação por código, rate limit) |
-| 021 | Suporte com impersonação auditada, alertas persistentes e exportação assíncrona |
-| 022 | Prontidão para produção (PostgreSQL+RLS, Redis, SMTP, worker) — **planejado** (Fase 21) |
-| 023 | MFA TOTP e assinatura eletrônica de atas — **planejado** (Fase 22) |
-| 024 | Chaves de API com escopos e revogação — **planejado** (Fase 23) |
-| 025 | Crescimento do SaaS (self-onboarding, trial, health, NPS) — **planejado** (Fase 24) |
+O domínio `edocbrplenario.com.br` hospeda **homologação sintética**. A
+[recuperação fora da VPS](docs/etapas/045-recuperacao-stack-postgres.md) e o
+[observador externo](docs/etapas/045-observador-publico-externo.md) têm provas
+datadas; ainda faltam backup recorrente durável, metas operacionais e aceite da
+Câmara. Os [formulários institucionais](docs/aceite/README.md) estão vazios até
+serem conferidos e assinados pelos responsáveis.
 
 ## Mapa de módulos (24)
 

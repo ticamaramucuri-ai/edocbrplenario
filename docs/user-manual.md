@@ -1,5 +1,7 @@
 # Manual do Usuário — Legis SaaS
 
+> **Manual de demonstração histórico.** Nome, contas e exemplos abaixo pertencem ao laboratório antigo e não são instrução para Mucuri. O [plano mestre](PLANO-MESTRE.md) exige revisão por papel antes do piloto e inclui o servidor desktop local ainda não implementado.
+
 Guia de uso da suíte legislativa para Câmaras Municipais. Organizado por perfil de acesso;
 cada seção cobre os módulos que o perfil utiliza. Todos os exemplos ususam os dados de
 demonstração da **Câmara Municipal de Vila Nova/MG** (fictícios).

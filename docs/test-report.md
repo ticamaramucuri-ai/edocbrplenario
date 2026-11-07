@@ -1,5 +1,7 @@
 # Relatório de Testes Executados — Legis SaaS (piloto)
 
+> **Registro de uma execução anterior, não certificado do piloto atual.** Para status, CI e provas recentes consulte o [plano mestre](PLANO-MESTRE.md), a [matriz viva](MATRIZ-ENTREGA.md) e o [registro de etapas](etapas/README.md).
+
 Testes **reais** executados no ambiente (curl sobre a API em execução, verificação de
 navegação com agent-browser na origem do gateway, e leitura de logs). Nenhum teste listado
 abaixo é simulado; falhas encontradas e corrigidas estão registradas em §3.

@@ -1,8 +1,8 @@
 # Registro de execução do plano
 
-**Referência de continuidade (05/11/2026):** [plano atualizado](../PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md) e [matriz de rastreabilidade](../MATRIZ-RASTREABILIDADE-2026-11-04.md). Os estados abaixo são evidências de cada incremento; “concluída localmente” não libera o piloto institucional.
+**Referência vigente:** [plano mestre](../PLANO-MESTRE.md) e [índice documental](../README.md). A [matriz de 04/11](../MATRIZ-RASTREABILIDADE-2026-11-04.md) e a tabela abaixo são histórico de incrementos; “concluída localmente” não libera o piloto institucional. As provas recentes da etapa 045 estão nos arquivos próprios e prevalecem sobre status anteriores da tabela.
 
-Cada etapa do [plano diretor](../PLANO-DESENVOLVIMENTO-PLENARIO.md) terá um arquivo numerado neste diretório. O registro deve conter: objetivo, mudança entregue, arquivos principais, verificações com resultado, limitações conhecidas, decisão técnica e critérios de entrada/saída da etapa seguinte. Uma etapa só recebe estado **concluída** quando os critérios de saída foram demonstrados; trabalho parcial permanece **em andamento**.
+Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquivo numerado neste diretório. O registro deve conter: objetivo, mudança entregue, arquivos principais, verificações com resultado, limitações conhecidas, decisão técnica e critérios de entrada/saída da etapa seguinte. Uma etapa só recebe estado **concluída** quando os critérios de saída foram demonstrados; trabalho parcial permanece **em andamento**.
 
 | Etapa | Estado | Entrega | Próxima dependência |
 |---|---|---|---|

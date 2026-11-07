@@ -1,5 +1,7 @@
 # Diagnóstico e plano de conclusão — edocBR Plenário
 
+> **Diagnóstico histórico.** Para o estado e as fases atuais, consulte o [plano mestre](PLANO-MESTRE.md).
+
 **Estado corrente:** consulte o [plano atualizado em 13/10/2026](PLANO-ATUALIZADO-2026-10-13.md). O inventário e a tabela de lacunas abaixo preservam a linha de base de 11/10/2026.
 
 **Data-base:** 11/10/2026 · **Revisão:** 1 · **Escopo:** código, esquema, testes, CI e documentos deste repositório até a etapa 042. Este plano orienta o desenvolvimento; não declara o sistema homologado para atos oficiais.

@@ -1,6 +1,6 @@
 # Fluxo de entrega — local → GitHub → VPS
 
-**Estado em 07/11/2026:** VPS de homologação sintética ativa e promoção por GitHub comprovada até o SHA `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b`. Domínio HTTPS e observador externo ativos; uma recuperação sintética em VPS passou, mas backup fora do host e aceite institucional seguem pendentes.
+**Estado em 07/11/2026:** VPS de homologação sintética ativa e promoção por GitHub comprovada até o SHA de aplicação `b8d137e304c1305782d91bc23880f6fb6c86e0af`. Domínio HTTPS, observador externo público/autenticado e restauração pontual de banco+arquivos+app em outro computador passaram. Backup **recorrente** em destino durável e aceite institucional seguem pendentes. O [plano mestre](PLANO-MESTRE.md) define o gate atual.
 
 ## Ambientes e responsabilidade
 
@@ -24,7 +24,7 @@ bash scripts/promote-vps.sh "$(git rev-parse origin/main)"
 
 O comando recusa revisão diferente do `main` remoto, alterações rastreadas locais ou CI ausente, falha ou em execução. Na VPS ele busca `main` por chave de deploy somente leitura, fixa o checkout no SHA, constrói a imagem a partir do `git archive` desse SHA, aplica migrações, sobe serviços, verifica os rótulos de revisão e consulta `/api/v1/health?ready=1`. A saída JSON registra a revisão anterior e a implantada, sem segredos. O arquivo privado `deploy/staging/.env` e os volumes persistentes não são sincronizados pelo Git.
 
-**Falha de promoção:** não presumir rollback automático de banco. Parar a promoção, preservar logs, identificar a migração e a revisão executada e restaurar a partir de backup conjunto quando necessário. Antes de cada mudança de esquema ou versão operacional, fazer backup de banco, imagens, gravações e replay e verificar seu manifesto. O ensaio de restauração fora do host ainda está pendente na fase 045.
+**Falha de promoção:** não presumir rollback automático de banco. Parar a promoção, preservar logs, identificar a migração e a revisão executada e restaurar a partir de backup conjunto quando necessário. Antes de cada mudança de esquema ou versão operacional, fazer backup de banco, imagens, gravações e replay e verificar seu manifesto. O ensaio sintético fora do host já passou; a rotina durável e a comutação operacional continuam pendentes na fase P1.
 
 ## Domínio e HTTPS
 
@@ -41,8 +41,8 @@ O [modo Full (strict)](https://developers.cloudflare.com/ssl/origin-configuratio
 
 ## Próximos critérios
 
-- Promoções por GitHub comprovadas nos SHAs `ceb885856cf160735dcb86401e5a0585279744b9` e `9ae0e774515a1e1c42bc53f3ab85318cf27d5d5b`, com CI verde, prova da imagem/saúde e verificação pública HTTPS. Repetir para cada mudança.
-- Acompanhar o [observador público da fase 045](etapas/045-observador-publico-externo.md), cuja primeira execução em máquina fora da VPS passou.
-- Backup cifrado e restauração conjunta fora do host, monitor autenticado dos workers e matriz de falhas da fase 045. A restauração em DB/arquivos temporários na mesma VPS passou, sem medir RTO/RPO oficial.
+- Promoções por GitHub comprovadas até o SHA de aplicação `b8d137e304c1305782d91bc23880f6fb6c86e0af`, com CI verde, prova da imagem/saúde e verificação pública HTTPS. Repetir para cada mudança.
+- Acompanhar o [observador público e autenticado da fase 045](etapas/045-observador-publico-externo.md), que já passou fora da VPS e detectou falha controlada de worker. Definir canal de alerta a responsável.
+- Automatizar backup cifrado em destino durável e retenção; restaurar em falha representativa e medir RTO/RPO. A [restauração sintética de banco, arquivos e app fora da VPS](etapas/045-recuperacao-stack-postgres.md) passou como prova pontual.
 - Monitorar o certificado, HTTPS externo e a configuração Full (strict) confirmada pelo administrador da zona.
 - Somente depois, dados regimentais e aceite institucional do piloto. Nextcloud e Alfresco permanecem na fase final de integração.

@@ -1,5 +1,7 @@
 # Matriz de rastreabilidade — edocBR Plenário
 
+> **Baseline de 04/11.** A matriz precisa ser ampliada para o desktop e para as provas recentes. O [plano mestre](PLANO-MESTRE.md) e o [índice](README.md) mostram o estado vigente; não inferir homologação das linhas abaixo.
+
 **Revisada em:** 05/11/2026. Relaciona requisitos críticos ao código, aos testes e à prova de aceite. A coluna “estado” distingue teste local de homologação. Atualizar quando a respectiva fase fechar; não substituir prova institucional por arquivo de teste.
 
 | Fluxo/requisito | Implementação principal | Teste automatizado principal | Evidência e estado | Próximo gate |

@@ -1,5 +1,7 @@
 # Plano de continuidade do desenvolvimento — edocBR Plenário
 
+> **Registro histórico de continuidade.** Consulte o [plano mestre vigente](PLANO-MESTRE.md) para o estado atual da VPS, backup, desktop e piloto.
+
 > **Para quem executa:** cada tarefa é independente e termina com entrega testável, prova reproduzível e commit. Use `superpowers:executing-plans` (execução direta) ou `superpowers:subagent-driven-development` (um implementador e um revisor por tarefa). Os passos usam caixas (`- [ ]`) para acompanhamento.
 
 **Objetivo:** levar o piloto do estado "funciona na máquina de desenvolvimento" ao estado "opera fora do host, com prova de recuperação e pacote de aceite pronto para a Câmara" — sem inventar dado oficial e sem reabrir módulo já entregue.

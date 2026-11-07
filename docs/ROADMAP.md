@@ -1,5 +1,7 @@
 # Plano de Continuidade — Legis SaaS
 
+> **Roadmap histórico.** O [plano mestre do edocBR Plenário](PLANO-MESTRE.md) é a referência vigente de fases e gates; esta página conserva o desenho anterior.
+
 Documento histórico de ondas do produto, consultável também no módulo Planejamento e
 Roadmap. A **Onda 5 (fases 21–24) foi entregue na v0.13.0**, com 26 módulos; os
 quadros de tarefas de §12 preservam o planejamento original. A **Onda 6 (§14) é
