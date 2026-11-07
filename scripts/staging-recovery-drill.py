@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -85,7 +86,17 @@ def restored_app_read(port: str, values: dict[str, str], started: float) -> tupl
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--require-media', action='store_true', help='Exige ao menos um replay vinculado ao banco')
+    parser.add_argument('--export-bundle', type=Path,
+                        help='Copia o pacote sintético verificado para um diretório novo e privado')
     args = parser.parse_args()
+    export = args.export_bundle
+    if export:
+        if not export.is_absolute() or export.exists() or export.is_symlink():
+            raise RuntimeError('Destino de exportação deve ser absoluto e ainda não existir.')
+        if export.parent.is_symlink() or not export.parent.is_dir():
+            raise RuntimeError('Diretório pai de exportação inválido.')
+        if stat.S_IMODE(export.parent.stat().st_mode) & 0o077:
+            raise RuntimeError('Diretório pai de exportação deve ser privado (modo 0700).')
     values = config()
     env = pg_env(values)
     slugs = run('psql', '-X', '-qAt', '-c', 'SELECT slug FROM "Tenant" ORDER BY slug',
@@ -234,6 +245,14 @@ def main() -> None:
                       'restoredAppStartToBootstrapSeconds': first_bootstrap_seconds,
                       'restoredAppAuthenticatedSessionCount': restored_session_count,
                       'officialRtoRpoMeasured': False}
+            if export:
+                shutil.copytree(bundle, export)
+                export.chmod(0o700)
+                exported = json.loads(run('python3', 'scripts/backup-bundle.py', 'verify',
+                                          '--bundle', str(export), capture=True))
+                if exported['manifestSha256'] != proof['manifestSha256']:
+                    raise RuntimeError('Manifesto exportado divergiu do pacote verificado.')
+                result['exportedBundle'] = str(export)
     finally:
         try:
             if database_created:
