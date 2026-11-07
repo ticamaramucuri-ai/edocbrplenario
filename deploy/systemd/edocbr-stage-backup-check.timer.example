@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly eDocBR synthetic staging backup check
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=edocbr-stage-backup-check.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+{
+  "scope": "synthetic-staging",
+  "vault": "/srv/edocbr-stage-vault",
+  "cert": "/etc/edocbr-stage-backup/cert.pem",
+  "key": "/etc/edocbr-stage-backup/key.pem",
+  "remoteCert": "/home/suporteplenario/.config/edocbr-stage-backup/cert.pem",
+  "target": "suporteplenario@5.183.35.108",
+  "identity": "/etc/edocbr-stage-backup/ssh-key",
+  "remoteRepo": "/home/suporteplenario/edocbr-plenario",
+  "keep": 7,
+  "maxAgeHours": 30
+}

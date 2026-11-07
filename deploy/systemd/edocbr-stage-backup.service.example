@@ -1,0 +1,8 @@
+[Unit]
+Description=eDocBR synthetic staging encrypted off-host backup
+
+[Service]
+Type=oneshot
+User=edocbr-backup
+ExecStart=/usr/bin/python3 /opt/edocbr-plenario/scripts/staging-backup-cycle.py run --config /etc/edocbr-stage-backup.json
+TimeoutStartSec=45min
