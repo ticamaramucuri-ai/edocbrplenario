@@ -7,6 +7,7 @@
 | Pergunta | Fonte principal | Natureza |
 |---|---|---|
 | O que construiremos, em que ordem e com qual saída? | [Plano mestre](PLANO-MESTRE.md) | **Vigente**; atualizar em mudança de escopo/gate |
+| Qual é a meta verificável de produção? | [Meta de produção](META-PRODUCAO.md) | **Vigente**; R3 é piloto delimitado e R4 é produto completo multi-Câmara |
 | Qual requisito tem código, teste, prova e gate? | [Matriz viva de entrega](MATRIZ-ENTREGA.md) | **Vigente**; atualizar em cada incremento |
 | O que uma entrega realmente provou? | [Registro de etapas](etapas/README.md) e arquivos numerados | Evidência datada; não sobrescrever resultados antigos |
 | Por que a arquitetura foi escolhida? | [ADRs](adr/) — sobretudo [núcleo local](adr/ADR-027-saas-nucleo-local-operacao-offline.md) | Decisão; criar novo ADR quando houver substituição |
