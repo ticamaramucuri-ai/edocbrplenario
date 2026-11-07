@@ -98,7 +98,10 @@ def opener():
 def buscar(cliente, url: str, timeout: float, payload=None):
     """Devolve (status, corpo, divergência de relógio em s, latência em ms)."""
     corpo = None if payload is None else json.dumps(payload).encode()
-    pedido = Request(url, corpo, {'Content-Type': 'application/json'} if corpo else {})
+    headers = {'User-Agent': 'edocbr-staging-observer/1.0'}
+    if corpo:
+        headers['Content-Type'] = 'application/json'
+    pedido = Request(url, corpo, headers)
     inicio = time.monotonic()
     try:
         with cliente.open(pedido, timeout=timeout) as resposta:

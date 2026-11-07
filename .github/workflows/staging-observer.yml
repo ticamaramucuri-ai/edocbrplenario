@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
+      - uses: actions/checkout@v4
       - name: Check public HTTPS and database readiness
         run: |
           python3 - <<'PY'
@@ -43,6 +44,8 @@ jobs:
           version = health.get("version", "")
           if len(version) != 40 or any(char not in "0123456789abcdef" for char in version):
               raise SystemExit(f"Unexpected deployed version: {version!r}")
+          with open(__import__('os').environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"version={version}\n")
 
           status, final_url, _, _ = get("https://www.edocbrplenario.com.br/")
           if status != 200 or final_url != base + "/":
@@ -59,3 +62,15 @@ jobs:
               "observer": "GitHub-hosted runner",
           }, sort_keys=True))
           PY
+        id: public
+      - name: Check authenticated internal services through the app
+        env:
+          EDOCBR_PLATFORM_EMAIL: stage-platform-observer@example.invalid
+          EDOCBR_PLATFORM_PASSWORD: ${{ secrets.STAGING_MONITOR_PASSWORD }}
+          EXPECTED_VERSION: ${{ steps.public.outputs.version }}
+        run: |
+          test -n "$EDOCBR_PLATFORM_PASSWORD" || { echo 'Missing STAGING_MONITOR_PASSWORD secret'; exit 2; }
+          python3 scripts/staging-remote-check.py \
+            --base-url https://edocbrplenario.com.br \
+            --expect-services app,realtime,webhooks,scheduler \
+            --expected-version "$EXPECTED_VERSION"

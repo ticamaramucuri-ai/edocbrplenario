@@ -30,6 +30,11 @@ def servidor(rotas: dict[str, tuple[int, dict]], desvio_de_relogio: float = 0.0)
     """Servidor falso: mapa caminho → (status, corpo JSON)."""
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802 - assinatura da biblioteca padrão
+            if self.headers.get('User-Agent') != 'edocbr-staging-observer/1.0':
+                self.send_response_only(403)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
             caminho = self.path.split('?')[0]
             if caminho not in rotas:
                 self.send_response_only(404)
