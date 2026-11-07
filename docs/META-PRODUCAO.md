@@ -29,9 +29,9 @@ P9 pode avançar em laboratório enquanto M2–M4 são construídos. Nenhum ensa
 
 Uma release só muda de “ensaiada” para “em operação” quando há:
 
-1. SHA, imagem e instaladores identificados; CI e migrações aprovadas; promoção local → GitHub → VPS e rollback documentados.
+1. SHA, imagem e instaladores identificados; CI e migrações aprovadas; ambientes de homologação e produção segregados, domínio/DNS e segredos de produção preparados; promoção local → GitHub → VPS e rollback documentados.
 2. Jornada completa no ambiente alvo com regras e pessoas autorizadas, comparação humana independente de quórum/voto/ata e segregação de publicação.
-3. Isolamento entre Câmaras, MFA e papéis, proteção de dados/segredos, auditoria e revisão de segurança; nenhum dado oficial na staging sintética.
+3. Isolamento entre Câmaras, MFA e papéis, proteção de dados/segredos, auditoria, política de privacidade/retenção e revisão de segurança; nenhum dado oficial na staging sintética.
 4. Backup íntegro em destino independente, restauração de banco + arquivos + aplicação + servidor local quando aplicável, alerta entregue e ensaio de indisponibilidade dentro de RTO/RPO acordados.
 5. Dispositivos, rede, energia, câmeras, áudio, banda e observador externo ensaiados; operação assistida, treinamento e plantão com responsáveis nomeados.
 6. Aceites e limites de uso registrados pela Câmara e pela operação. Falha bloqueante reabre o gate e suspende a ampliação.
