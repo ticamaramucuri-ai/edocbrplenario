@@ -131,7 +131,7 @@ Mudanças de regra aprovada, autoridade de sessão, formato de pacote ou publica
 ## 9. Próximas execuções concretas
 
 1. **Fechar P0 nesta revisão:** publicar índice, plano mestre, hierarquia dos legados e matriz de estado. Conferir links e CI; não implantar documentação como se fosse nova versão do app.
-2. **Avançar P1:** escolher destino independente durável e custódia de chave; automatizar backup cifrado, retenção, verificação, alerta e restauração periódica. Executar falha global/comutação com carga sintética representativa e registrar metas pactuadas. O restore independente de app+banco+arquivos já passou como ensaio pontual.
+2. **Avançar P1:** a coleta cifrada, a verificação no receptor e a retenção por quantidade estão implementadas para staging fictícia; escolher destino independente durável e custódia de chave, configurar agenda e alerta, restaurar periodicamente e executar falha global/comutação com carga sintética representativa. Registrar metas pactuadas. O restore independente de app+banco+arquivos já passou como ensaio pontual.
 3. **Iniciar P4 sem esperar conta institucional:** escrever contrato versionado do pacote de sessão, manifesto de documentos, comandos/eventos, autoridade, ACK e quarentena; usar tenant fictício e comparar o motor web atual. Fazer modelo de ameaça antes de abrir API LAN.
 4. **Preparar P2/P3 com Mucuri:** recolher e conferir formulários de [aceite](aceite/README.md), responsáveis e canais; seguir com fixtures sintéticas enquanto não houver aprovação. Não converter o pré-voo bloqueado em pronto por preenchimento presumido.
 5. **P9 em paralelo técnico:** ensaiar encoder, gravação e falha de destinos com mídia fictícia; a prova em canal institucional aguarda conta e equipamento.
