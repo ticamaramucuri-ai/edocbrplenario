@@ -1,6 +1,6 @@
 # 045 — Observador público externo
 
-**Estado em 07/11/2026:** rotina de observação criada para execução em runner hospedado pelo GitHub; ativação efetiva depende de o workflow chegar à branch padrão do repositório.
+**Estado em 07/11/2026:** workflow publicado na branch padrão e primeira execução externa concluída com sucesso; agendamento de 15 minutos ativo.
 
 ## Objetivo
 
@@ -29,11 +29,19 @@ Na promoção de 06/11/2026, a partir do ambiente de desenvolvimento:
 
 Essas verificações confirmam a promoção daquele commit, mas foram feitas no mesmo fluxo operacional. A prova de monitoramento independente começará quando o workflow estiver na branch padrão e tiver ao menos uma execução concluída no histórico do GitHub.
 
+Primeira execução independente, via workflow manual, em 07/11/2026:
+
+- Run do GitHub Actions: [42390489098](https://github.com/e-docBR/edocBRplenario/actions/runs/42390489098), commit de configuração `b180afa4dda07614df01d1c13184273fe51590d1`;
+- resultado: sucesso em 4 segundos no runner hospedado pelo GitHub;
+- versão da aplicação observada: `ceb885856cf160735dcb86401e5a0585279744b9`;
+- HTTPS, banco pronto, `noindex` e redirecionamento de `www`: todos aprovados.
+
+O agendamento periódico está instalado; a primeira passagem manual valida o workflow e o caminho externo, mas ainda não constitui histórico de disponibilidade nem prova de alertas.
+
 ## Próxima ação e limites
 
-1. Publicar o workflow em `main` e executar `workflow_dispatch`.
-2. Conferir as primeiras execuções agendadas e definir destino para alertas de falha sem expor credenciais.
-3. Instalar ou escolher um coletor para a sonda autenticada de `platform_monitor`, em máquina independente, para verificar os cinco serviços internos sem abrir suas portas.
-4. Executar backup PostgreSQL + arquivos de sessão e fazer restauração limpa fora do volume ativo; medir RPO/RTO.
+1. Acompanhar execuções agendadas e definir destino para alertas de falha sem expor credenciais.
+2. Instalar ou escolher um coletor para a sonda autenticada de `platform_monitor`, em máquina independente, para verificar os cinco serviços internos sem abrir suas portas.
+3. Executar backup PostgreSQL + arquivos de sessão e fazer restauração limpa fora do volume ativo; medir RPO/RTO.
 
 O domínio continua sendo ambiente de staging sintético, marcado `noindex`. O workflow não configura produção nem constitui aceite institucional.

@@ -75,6 +75,6 @@ O domínio expõe **somente a stack sintética**. O cabeçalho `X-Robots-Tag: no
 
 O commit `ceb885856cf160735dcb86401e5a0585279744b9` foi aprovado nos três jobs da CI e promovido com `scripts/promote-vps.sh`. O build foi feito a partir do arquivo do commit fixado; a migração e a subida da stack sintética terminaram com app, realtime, webhooks, scheduler, PostgreSQL e Redis saudáveis. O checkout de `/home/suporteplenario/edocbr-plenario` na VPS confirmou o mesmo SHA, sem alterações locais.
 
-Verificação pública feita após a promoção: homepage HTTP 200; `/api/v1/health?ready=1` HTTP 200 com `ok=true`, `database=ready` e a versão acima; `X-Robots-Tag: noindex, nofollow, noarchive`. A [rotina do observador externo](045-observador-publico-externo.md) foi preparada para dar continuidade a essas verificações de 15 em 15 minutos quando publicada na branch padrão.
+Verificação pública feita após a promoção: homepage HTTP 200; `/api/v1/health?ready=1` HTTP 200 com `ok=true`, `database=ready` e a versão acima; `X-Robots-Tag: noindex, nofollow, noarchive`. A [rotina do observador externo](045-observador-publico-externo.md) está publicada; sua primeira execução externa (run `42390489098`, em 07/11) aprovou HTTPS, prontidão, `noindex`, SHA e redirecionamento `www`.
 
 Esta é uma promoção de staging, não uma liberação de produção. Backup/restauração fora do host, alertas, sonda externa autenticada dos workers e ensaio da matriz de falhas ainda são necessários para fechar a fase 045.
