@@ -2,6 +2,8 @@
 
 **Referência vigente:** [plano mestre](../PLANO-MESTRE.md) e [índice documental](../README.md). A [matriz de 04/11](../MATRIZ-RASTREABILIDADE-2026-11-04.md) e a tabela abaixo são histórico de incrementos; “concluída localmente” não libera o piloto institucional. As provas recentes da etapa 045 estão nos arquivos próprios e prevalecem sobre status anteriores da tabela.
 
+O contrato inicial da operação local está em [P4 / etapa 050 — transferência de sessão v1](050-contrato-transferencia-sessao-v1.md); ele ainda não libera voto offline.
+
 Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquivo numerado neste diretório. O registro deve conter: objetivo, mudança entregue, arquivos principais, verificações com resultado, limitações conhecidas, decisão técnica e critérios de entrada/saída da etapa seguinte. Uma etapa só recebe estado **concluída** quando os critérios de saída foram demonstrados; trabalho parcial permanece **em andamento**.
 
 | Etapa | Estado | Entrega | Próxima dependência |
