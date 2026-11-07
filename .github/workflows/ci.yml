@@ -30,6 +30,7 @@ jobs:
       - run: python3 -m unittest tests/test_asset_audit.py
       - run: python3 -I tests/test-prune-local-backups.py
       - run: python3 -I tests/test-staging-remote-check.py
+      - run: python3 -I tests/test_staging_backup_cycle.py
       - run: python3 tests/test-staging-gateway-config.py
       - run: python3 tests/test-staging-fault-matrix.py
       - run: python3 scripts/recovery-drill-local.py
