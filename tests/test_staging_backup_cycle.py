@@ -32,6 +32,7 @@ class BackupCycleTests(unittest.TestCase):
         self.config = {'vault': str(self.vault), 'maxAgeHours': 30, 'keep': 2}
         self.status = {'scope': 'synthetic-staging', 'lastAttempt': 'success',
                        'lastSuccessAt': datetime.now(timezone.utc).isoformat(),
+                       'snapshotAt': datetime.now(timezone.utc).isoformat(),
                        'snapshot': str(self.snapshot), 'ciphertextSha256': self.digest,
                        'manifestSha256': self.manifest}
         cycle.write_status(self.vault, self.status)
@@ -44,11 +45,11 @@ class BackupCycleTests(unittest.TestCase):
             cycle.check_cycle(self.config)
 
     def test_old_or_failed_attempt_is_not_healthy(self):
-        self.status['lastSuccessAt'] = (datetime.now(timezone.utc) - timedelta(hours=31)).isoformat()
+        self.status['snapshotAt'] = (datetime.now(timezone.utc) - timedelta(hours=31)).isoformat()
         cycle.write_status(self.vault, self.status)
         with self.assertRaisesRegex(RuntimeError, 'fora do prazo'):
             cycle.check_cycle(self.config)
-        self.status['lastSuccessAt'] = datetime.now(timezone.utc).isoformat()
+        self.status['snapshotAt'] = datetime.now(timezone.utc).isoformat()
         self.status['lastAttempt'] = 'failed'
         cycle.write_status(self.vault, self.status)
         with self.assertRaisesRegex(RuntimeError, 'não foi bem-sucedida'):

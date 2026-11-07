@@ -117,6 +117,7 @@ def run_cycle(config: dict) -> dict:
                 raise ValueError('Receptor não retornou snapshot no vault configurado.')
             status = {'scope': 'synthetic-staging', 'lastAttemptAt': attempted,
                       'lastAttempt': 'success', 'lastSuccessAt': utc_now().isoformat(),
+                      'snapshotAt': proof['receivedAt'],
                       'snapshot': str(snapshot), 'ciphertextSha256': proof['ciphertextSha256'],
                       'manifestSha256': proof['manifestSha256']}
             write_status(vault, status)
@@ -124,7 +125,7 @@ def run_cycle(config: dict) -> dict:
         except Exception as error:
             status = {'scope': 'synthetic-staging', 'lastAttemptAt': attempted,
                       'lastAttempt': 'failed', 'error': str(error)[:1000]}
-            for key in ('lastSuccessAt', 'snapshot', 'ciphertextSha256', 'manifestSha256'):
+            for key in ('lastSuccessAt', 'snapshotAt', 'snapshot', 'ciphertextSha256', 'manifestSha256'):
                 if key in previous:
                     status[key] = previous[key]
             write_status(vault, status)
@@ -138,7 +139,7 @@ def _check_locked(config: dict) -> dict:
     status = read_status(vault)
     if status.get('scope') != 'synthetic-staging' or status.get('lastAttempt') != 'success':
         raise RuntimeError('Última tentativa de backup não foi bem-sucedida.')
-    received = datetime.fromisoformat(status['lastSuccessAt'])
+    received = datetime.fromisoformat(status['snapshotAt'])
     if received.tzinfo is None:
         raise ValueError('Horário sem fuso no estado.')
     age_hours = (utc_now() - received).total_seconds() / 3600
