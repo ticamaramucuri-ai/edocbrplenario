@@ -74,15 +74,19 @@ with tempfile.TemporaryDirectory(prefix='edocbr-stage-media-') as temporary:
     source_dir = f'/data/recordings/session-{SESSION_ID}'
     names = ('2026-10-11_12-00-00-000000.mp4', '2026-10-11_12-00-01-000000.mp4')
     if not state:
-        sample = Path(temporary) / 'sample.mp4'
-        subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
+        sample = f'/tmp/edocbr-stage-media-{os.getpid()}.mp4'
+        subprocess.run(['docker', 'exec', app, 'ffmpeg', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
                         '-i', 'testsrc2=size=160x90:rate=10', '-f', 'lavfi',
                         '-i', 'sine=frequency=800:sample_rate=48000', '-t', '1',
                         '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac',
-                        '-y', str(sample)], check=True, timeout=20)
-        subprocess.run(['docker', 'exec', app, 'mkdir', '-p', '-m', '700', source_dir], check=True)
-        for name in names:
-            subprocess.run(['docker', 'cp', str(sample), f'{app}:{source_dir}/{name}'], check=True)
+                        '-y', sample], check=True, timeout=20)
+        try:
+            subprocess.run(['docker', 'exec', app, 'mkdir', '-p', '-m', '700', source_dir], check=True)
+            for name in names:
+                subprocess.run(['docker', 'exec', app, 'cp', sample, f'{source_dir}/{name}'], check=True)
+        finally:
+            subprocess.run(['docker', 'exec', app, 'rm', '-f', sample],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         _, _, build_body = call(f'/api/v1/sessions/{SESSION_ID}/transmission/archive',
                                 {'action': 'build', 'version': 1,
                                  'idempotencyKey': 'stage-media-recovery-build-v1'})
