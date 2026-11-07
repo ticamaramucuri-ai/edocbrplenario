@@ -14,6 +14,9 @@ cleanup() {
       status=1
     fi
   fi
+  if [ "$status" != 0 ]; then
+    docker logs "$container" >&2 2>/dev/null || true
+  fi
   docker rm -f "$container" >/dev/null 2>&1 || true
   rm -rf "$temporary"
   exit "$status"
@@ -75,11 +78,18 @@ if ! cmp -s "$temporary/generated.sql" prisma/postgres/migrations/0001_baseline.
   exit 1
 fi
 docker run -d --rm --name "$container" -p 127.0.0.1::5432 -e POSTGRES_PASSWORD=test-only postgres:16-alpine >/dev/null
+postgres_ready=0
 for attempt in {1..30}; do
-  if docker exec "$container" pg_isready -U postgres -d postgres >/dev/null 2>&1; then break; fi
+  if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1; then
+    postgres_ready=1
+    break
+  fi
   sleep 1
 done
-docker exec "$container" pg_isready -U postgres -d postgres >/dev/null
+if [ "$postgres_ready" != 1 ]; then
+  echo 'PostgreSQL temporário não ficou pronto dentro de 30 segundos.' >&2
+  exit 2
+fi
 port="$(docker port "$container" 5432/tcp | sed 's/.*://')"
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py status
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
