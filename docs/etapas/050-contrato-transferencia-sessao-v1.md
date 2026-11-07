@@ -1,6 +1,6 @@
 # P4 / Etapa 050 — contrato inicial de transferência web → servidor local
 
-**Estado em 07/11/2026:** contrato puro v1 e verificador implementados; ainda não há exportador, rota de download, servidor desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
+**Estado em 07/11/2026:** contrato v1, verificador e montador interno de candidato a partir da revisão publicada implementados; ainda não há rota de download, assinatura com chave institucional, servidor desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
 
 ## Decisão implementada
 
@@ -10,14 +10,22 @@ O manifesto é serializado com chaves ordenadas e domínio `edocbr.session-trans
 
 O contrato contém **dados de preparação**. Uma assinatura válida prova integridade e origem apenas se a chave confiável tiver sido provisionada de modo seguro; ela não transfere autoridade da sessão, não autentica um dispositivo parlamentar e não confirma que o regimento foi aprovado. O congelamento de revisão, comando de abertura, sequência/ACK e promoção de reserva serão contratos separados antes de permitir voto local. A política deliberativa ainda é um snapshot JSON assinado; seu esquema e os casos de cálculo precisam ser fixados contra a configuração oficial na próxima rodada.
 
+## Candidato gerado do banco
+
+`src/lib/server/session-transfer-export.ts` monta, em transação serializável, **somente a última revisão publicada de sessão ainda não aberta**. Carrega os documentos pelos IDs congelados em `documentManifestJson` e confere metadados, tamanho e SHA-256 com a linha do banco. Inclui texto da versão mais recente das matérias referenciadas e bytes dos seus anexos locais. O anexo deve estar sob `/tenants/<tenantId>/` dentro da raiz pública, sem symlink, com tamanho cadastrado igual ao real; URL remota, metadado sem arquivo, caminho de outra Câmara ou arquivo ausente bloqueiam a exportação. Uma matéria sem texto integral nem anexo também bloqueia. O resultado é um candidato em memória `{manifest, bytesById}`, ainda **não assinado nem disponibilizado por API**.
+
+Para sessão oficial, a política e a composição são extraídas da revisão institucional aprovada vinculada à sessão, depois de conferir o SHA-256 do snapshot; mudanças posteriores em `Tenant.settings` não alteram esse candidato. O serviço não busca URLs externas durante a preparação. A linha atual de `MatterAttachment` guarda URL e tamanho, mas não guarda hash ou vínculo à revisão da pauta: anexos acrescentados depois da publicação ainda podem mudar o candidato. Antes do gate P4, a publicação deve congelar um manifesto versionado das matérias/anexos e persistir os bytes sob acervo por Câmara. O exportador permanece interno até essa lacuna, o provisionamento de chave e o modelo de ameaça serem resolvidos.
+
 ## Prova
 
-`DATABASE_URL=file:/tmp/edocbr-session-transfer-test.db bun test tests/session-transfer-contract.test.ts` passou com quatro casos: pacote assinado íntegro; Câmara/sessão/revisão ou chave incompatíveis; alteração de pauta, política ou assinatura; arquivo ausente, adulterado, URL isolada, ID repetido e bytes extras. `bun run typecheck` e `bun run lint` passaram. A CI executará o teste de contrato em cada PR. Os dados são fictícios e o módulo não consulta banco nem habilita rota pública.
+`DATABASE_URL=file:/tmp/edocbr-session-transfer-test.db bun test tests/session-transfer-contract.test.ts` passou com seis casos: pacote assinado íntegro; Câmara/sessão/revisão ou chave incompatíveis; alteração de pauta, política ou assinatura; serialização canônica, inclusive chave JSON especial; arquivo ausente, adulterado, URL isolada, ID repetido e bytes extras. `bun run typecheck` e `bun run lint` passaram. A CI executa o teste de contrato em cada PR. Os dados são fictícios e o módulo de contrato não consulta banco nem habilita rota pública.
+
+`bash scripts/test-session-transfer-export.sh` criou banco descartável e passou com quatro casos: PDF e anexo local reais viram bytes verificáveis e assinatura de ensaio; Câmara alheia, URL externa, caminho de outra Câmara e PDF adulterado são recusados; sessão oficial usa configuração histórica aprovada; revisão 2 substitui a 1 sem misturar PDFs e sessão já aberta é recusada. Esse ensaio não habilita transferência em rede nem substitui prova em PostgreSQL.
 
 ## Próxima entrega P4
 
 1. Fixar o snapshot deliberativo com casos do motor atual e ligação à versão de configuração oficial.
-2. Construir exportador transacional da revisão publicada, com tenant isolado, lista de documentos da revisão e todos os anexos de matéria materializados; URL externa sem cópia verificada bloqueia a prontidão.
+2. Congelar na publicação os textos, anexos e hashes das matérias por revisão e migrar URLs livres para acervo privado por Câmara; o montador interno atual bloqueia referências não materializadas, mas ainda lê anexos atuais da matéria.
 3. Definir identidade do servidor local, provisionamento/rotação da chave pública, assinatura no servidor, download autenticado e importação atômica com ACK por artefato.
 4. Modelar autoridade única, sequência de comandos/eventos, deduplicação, ACK e quarentena; fazer modelo de ameaça antes de expor API LAN.
 

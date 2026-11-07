@@ -24,6 +24,16 @@ export const transferManifestV1Schema = z.object({
   agendaSnapshot: z.array(z.record(z.string(), z.unknown())),
   policySnapshot: z.record(z.string(), z.unknown()),
   deliberationPolicySnapshot: z.record(z.string(), z.unknown()).refine((policy) => Object.keys(policy).length > 0, 'Deliberation policy required'),
+  matterSnapshot: z.array(z.object({
+    matterId: identifier,
+    type: z.string().min(1),
+    number: z.number().int().positive(),
+    year: z.number().int().positive(),
+    ementa: z.string().min(1),
+    authors: z.array(z.string()),
+    latestVersion: z.number().int().positive().nullable(),
+    latestText: z.string().nullable(),
+  }).strict()),
   rosterSnapshot: z.array(z.object({
     parliamentarianId: identifier,
     displayName: z.string().min(1),
@@ -70,8 +80,15 @@ function assertManifest(manifest: TransferManifestV1): TransferManifestV1 {
   canonicalManifest(parsed)
   const artifactIds = parsed.artifacts.map((entry) => entry.id)
   const rosterIds = parsed.rosterSnapshot.map((entry) => entry.parliamentarianId)
-  if (new Set(artifactIds).size !== artifactIds.length || new Set(rosterIds).size !== rosterIds.length) {
+  const matterIds = parsed.matterSnapshot.map((entry) => entry.matterId)
+  if (new Set(artifactIds).size !== artifactIds.length || new Set(rosterIds).size !== rosterIds.length ||
+      new Set(matterIds).size !== matterIds.length) {
     throw new Error('Manifesto contém identificadores duplicados.')
+  }
+  for (const item of parsed.agendaSnapshot) {
+    if (typeof item.matterId === 'string' && item.matterId && !matterIds.includes(item.matterId)) {
+      throw new Error(`Matéria referenciada sem snapshot: ${item.matterId}`)
+    }
   }
   return parsed
 }
