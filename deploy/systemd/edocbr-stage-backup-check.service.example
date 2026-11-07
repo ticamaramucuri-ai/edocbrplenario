@@ -5,3 +5,4 @@ Description=Check eDocBR synthetic staging backup freshness and integrity
 Type=oneshot
 User=edocbr-backup
 ExecStart=/usr/bin/python3 /opt/edocbr-plenario/scripts/staging-backup-cycle.py check --config /etc/edocbr-stage-backup.json
+TimeoutStartSec=50min

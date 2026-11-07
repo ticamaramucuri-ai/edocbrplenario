@@ -133,7 +133,7 @@ def run_cycle(config: dict) -> dict:
         os.close(descriptor)
 
 
-def check_cycle(config: dict) -> dict:
+def _check_locked(config: dict) -> dict:
     vault = Path(config['vault'])
     status = read_status(vault)
     if status.get('scope') != 'synthetic-staging' or status.get('lastAttempt') != 'success':
@@ -157,6 +157,17 @@ def check_cycle(config: dict) -> dict:
         raise RuntimeError('Hash do snapshot ou metadados divergiu.')
     return {'ok': True, 'scope': 'synthetic-staging', 'ageHours': round(age_hours, 3),
             'snapshot': str(snapshot), 'ciphertextSha256': status['ciphertextSha256']}
+
+
+def check_cycle(config: dict) -> dict:
+    vault = Path(config['vault'])
+    descriptor = os.open(vault / '.backup.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        fcntl.flock(descriptor, fcntl.LOCK_SH)
+        return _check_locked(config)
+    finally:
+        os.close(descriptor)
 
 
 def main() -> None:
