@@ -50,7 +50,7 @@ function canonicalValue(value: unknown): unknown {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (Array.isArray(value)) return value.map(canonicalValue)
   if (typeof value === 'object' && value && Object.getPrototypeOf(value) === Object.prototype) {
-    const result: Record<string, unknown> = {}
+    const result: Record<string, unknown> = Object.create(null)
     for (const key of Object.keys(value).sort()) result[key] = canonicalValue((value as Record<string, unknown>)[key])
     return result
   }

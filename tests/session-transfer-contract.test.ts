@@ -55,6 +55,13 @@ test('ordem das chaves JSON não altera a assinatura', () => {
   expect(verify({ manifest: reordered }).sessionId).toBe('session-a')
 })
 
+test('chave JSON especial não some da serialização assinada', () => {
+  const { manifest, bytesById } = fixture()
+  const policy = JSON.parse('{"__proto__":{"quorum":1},"minimumAgendaMatters":1}') as Record<string, unknown>
+  const signed = signPreparedPackage({ ...manifest, policySnapshot: policy }, bytesById, 'staging-signing-key', privateKey)
+  expect(signed.valueBase64).not.toBe(signPreparedPackage(manifest, bytesById, 'staging-signing-key', privateKey).valueBase64)
+})
+
 test('arquivo ausente, adulterado ou representado só por URL bloqueia prontidão', () => {
   const { manifest, bytesById, verify } = fixture()
   expect(() => verify({ bytesById: new Map([['document-1', document]]) })).toThrow('Quantidade')
