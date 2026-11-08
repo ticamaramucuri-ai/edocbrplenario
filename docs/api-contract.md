@@ -7,6 +7,12 @@ Cobre as Ondas 1–4 (fases 0–20): **~75 grupos de rotas** (internas, de plata
 públicas), a matriz RBAC completa, os eventos outbox e de auditoria e as regras de rate
 limit dos endpoints públicos.
 
+## Adição da etapa 058 — identidade do servidor local
+
+`GET/POST /api/v1/local-devices` lista/cadastra a chave pública Ed25519 SPKI do servidor local da própria Câmara. `POST /api/v1/local-devices/:id/designate {expectedGeneration,approvalReference}` seleciona o único equipamento elegível a autenticar o futuro download; `POST /api/v1/local-devices/:id/revoke {reason}` revoga e limpa a seleção. Todas exigem `tenant_admin`, cookie real de login com MFA verificado e ausência de impersonação; POST exige `X-edocbr-admin-action: 1`. Registro e designação não transferem autoridade de sessão.
+
+Pedidos do equipamento usam `X-edocbr-device-id`, `X-edocbr-device-timestamp` (ms), `X-edocbr-device-nonce` (base64url) e `X-edocbr-device-signature` (Ed25519 base64). A mensagem assinada contém, em linhas, `edocbr.local-device.request.v1`, Câmara, dispositivo, método, caminho+query, timestamp e nonce. A verificação interna exige equipamento ativo/designado, janela de 2 minutos e nonce único; replay retorna 409 `LOCAL_DEVICE_REPLAY`. Ainda não existe endpoint de download.
+
 ## Adição da etapa 046 — configuração oficial
 
 `GET /api/v1/official-configuration` retorna `{ready, approved, snapshotSha256, checks, revisions}` no escopo do ator. Cada `check` contém `id`, `label`, `ok` e `detail`. O snapshot completo fica somente no servidor. `POST /api/v1/official-configuration` exige `tenant.update` e body `{expectedSha256, approvalReference, acknowledged: true}`; retorna `201 {revision}`. Checklist incompleto ou versão já aprovada gera 409 `SESSION_PRECONDITION`/`CONFLICT_VERSION`. A referência é fornecida pelo responsável da Câmara e não é validada automaticamente contra um documento externo.

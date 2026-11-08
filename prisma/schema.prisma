@@ -79,6 +79,59 @@ model Tenant {
   sessionRecordings SessionRecording[]
   displayStates    DisplayState[]
   officialConfigurationRevisions OfficialConfigurationRevision[]
+  localServerDevices LocalServerDevice[]
+  localServerDesignation LocalServerDesignation?
+  localDeviceRequestNonces LocalDeviceRequestNonce[]
+}
+
+// Identidade do servidor local; a chave pública do equipamento é distinta da
+// chave que assina os pacotes da Câmara. Registro não concede autoridade de voto.
+model LocalServerDevice {
+  id                     String   @id @default(cuid())
+  tenantId               String
+  name                   String
+  publicKeyPem           String
+  publicKeySpkiSha256    String   @unique
+  approvalReference      String
+  status                 String   @default("registered") // registered|revoked
+  createdById            String
+  createdAt              DateTime @default(now())
+  revokedAt              DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  designations LocalServerDesignation[]
+  requestNonces LocalDeviceRequestNonce[]
+
+  @@unique([tenantId, publicKeySpkiSha256])
+  @@index([tenantId, status])
+}
+
+// Um ponteiro por Câmara, com geração crescente para futuras concessões.
+model LocalServerDesignation {
+  tenantId      String   @id
+  deviceId      String?
+  generation    Int      @default(0)
+  updatedById   String
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  device LocalServerDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+}
+
+// Nonce consumido por pedido autenticado do desktop; replay não é aceito.
+model LocalDeviceRequestNonce {
+  id        String   @id @default(cuid())
+  tenantId  String
+  deviceId  String
+  nonceHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  device LocalServerDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, deviceId, nonceHash])
+  @@index([expiresAt])
 }
 
 // Aprovação interna versionada da configuração institucional da Câmara.
@@ -112,6 +165,7 @@ model AuthSession {
   userAgent       String?
   ip              String?
   lastUsedAt      DateTime? // Onda 5/F22: best-effort na resolução da sessão (throttle interno)
+  mfaVerifiedAt   DateTime? // sessão criada após verificação TOTP; atos sensíveis exigem este sinal
 
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   impersonation SupportImpersonation? @relation("ImpersonationSession", fields: [impersonationId], references: [id])
