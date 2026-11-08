@@ -15,8 +15,9 @@ import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signi
 import { readTransferPackage } from '@/lib/session-transfer-wire'
 import { downloadAndPrepareSession } from '@/lib/local-device-client'
 import { GET as listLocalPreparations } from '@/app/api/v1/local-preparations/route'
+import { POST as acknowledgeTransfer } from '@/app/api/v1/sessions/[id]/transfer-ack/route'
 import { discoverPreparedSessions, synchronizePreparedSessions } from '@/lib/local-session-discovery'
-import { signedLocalDeviceGet } from '@/lib/local-device-http'
+import { signedLocalDeviceGet, signedLocalDevicePost } from '@/lib/local-device-http'
 
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 let publicRoot: string
@@ -116,11 +117,17 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
       expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
   } finally { await rm(wireLocalRoot, { recursive: true, force: true }) }
   const clientRoot = await mkdtemp(join(tmpdir(), 'edocbr-client-import-'))
+  let dropFirstAck = true
   const routeFetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
-    const request = new NextRequest(String(input), { method: init?.method, headers: init?.headers })
-    return new URL(request.url).pathname === '/api/v1/local-preparations'
-      ? listLocalPreparations(request, { params: Promise.resolve({}) })
-      : downloadTransfer(request, context)
+    const request = new NextRequest(String(input), { method: init?.method, headers: init?.headers,
+      body: init?.body as BodyInit | undefined })
+    const path = new URL(request.url).pathname
+    if (path === '/api/v1/local-preparations') return listLocalPreparations(request, { params: Promise.resolve({}) })
+    if (path.endsWith('/transfer-ack')) {
+      if (dropFirstAck) { dropFirstAck = false; return new Response(null, { status: 503 }) }
+      return acknowledgeTransfer(request, context)
+    }
+    return downloadTransfer(request, context)
   }) as typeof fetch
   const clientArgs = { baseUrl: 'https://example.invalid', tenantId: tenant.id, sessionId: session.id,
     deviceId: device.id, privateKey: deviceKeys.privateKey, trustedKeys, localRoot: clientRoot,
@@ -128,9 +135,30 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
   try {
     expect((await listLocalPreparations(new NextRequest('https://example.invalid/api/v1/local-preparations'),
       { params: Promise.resolve({}) })).status).toBe(401)
+    await expect(downloadAndPrepareSession(clientArgs)).rejects.toThrow('importado, mas confirmação recusada')
+    expect((await readPreparedPackage({ root: clientRoot, expectedTenantId: tenant.id,
+      expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
+    const unacknowledged = await db.localSessionTransferIssue.findFirstOrThrow({ where: {
+      tenantId: tenant.id, deviceId: device.id, sessionId: session.id } })
+    expect(unacknowledged.acknowledgedAt).toBeNull()
     const imported = await downloadAndPrepareSession(clientArgs)
     expect(imported.revisionId).toBe(candidate.manifest.revisionId)
+    const firstIssue = await db.localSessionTransferIssue.findFirstOrThrow({ where: {
+      tenantId: tenant.id, deviceId: device.id, sessionId: session.id } })
+    expect(firstIssue.acknowledgedAt).not.toBeNull()
+    const badReceipt = JSON.stringify({ issueId: firstIssue.id, revisionId: firstIssue.revisionId,
+      revisionNumber: firstIssue.revisionNumber, manifestSha256: '0'.repeat(64),
+      artifacts: JSON.parse(firstIssue.artifactHashesJson) })
+    const badSigned = signedLocalDevicePost({ ...clientArgs, body: badReceipt,
+      pathAndQuery: `/api/v1/sessions/${session.id}/transfer-ack` })
+    const ackRequest = (body: string, headers: HeadersInit) => new NextRequest(badSigned.url, {
+      method: 'POST', headers, body })
+    expect((await acknowledgeTransfer(ackRequest(badReceipt, badSigned.init.headers!), context)).status).toBe(409)
+    expect((await acknowledgeTransfer(ackRequest(badReceipt.replace('0'.repeat(64), '1'.repeat(64)),
+      badSigned.init.headers!), context)).status).toBe(401)
     expect((await downloadAndPrepareSession(clientArgs)).manifestSha256).toBe(imported.manifestSha256)
+    expect(await db.localSessionTransferIssue.count({ where: { tenantId: tenant.id,
+      deviceId: device.id, sessionId: session.id } })).toBe(1)
     await expect(downloadAndPrepareSession({ ...clientArgs, baseUrl: 'http://example.invalid' })).rejects.toThrow('HTTPS')
     await expect(downloadAndPrepareSession({ ...clientArgs,
       trustedKeys: new Map([['other', generateKeyPairSync('ed25519').publicKey]]) })).rejects.toThrow('confiável')

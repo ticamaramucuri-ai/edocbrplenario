@@ -5,7 +5,7 @@ import { DomainError, forbiddenRole, mfaRequired, unauthenticated } from './erro
 import { resolveActor } from './actor'
 import { requirePermission } from './rbac'
 import { getSessionToken, resolveSessionContext } from './session'
-import { localDeviceRequestMessage } from '@/lib/local-device-request'
+import { localDeviceRequestMessage, localDeviceRequestMessageV2 } from '@/lib/local-device-request'
 
 export { localDeviceRequestMessage } from '@/lib/local-device-request'
 
@@ -41,7 +41,7 @@ export function parseLocalDevicePublicKey(pem: string): { publicKeyPem: string; 
 }
 
 /** Consume a nonce only after signature, tenant, designation and clock checks. */
-export async function authenticateLocalDeviceRequest(req: Request, tenantId: string): Promise<LocalServerDevice> {
+export async function authenticateLocalDeviceRequest(req: Request, tenantId: string, bodySha256?: string): Promise<LocalServerDevice> {
   const deviceId = req.headers.get('x-edocbr-device-id') ?? ''
   const timestamp = req.headers.get('x-edocbr-device-timestamp') ?? ''
   const nonce = req.headers.get('x-edocbr-device-nonce') ?? ''
@@ -61,8 +61,16 @@ export async function authenticateLocalDeviceRequest(req: Request, tenantId: str
     throw unauthenticated('Assinatura do servidor local inválida.')
   }
   const url = new URL(req.url)
-  const message = localDeviceRequestMessage({ tenantId, deviceId, method: req.method,
-    pathAndQuery: url.pathname + url.search, timestamp, nonce })
+  if ((req.method === 'GET' && bodySha256 !== undefined) ||
+      (req.method !== 'GET' && (!bodySha256 || !/^[0-9a-f]{64}$/.test(bodySha256) ||
+        req.headers.get('x-edocbr-body-sha256') !== bodySha256))) {
+    throw unauthenticated('Digest do pedido assinado inválido.')
+  }
+  const message = bodySha256
+    ? localDeviceRequestMessageV2({ tenantId, deviceId, method: req.method,
+      pathAndQuery: url.pathname + url.search, timestamp, nonce, bodySha256 })
+    : localDeviceRequestMessage({ tenantId, deviceId, method: req.method,
+      pathAndQuery: url.pathname + url.search, timestamp, nonce })
   let valid = false
   try { valid = verifySignature(null, message, createPublicKey(device.publicKeyPem), signature) } catch { /* deny */ }
   if (!valid) throw unauthenticated('Assinatura do servidor local inválida.')

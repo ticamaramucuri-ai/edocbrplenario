@@ -1,6 +1,6 @@
 # P5 — identidade cifrada e processo de sincronização local
 
-**Estado em 08/11/2026:** implementação local em ensaio. Ainda não há instalador, serviço supervisionado pelo sistema operacional, custódia institucional de segredo ou API LAN.
+**Estado em 08/11/2026:** PR #27 integrada no SHA `3bb3a0a2899bd71138f7a6cbc50400a568396ae1`, CI da `main` 42492450964 aprovada e promoção à VPS sintética confirmada. Ainda não há instalador, serviço supervisionado pelo sistema operacional, custódia institucional de segredo ou API LAN.
 
 ## Operação entregue
 
@@ -12,6 +12,6 @@ Depois do cadastro/designação no SaaS, `enroll <raiz> <deviceId>` vincula a id
 
 ## Prova e limite
 
-`tests/local-device-keystore.test.ts` verifica cifra em repouso, frase errada, alteração de Câmara, vínculo único, impressão divergente, permissões e symlink. `tests/local-server-cli.test.ts` executa os comandos reais `init`, `enroll` e `trust` e confirma que a saída não contém a frase secreta. CI executa ambos; `typecheck` e `lint` são gates. Ensaios em máquina Windows/Linux real, supervisão, backup/restauração, rotação de frase e proteção de RAM continuam pendentes.
+`tests/local-device-keystore.test.ts` verifica cifra em repouso, frase errada, alteração de Câmara, vínculo único, impressão divergente, permissões e symlink. `tests/local-server-cli.test.ts` executa os comandos reais `init`, `enroll` e `trust` e confirma que a saída não contém a frase secreta. CI aprovou aplicação, PostgreSQL e mídia; o promotor confirmou quatro serviços saudáveis e 20 migrações na VPS. A URL pública `/api/v1/health?ready=1` respondeu 200 com o SHA e `/api/v1/local-preparations` sem identidade respondeu 401. Ensaios em máquina Windows/Linux real, supervisão, backup/restauração, rotação de frase e proteção de RAM continuam pendentes.
 
-**Próximo passo:** pacote instalável para os dois sistemas, credenciais entregues por mecanismo seguro de serviço, inicialização automática e observabilidade local; depois ACK durável, retomada por artefato, API LAN/TLS e autoridade única. O piloto institucional depende de custódia e aceites próprios.
+**Próximo passo:** pacote instalável para os dois sistemas, credenciais entregues por mecanismo seguro de serviço, inicialização automática e observabilidade local; [ACK integral](063-confirmacao-transferencia-local.md) foi acrescentado em laboratório, mas retomada por artefato, API LAN/TLS e autoridade única seguem pendentes. O piloto institucional depende de custódia e aceites próprios.

@@ -15,6 +15,8 @@ limit dos endpoints públicos.
 
 `GET /api/v1/local-preparations?cursor=<sessionId>` usa os mesmos cabeçalhos assinados e retorna no máximo 100 sessões agendadas com pauta publicada da própria Câmara por página, com `nextCursor` ou `null`. A resposta sinaliza a existência preliminar de snapshot de matéria em `readyForTransfer`; o download realiza a validação integral. Cursor de outra Câmara recebe 404. [Etapa 061](etapas/061-descoberta-sincronizacao-preparacoes.md).
 
+`GET /api/v1/sessions/:id/transfer` inclui `X-Edocbr-Transfer-Issue-Id`; o SaaS persiste a emissão para o dispositivo e manifesto exatos. `POST /api/v1/sessions/:id/transfer-ack` recebe `{issueId,revisionId,revisionNumber,manifestSha256,artifacts:[{id,sha256,sizeBytes}]}` depois de importação e releitura locais. A assinatura de pedido v2 inclui `X-edocbr-body-sha256` e cobre o SHA-256 do corpo JSON exato além dos campos de autenticação v1. Emissão alheia retorna 404; divergência retorna 409 `LOCAL_TRANSFER_ACK_MISMATCH`; repetição válida com nonce novo devolve o ACK original. [Etapa 063](etapas/063-confirmacao-transferencia-local.md).
+
 Pedidos do equipamento usam `X-edocbr-device-id`, `X-edocbr-device-timestamp` (ms), `X-edocbr-device-nonce` (base64url) e `X-edocbr-device-signature` (Ed25519 base64). A mensagem assinada contém, em linhas, `edocbr.local-device.request.v1`, Câmara, dispositivo, método, caminho+query, timestamp e nonce. A verificação interna exige equipamento ativo/designado, janela de 2 minutos e nonce único; replay retorna 409 `LOCAL_DEVICE_REPLAY`. Ainda não existe endpoint de download.
 
 ## Adição da etapa 046 — configuração oficial
