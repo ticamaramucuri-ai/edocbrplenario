@@ -71,6 +71,7 @@ export type ApiErrorCode =
   | 'MEDIA_ARCHIVE_TAMPERED'
   | 'DOCUMENT_INTEGRITY_FAILED'
   | 'LOCAL_DEVICE_REPLAY'
+  | 'LOCAL_TRANSFER_UNAVAILABLE'
   | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR'
 
@@ -134,6 +135,7 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   MEDIA_ARCHIVE_TAMPERED: 'media-archive-tampered',
   DOCUMENT_INTEGRITY_FAILED: 'document-integrity-failed',
   LOCAL_DEVICE_REPLAY: 'local-device-replay',
+  LOCAL_TRANSFER_UNAVAILABLE: 'local-transfer-unavailable',
   DATABASE_UNAVAILABLE: 'database-unavailable',
   INTERNAL_ERROR: 'internal-error',
 }
