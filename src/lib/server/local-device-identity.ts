@@ -5,6 +5,9 @@ import { DomainError, forbiddenRole, mfaRequired, unauthenticated } from './erro
 import { resolveActor } from './actor'
 import { requirePermission } from './rbac'
 import { getSessionToken, resolveSessionContext } from './session'
+import { localDeviceRequestMessage } from '@/lib/local-device-request'
+
+export { localDeviceRequestMessage } from '@/lib/local-device-request'
 
 const WINDOW_MS = 120_000
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
@@ -35,13 +38,6 @@ export function parseLocalDevicePublicKey(pem: string): { publicKeyPem: string; 
   if (key.asymmetricKeyType !== 'ed25519' || key.type !== 'public') throw new Error('Chave do desktop deve ser Ed25519.')
   return { publicKeyPem: key.export({ format: 'pem', type: 'spki' }).toString(),
     publicKeySpkiSha256: sha256(key.export({ format: 'der', type: 'spki' }) as Buffer) }
-}
-
-export function localDeviceRequestMessage(args: {
-  tenantId: string; deviceId: string; method: string; pathAndQuery: string; timestamp: string; nonce: string
-}): Buffer {
-  return Buffer.from(['edocbr.local-device.request.v1', args.tenantId, args.deviceId,
-    args.method.toUpperCase(), args.pathAndQuery, args.timestamp, args.nonce].join('\n'), 'utf8')
 }
 
 /** Consume a nonce only after signature, tenant, designation and clock checks. */

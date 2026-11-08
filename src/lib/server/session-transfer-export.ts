@@ -1,5 +1,5 @@
-/** Read-only candidate for a future authenticated web → local transfer.
- * No route, signing key, device grant or offline authority is exposed here.
+/** Read-only candidate for authenticated web → local preparation.
+ * This builder does not grant session or voting authority.
  */
 import { createHash } from 'node:crypto'
 import { Prisma } from '@prisma/client'
