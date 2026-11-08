@@ -1,6 +1,6 @@
 # P4 / Etapa 050 — contrato inicial de transferência web → servidor local
 
-**Estado em 07/11/2026:** contrato v1, verificador, montador interno e snapshot de matéria/anexos por revisão publicada implementados; ainda não há rota de download, assinatura com chave institucional, servidor desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
+**Estado em 07/11/2026:** contrato v1, verificador, montador interno, snapshot por revisão e importador local de ensaio implementados; ainda não há rota de download, assinatura com chave institucional, serviço desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
 
 ## Decisão implementada
 
@@ -23,6 +23,8 @@ Para sessão oficial, a política e a composição são extraídas da revisão i
 `bash scripts/test-session-transfer-export.sh` criou banco descartável e passou com quatro casos: PDF e anexo local reais viram bytes verificáveis e assinatura de ensaio; Câmara alheia, URL externa, caminho de outra Câmara e PDF adulterado são recusados; sessão oficial usa configuração histórica aprovada; revisão 2 substitui a 1 sem misturar PDFs e sessão já aberta é recusada. Esse ensaio não habilita transferência em rede nem substitui prova em PostgreSQL.
 
 **Incremento de 07/11:** a publicação e a emenda gravam `matterManifestJson` e `SessionMatterArtifact` na mesma transação da revisão. `bun run typecheck`, `bun run lint`, `bash scripts/test-session-transfer-export.sh` (4 casos, 21 verificações), `bun run test:session:preparation` e `bash scripts/test-postgres-foundation.sh` passaram; este último aplicou a migração 0019, fez cópia/restore e executou os ensaios PostgreSQL. O teste de exportação confirma que versão nova de texto e alteração da URL não mudam revisão antiga; bytes adulterados, manifesto legado e anexo indisponível bloqueiam. Limite: a publicação ainda aceita referência externa, mas a marca como indisponível para o local; nova revisão é necessária depois do reparo. O acervo privado de origem e o pacote assinado seguem pendentes.
+
+**Importador local de ensaio:** `src/lib/local-session-package-store.ts` recebe manifesto, assinatura e bytes, exige chave pública confiável provisionada fora do pacote e valida Câmara, sessão, versão e hashes antes de persistir. Grava arquivos em diretório temporário, troca para revisão completa e só então atualiza `current.json`. A leitura de prontidão relê e verifica todos os bytes. Repetição da mesma revisão é idempotente; número igual com conteúdo diferente e regressão são bloqueados. Diretório órfão deixado antes da troca do ponteiro é reconstruído na repetição. Uma trava por sessão impede importações concorrentes; se o processo cair mantendo a trava, sua remoção é uma operação manual de recuperação. `tests/local-session-package-store.test.ts` cobre quatro casos/19 verificações e `tests/session-transfer-export.test.ts` agora importa o candidato do banco e o relê. Este armazenamento é um protótipo de núcleo local: falta serviço Windows/Linux, entrega HTTP, chave institucional, quota de disco real, backup e teste de desligamento brusco. Nenhum dispositivo ou voto usa este importador ainda.
 
 ## Próxima entrega P4
 

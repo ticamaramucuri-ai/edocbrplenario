@@ -1,6 +1,6 @@
 # Meta de entrega em produção — edocBR Plenário
 
-**Estado em 07/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**. O incremento P4 já congela matérias e anexos na revisão publicada, mas ainda não oferece pacote assinado pela instituição nem servidor local. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
+**Estado em 07/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**. O incremento P4 congela matérias e anexos na revisão publicada e tem importador local de ensaio; ainda não oferece pacote assinado pela instituição nem serviço desktop. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
 
 ## Resultado exigido
 
