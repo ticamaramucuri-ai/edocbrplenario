@@ -1,11 +1,13 @@
 /** Signed preparation package for the one designated server of this Chamber. */
 import type { NextRequest } from 'next/server'
+import { createHash } from 'node:crypto'
 import { db } from '@/lib/db'
 import { apiHandler, DomainError, notFound, unauthenticated } from '@/lib/server/errors'
 import { authenticateLocalDeviceRequest } from '@/lib/server/local-device-identity'
 import { buildSessionTransferCandidate } from '@/lib/server/session-transfer-export'
 import { signSessionTransferCandidate } from '@/lib/server/session-transfer-signing'
 import { transferPackageStream } from '@/lib/session-transfer-wire'
+import { canonicalManifest } from '@/lib/session-transfer-contract'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -46,10 +48,21 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
     throw new DomainError('SESSION_PRECONDITION', 409, 'Pacote excede o limite',
       'A preparação da sessão excede os limites de transferência local.')
   }
+  const manifestSha256 = createHash('sha256').update(canonicalManifest(candidate.manifest)).digest('hex')
+  const issue = await db.localSessionTransferIssue.upsert({
+    where: { tenantId_deviceId_revisionId_manifestSha256: {
+      tenantId, deviceId: device.id, revisionId: candidate.manifest.revisionId, manifestSha256 } },
+    update: {},
+    create: { tenantId, deviceId: device.id, sessionId: id,
+      revisionId: candidate.manifest.revisionId, revisionNumber: candidate.manifest.revisionNumber,
+      manifestSha256, artifactHashesJson: JSON.stringify(candidate.manifest.artifacts.map((item) => ({
+        id: item.id, sha256: item.sha256, sizeBytes: item.sizeBytes }))) },
+  })
   return new Response(stream, { headers: {
     'Content-Type': 'application/vnd.edocbr.session-transfer.v1',
     'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',
     'Content-Disposition': 'attachment; filename="sessao-preparada.edocbr"',
+    'X-Edocbr-Transfer-Issue-Id': issue.id,
   } })
 })

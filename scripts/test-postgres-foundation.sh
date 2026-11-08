@@ -35,7 +35,7 @@ source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionMatterArtifact \{.*?\n\}\n', '\n', source, flags=re.S)
-for model in ['LocalServerDevice', 'LocalServerDesignation', 'LocalDeviceRequestNonce']:
+for model in ['LocalServerDevice', 'LocalServerDesignation', 'LocalDeviceRequestNonce', 'LocalSessionTransferIssue']:
     source = re.sub(rf'\nmodel {model} \{{.*?\n\}}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
@@ -48,8 +48,8 @@ for model, fields, indexes in [
                 'contactAddress', 'contactPostalCode', 'contactGeneralPhone', 'contactAlternatePhone',
                 'contactOmbudsmanPhone', 'contactGeneralEmail', 'contactProtocolEmail', 'contactOmbudsmanEmail',
                 'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours',
-                'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces'], []),
-    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
+                'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces', 'localSessionTransferIssues'], []),
+    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState', 'localTransferIssues'], []),
     ('AuthSession', ['mfaVerifiedAt'], []),
     ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'matterArtifacts'], []),
     ('AttendanceEvent', ['commandId'], []),

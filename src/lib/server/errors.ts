@@ -72,6 +72,7 @@ export type ApiErrorCode =
   | 'DOCUMENT_INTEGRITY_FAILED'
   | 'LOCAL_DEVICE_REPLAY'
   | 'LOCAL_TRANSFER_UNAVAILABLE'
+  | 'LOCAL_TRANSFER_ACK_MISMATCH'
   | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR'
 
@@ -136,6 +137,7 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   DOCUMENT_INTEGRITY_FAILED: 'document-integrity-failed',
   LOCAL_DEVICE_REPLAY: 'local-device-replay',
   LOCAL_TRANSFER_UNAVAILABLE: 'local-transfer-unavailable',
+  LOCAL_TRANSFER_ACK_MISMATCH: 'local-transfer-ack-mismatch',
   DATABASE_UNAVAILABLE: 'database-unavailable',
   INTERNAL_ERROR: 'internal-error',
 }
