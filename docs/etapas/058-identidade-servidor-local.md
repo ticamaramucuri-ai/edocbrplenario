@@ -14,6 +14,8 @@
 
 `bash scripts/test-local-device-identity.sh` usa SQLite descartável e verifica duas Câmaras, MFA, cabeçalho administrativo, chave repetida inclusive em outra Câmara, designação com geração, pedido assinado, replay, alteração da URL, revogação e auditoria. `bash scripts/test-postgres-foundation.sh` aplica a migração, copia/restaura o banco e executa a suíte PostgreSQL. `bun run typecheck` e `bun run lint` passaram. Esta prova não substitui ensaio HTTP/TLS real, relógios divergentes, concorrência entre instâncias, revogação durante download nem dispositivo físico.
 
+**Entrega e implantação de homologação:** [PR #22](https://github.com/e-docBR/edocBRplenario/pull/22), merge `d00e64475f99185db634992fd4ebaf1adee94141`; CI da `main` 42434472734 concluída com aplicação, PostgreSQL e mídia aprovados. O promotor fixou esse SHA na VPS e aplicou 20 migrações; app, realtime, webhooks, scheduler, PostgreSQL e Redis ficaram saudáveis. Em `https://edocbrplenario.com.br`, `GET /api/v1/health` respondeu 200 e `GET /api/v1/local-devices` sem login respondeu 401. O ambiente continua sintético, sem desktop designado e sem chave institucional provisionada.
+
 ## Próxima dependência
 
 1. Definir bootstrap do desktop: geração da chave privada no equipamento, prova da impressão digital ao administrador e distribuição autenticada da chave pública de assinatura da Câmara.
