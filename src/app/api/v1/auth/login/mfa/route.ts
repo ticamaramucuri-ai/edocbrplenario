@@ -49,7 +49,7 @@ export const POST = apiHandler(async (req: Request, _ctx, correlationId) => {
     )
   }
 
-  const token = await createSession(user.id, req.headers.get('user-agent'), clientIp(req))
+  const token = await createSession(user.id, req.headers.get('user-agent'), clientIp(req), true)
 
   if (user.tenantId) {
     await withTransaction(async (tx) => {

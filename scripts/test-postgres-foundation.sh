@@ -35,6 +35,8 @@ source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionMatterArtifact \{.*?\n\}\n', '\n', source, flags=re.S)
+for model in ['LocalServerDevice', 'LocalServerDesignation', 'LocalDeviceRequestNonce']:
+    source = re.sub(rf'\nmodel {model} \{{.*?\n\}}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MediaPublicObservation \{.*?\n\}\n', '\n', source, flags=re.S)
@@ -45,8 +47,10 @@ for model, fields, indexes in [
     ('Tenant', ['officialConfigurationRevisions', 'sessionDocuments', 'sessionNoticeDeliveries', 'displayStates',
                 'contactAddress', 'contactPostalCode', 'contactGeneralPhone', 'contactAlternatePhone',
                 'contactOmbudsmanPhone', 'contactGeneralEmail', 'contactProtocolEmail', 'contactOmbudsmanEmail',
-                'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours'], []),
+                'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours',
+                'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
+    ('AuthSession', ['mfaVerifiedAt'], []),
     ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'matterArtifacts'], []),
     ('AttendanceEvent', ['commandId'], []),
     ('Voting', ['symbolicTallies'], []),
@@ -180,6 +184,8 @@ switched_client=1
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" bunx prisma generate --schema "$temporary/schema-app.prisma" >/dev/null
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/postgres-services-e2e.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  bun test tests/local-device-identity.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/rate-limit-postgres.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \

@@ -88,7 +88,8 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 export async function createSession(
   userId: string,
   userAgent?: string | null,
-  ip?: string | null
+  ip?: string | null,
+  mfaVerified = false,
 ): Promise<string> {
   const token = randomBytes(32).toString('hex')
   await db.authSession.create({
@@ -98,6 +99,7 @@ export async function createSession(
       expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000),
       userAgent: userAgent?.slice(0, 300) ?? null,
       ip: ip ?? null,
+      mfaVerifiedAt: mfaVerified ? new Date() : null,
     },
   })
   return token

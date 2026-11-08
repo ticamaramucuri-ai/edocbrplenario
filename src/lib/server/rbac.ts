@@ -63,6 +63,7 @@ export const PERMISSIONS: Record<string, Role[]> = {
   'impersonation.manage': ['platform_owner', 'platform_support'],
   // Onda 5 / Fase 23 — Chaves de API do tenant (emissão e revogação)
   'apikey.manage': ['tenant_admin'],
+  'local.device.manage': ['tenant_admin'],
 }
 
 /** 403 FORBIDDEN_ROLE quando o papel do ator não está na matriz da ação. */

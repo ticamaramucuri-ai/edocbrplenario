@@ -3,6 +3,7 @@
 **Referência vigente:** [plano mestre](../PLANO-MESTRE.md) e [índice documental](../README.md). A [matriz de 04/11](../MATRIZ-RASTREABILIDADE-2026-11-04.md) e a tabela abaixo são histórico de incrementos; “concluída localmente” não libera o piloto institucional. As provas recentes da etapa 045 estão nos arquivos próprios e prevalecem sobre status anteriores da tabela.
 
 O contrato inicial da operação local está em [P4 / etapa 050 — transferência de sessão v1](050-contrato-transferencia-sessao-v1.md); ele ainda não libera voto offline.
+O registro do desktop designado, sua chave pública e a autenticação dos pedidos estão na [etapa 058](058-identidade-servidor-local.md); ainda não há download nem autoridade offline.
 
 Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquivo numerado neste diretório. O registro deve conter: objetivo, mudança entregue, arquivos principais, verificações com resultado, limitações conhecidas, decisão técnica e critérios de entrada/saída da etapa seguinte. Uma etapa só recebe estado **concluída** quando os critérios de saída foram demonstrados; trabalho parcial permanece **em andamento**.
 
@@ -102,6 +103,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [053a — Contatos institucionais](053a-contatos-institucionais.md) | Incremento local concluído | Contatos por tenant e 11 campos públicos de Mucuri | Conferência institucional dos contatos |
 | [053b — Ciclo de eleição da Mesa](053b-ciclo-eleicao-mesa.md) | Incremento local concluído | Eleição futura, confirmação de posse e cancelamento com ato e auditoria | Ato de posse real e homologação da Câmara |
 | [053c — Fotos públicas de Mucuri](053c-fotos-publicas-mucuri.md) | Importação local concluída | 13 fotos do portal da Câmara com hash de origem e processamento local | Conferência institucional das fotos e emblemas partidários verificados |
+| [058 — Identidade do servidor local](058-identidade-servidor-local.md) | Incremento técnico em ensaio | Chave pública por desktop, designação única por Câmara, revogação e pedido Ed25519 com nonce; MFA no administrador | Bootstrap físico, download autenticado, concorrência PostgreSQL e autoridade de sessão |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
