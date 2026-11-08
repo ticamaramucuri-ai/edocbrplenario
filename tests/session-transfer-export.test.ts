@@ -14,6 +14,9 @@ import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
 import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signing'
 import { readTransferPackage } from '@/lib/session-transfer-wire'
 import { downloadAndPrepareSession } from '@/lib/local-device-client'
+import { GET as listLocalPreparations } from '@/app/api/v1/local-preparations/route'
+import { discoverPreparedSessions, synchronizePreparedSessions } from '@/lib/local-session-discovery'
+import { signedLocalDeviceGet } from '@/lib/local-device-http'
 
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 let publicRoot: string
@@ -113,17 +116,43 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
       expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
   } finally { await rm(wireLocalRoot, { recursive: true, force: true }) }
   const clientRoot = await mkdtemp(join(tmpdir(), 'edocbr-client-import-'))
+  const routeFetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
+    const request = new NextRequest(String(input), { method: init?.method, headers: init?.headers })
+    return new URL(request.url).pathname === '/api/v1/local-preparations'
+      ? listLocalPreparations(request, { params: Promise.resolve({}) })
+      : downloadTransfer(request, context)
+  }) as typeof fetch
   const clientArgs = { baseUrl: 'https://example.invalid', tenantId: tenant.id, sessionId: session.id,
     deviceId: device.id, privateKey: deviceKeys.privateKey, trustedKeys, localRoot: clientRoot,
-    fetchImpl: (async (input: URL | RequestInfo, init?: RequestInit) =>
-      downloadTransfer(new NextRequest(String(input), { method: init?.method, headers: init?.headers }), context)) as typeof fetch }
+    fetchImpl: routeFetch }
   try {
+    expect((await listLocalPreparations(new NextRequest('https://example.invalid/api/v1/local-preparations'),
+      { params: Promise.resolve({}) })).status).toBe(401)
     const imported = await downloadAndPrepareSession(clientArgs)
     expect(imported.revisionId).toBe(candidate.manifest.revisionId)
     expect((await downloadAndPrepareSession(clientArgs)).manifestSha256).toBe(imported.manifestSha256)
     await expect(downloadAndPrepareSession({ ...clientArgs, baseUrl: 'http://example.invalid' })).rejects.toThrow('HTTPS')
     await expect(downloadAndPrepareSession({ ...clientArgs,
       trustedKeys: new Map([['other', generateKeyPairSync('ed25519').publicKey]]) })).rejects.toThrow('confiável')
+    await db.session.createMany({ data: Array.from({ length: 101 }, (_, index) => ({
+      tenantId: tenant.id, number: index + 2, year: 2026,
+      scheduledAt: new Date('2026-12-01T12:00:00Z'), status: 'scheduled', agendaPublished: true,
+      presidentId: person.id,
+    })) })
+    const otherSession = await db.session.create({ data: { tenantId: other.id, number: 1, year: 2026,
+      scheduledAt: new Date('2026-12-01T12:00:00Z'), status: 'scheduled', agendaPublished: true } })
+    const alienCursor = signedLocalDeviceGet({ ...clientArgs,
+      pathAndQuery: `/api/v1/local-preparations?cursor=${otherSession.id}` })
+    expect((await listLocalPreparations(new NextRequest(alienCursor.url, {
+      method: alienCursor.init.method, headers: alienCursor.init.headers }),
+    { params: Promise.resolve({}) })).status).toBe(404)
+    const discovered = await discoverPreparedSessions(clientArgs)
+    expect(discovered).toHaveLength(102)
+    expect(discovered.filter((item) => item.readyForTransfer).map((item) => item.id)).toEqual([session.id])
+    const cycle = await synchronizePreparedSessions(clientArgs)
+    expect(cycle.prepared).toHaveLength(1)
+    expect(cycle.skipped).toHaveLength(101)
+    expect(cycle.failed).toHaveLength(0)
   } finally { await rm(clientRoot, { recursive: true, force: true }) }
   expect((await downloadTransfer(signedRequest, context)).status).toBe(409)
   const revoked = request(tenant.id)
