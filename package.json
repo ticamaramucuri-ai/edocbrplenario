@@ -68,6 +68,7 @@
     "test:seed:demo-logins": "bash scripts/test-seed-demo-logins.sh",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
+    "transfer:key:provision": "bun scripts/provision-session-transfer-key.ts",
     "db:register:mucuri": "bun scripts/register-mucuri.ts",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset"

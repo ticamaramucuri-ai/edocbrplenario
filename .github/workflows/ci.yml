@@ -24,6 +24,7 @@ jobs:
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/pending-checkin.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/session-transfer-contract.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-session-package-store.test.ts
+      - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/session-transfer-signing.test.ts
       - run: bash scripts/test-session-transfer-export.sh
       - run: bun run test:clean:test-tenants
       - run: bun run test:bootstrap:empty-tenant
