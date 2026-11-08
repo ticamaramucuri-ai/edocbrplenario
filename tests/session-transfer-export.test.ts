@@ -7,14 +7,17 @@ import { db } from '@/lib/db'
 import { buildSessionTransferCandidate } from '@/lib/server/session-transfer-export'
 import { captureMatterSnapshot, freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
 import { signPreparedPackage, verifyPreparedPackage } from '@/lib/session-transfer-contract'
+import { importPreparedPackage, readPreparedPackage } from '@/lib/local-session-package-store'
 
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 let publicRoot: string
+let localRoot: string
 let ids: { tenant: string; other: string; session: string; matter: string; attachment: string; document: string }
 
 afterAll(async () => {
   await db.$disconnect()
   if (publicRoot) await rm(publicRoot, { recursive: true, force: true })
+  if (localRoot) await rm(localRoot, { recursive: true, force: true })
 })
 
 test('revisão publicada exporta bytes de PDF e anexo local, texto e política assináveis', async () => {
@@ -58,6 +61,11 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
   expect(verifyPreparedPackage({ manifest: candidate.manifest, signature,
     bytesById: candidate.bytesById, expectedTenantId: tenant.id, expectedSessionId: session.id,
     minimumRevisionNumber: 1, trustedKeys: new Map([['test-key', publicKey]]) }).revisionNumber).toBe(1)
+  localRoot = await mkdtemp(join(tmpdir(), 'edocbr-local-import-'))
+  const localArgs = { root: localRoot, expectedTenantId: tenant.id, expectedSessionId: session.id,
+    trustedKeys: new Map([['test-key', publicKey]]) }
+  await importPreparedPackage({ ...localArgs, ...candidate, signature })
+  expect((await readPreparedPackage(localArgs)).manifest.revisionId).toBe(candidate.manifest.revisionId)
   await expect(buildSessionTransferCandidate({ tenantId: other.id, sessionId: session.id })).rejects.toThrow('não encontrada')
 })
 
