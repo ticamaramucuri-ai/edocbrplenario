@@ -13,6 +13,7 @@ import { GET as downloadTransfer } from '@/app/api/v1/sessions/[id]/transfer/rou
 import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
 import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signing'
 import { readTransferPackage } from '@/lib/session-transfer-wire'
+import { downloadAndPrepareSession } from '@/lib/local-device-client'
 
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 let publicRoot: string
@@ -111,6 +112,19 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     expect((await readPreparedPackage({ root: wireLocalRoot, expectedTenantId: tenant.id,
       expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
   } finally { await rm(wireLocalRoot, { recursive: true, force: true }) }
+  const clientRoot = await mkdtemp(join(tmpdir(), 'edocbr-client-import-'))
+  const clientArgs = { baseUrl: 'https://example.invalid', tenantId: tenant.id, sessionId: session.id,
+    deviceId: device.id, privateKey: deviceKeys.privateKey, trustedKeys, localRoot: clientRoot,
+    fetchImpl: (async (input: URL | RequestInfo, init?: RequestInit) =>
+      downloadTransfer(new NextRequest(String(input), { method: init?.method, headers: init?.headers }), context)) as typeof fetch }
+  try {
+    const imported = await downloadAndPrepareSession(clientArgs)
+    expect(imported.revisionId).toBe(candidate.manifest.revisionId)
+    expect((await downloadAndPrepareSession(clientArgs)).manifestSha256).toBe(imported.manifestSha256)
+    await expect(downloadAndPrepareSession({ ...clientArgs, baseUrl: 'http://example.invalid' })).rejects.toThrow('HTTPS')
+    await expect(downloadAndPrepareSession({ ...clientArgs,
+      trustedKeys: new Map([['other', generateKeyPairSync('ed25519').publicKey]]) })).rejects.toThrow('confiável')
+  } finally { await rm(clientRoot, { recursive: true, force: true }) }
   expect((await downloadTransfer(signedRequest, context)).status).toBe(409)
   const revoked = request(tenant.id)
   await db.localServerDesignation.update({ where: { tenantId: tenant.id }, data: { deviceId: null } })
