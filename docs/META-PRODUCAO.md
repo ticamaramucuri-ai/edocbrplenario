@@ -1,6 +1,6 @@
 # Meta de entrega em produção — edocBR Plenário
 
-**Estado em 07/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**. P4 congela matérias/anexos e ensaia importação, assinatura por Câmara e identidade do desktop designado; ainda não possui chave institucional provisionada, download de pacote nem serviço desktop. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
+**Estado em 07/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**. P4 congela matérias/anexos e ensaia importação, assinatura por Câmara, identidade do desktop designado e download autenticado; ainda não possui chave institucional provisionada nem serviço desktop. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
 
 ## Resultado exigido
 

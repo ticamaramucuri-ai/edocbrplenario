@@ -1,23 +1,30 @@
 import { afterAll, expect, test } from 'bun:test'
-import { createHash, generateKeyPairSync } from 'node:crypto'
+import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { buildSessionTransferCandidate } from '@/lib/server/session-transfer-export'
 import { captureMatterSnapshot, freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
 import { signPreparedPackage, verifyPreparedPackage } from '@/lib/session-transfer-contract'
 import { importPreparedPackage, readPreparedPackage } from '@/lib/local-session-package-store'
+import { GET as downloadTransfer } from '@/app/api/v1/sessions/[id]/transfer/route'
+import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
+import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signing'
+import { readTransferPackage } from '@/lib/session-transfer-wire'
 
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 let publicRoot: string
 let localRoot: string
+let keyRoot: string
 let ids: { tenant: string; other: string; session: string; matter: string; attachment: string; document: string }
 
 afterAll(async () => {
   await db.$disconnect()
   if (publicRoot) await rm(publicRoot, { recursive: true, force: true })
   if (localRoot) await rm(localRoot, { recursive: true, force: true })
+  if (keyRoot) await rm(keyRoot, { recursive: true, force: true })
 })
 
 test('revisão publicada exporta bytes de PDF e anexo local, texto e política assináveis', async () => {
@@ -67,6 +74,48 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
   await importPreparedPackage({ ...localArgs, ...candidate, signature })
   expect((await readPreparedPackage(localArgs)).manifest.revisionId).toBe(candidate.manifest.revisionId)
   await expect(buildSessionTransferCandidate({ tenantId: other.id, sessionId: session.id })).rejects.toThrow('não encontrada')
+
+  keyRoot = await mkdtemp(join(tmpdir(), 'edocbr-transfer-keys-'))
+  const signing = await provisionTransferSigningKey({ root: keyRoot, tenantId: tenant.id })
+  process.env.EDOCBR_TRANSFER_KEY_ROOT = keyRoot
+  const deviceKeys = generateKeyPairSync('ed25519')
+  const device = await db.localServerDevice.create({ data: { tenantId: tenant.id, name: 'Servidor de ensaio',
+    publicKeyPem: deviceKeys.publicKey.export({ format: 'pem', type: 'spki' }).toString(),
+    publicKeySpkiSha256: hash(deviceKeys.publicKey.export({ format: 'der', type: 'spki' }) as Buffer),
+    approvalReference: 'Teste automatizado', createdById: person.id } })
+  await db.localServerDesignation.create({ data: { tenantId: tenant.id, deviceId: device.id, updatedById: person.id } })
+  const url = `https://example.invalid/api/v1/sessions/${session.id}/transfer`
+  const context = { params: Promise.resolve({ id: session.id }) }
+  const request = (tenantId: string, nonce = randomBytes(24).toString('base64url')) => {
+    const timestamp = String(Date.now())
+    const message = localDeviceRequestMessage({ tenantId, deviceId: device.id, method: 'GET',
+      pathAndQuery: new URL(url).pathname, timestamp, nonce })
+    return new NextRequest(url, { headers: { 'x-edocbr-tenant-id': tenantId,
+      'x-edocbr-device-id': device.id, 'x-edocbr-device-timestamp': timestamp,
+      'x-edocbr-device-nonce': nonce,
+      'x-edocbr-device-signature': sign(null, message, deviceKeys.privateKey).toString('base64') } })
+  }
+  expect((await downloadTransfer(new NextRequest(url), context)).status).toBe(401)
+  const wrongTenant = await downloadTransfer(request(other.id), context)
+  expect(wrongTenant.status).toBe(401)
+  const signedRequest = request(tenant.id)
+  const response = await downloadTransfer(signedRequest, context)
+  expect(response.status).toBe(200)
+  expect(response.headers.get('cache-control')).toContain('no-store')
+  const wire = await readTransferPackage(response.body!)
+  const trustedKeys = new Map([[signing.active.keyId, (await import('node:crypto')).createPublicKey(signing.publicKeyPem)]])
+  const wireLocalRoot = await mkdtemp(join(tmpdir(), 'edocbr-wire-import-'))
+  try {
+    await importPreparedPackage({ root: wireLocalRoot, ...wire,
+      expectedTenantId: tenant.id, expectedSessionId: session.id, trustedKeys })
+    expect((await readPreparedPackage({ root: wireLocalRoot, expectedTenantId: tenant.id,
+      expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
+  } finally { await rm(wireLocalRoot, { recursive: true, force: true }) }
+  expect((await downloadTransfer(signedRequest, context)).status).toBe(409)
+  const revoked = request(tenant.id)
+  await db.localServerDesignation.update({ where: { tenantId: tenant.id }, data: { deviceId: null } })
+  expect((await downloadTransfer(revoked, context)).status).toBe(401)
+  delete process.env.EDOCBR_TRANSFER_KEY_ROOT
 })
 
 test('edições posteriores não mudam revisão publicada; fontes inseguras ficam indisponíveis em revisão nova', async () => {
