@@ -21,6 +21,8 @@ import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 import { createSessionNotice } from '@/lib/server/session-notice'
 import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
 import { inspectOfficialConfiguration } from '@/lib/server/official-configuration'
+import { freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
+import { join } from 'node:path'
 
 export const dynamic = 'force-dynamic'
 
@@ -210,7 +212,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         exceptionReason: body.noticeExceptionReason,
       })
       noticeHash = notice.noticeSha256
-      await tx.sessionAgendaRevision.create({ data: {
+      const revision = await tx.sessionAgendaRevision.create({ data: {
         tenantId: session.tenantId,
         sessionId: session.id,
         revision: 1,
@@ -222,6 +224,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         actorId: actor.id,
         createdAt: now,
       } })
+      await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: session.tenantId,
+        agenda: JSON.parse(publication.agendaJson), publicRoot: join(process.cwd(), 'public') })
       await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: session.id,
         revision: 1, noticeSha256: notice.noticeSha256, issuedAt: now })
     }

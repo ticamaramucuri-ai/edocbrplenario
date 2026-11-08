@@ -14,6 +14,8 @@ import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { createSessionNotice } from '@/lib/server/session-notice'
 import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
+import { freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
+import { join } from 'node:path'
 
 export const dynamic = 'force-dynamic'
 
@@ -145,7 +147,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       issuedAt, agenda: change.after, policy: policySnapshot, justification: command.justification,
       documents: documentManifest,
       exceptionReason: change.deadline.exceptionReason })
-    await tx.sessionAgendaRevision.create({ data: {
+    const revision = await tx.sessionAgendaRevision.create({ data: {
       tenantId: session.tenantId, sessionId: id, revision: change.revision,
       agendaJson: JSON.stringify(change.after),
       policyJson: JSON.stringify(policySnapshot),
@@ -154,6 +156,8 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       justification: command.justification, actorId: actor.id,
       noticeJson: notice.noticeJson, noticeSha256: notice.noticeSha256, createdAt: issuedAt,
     } })
+    await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: session.tenantId,
+      agenda: change.after, publicRoot: join(process.cwd(), 'public') })
     await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: id,
       revision: change.revision, noticeSha256: notice.noticeSha256, issuedAt })
     await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'agenda.amended', aggregateType: 'session', aggregateId: id,

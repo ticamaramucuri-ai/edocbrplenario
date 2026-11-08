@@ -22,6 +22,8 @@
 
 `migrations/0015_display_frozen_frame.sql` armazena o quadro público congelado e seu hash SHA-256. A API só o entrega enquanto a mesma sessão e versão permanecem congeladas.
 
+`migrations/0019_session_matter_snapshot.sql` adiciona manifesto de matéria e bytes de anexo por revisão. Revisões anteriores ficam com manifesto nulo e não podem gerar pacote local; publicar nova revisão após materializar os anexos é necessário. Os bytes entram no backup do PostgreSQL.
+
 O executor `scripts/postgres-migrate.py` registra histórico e checksum e usa bloqueio consultivo. Defina `POSTGRES_MIGRATION_URL` em um gerenciador de segredos/ambiente e execute `bun run db:postgres:status` ou `bun run db:postgres:migrate`. Para remover somente os índices 0002, use `bun run db:postgres:rollback-indexes`. Falha de migração fica registrada e exige reparo explícito; não edite SQL já aplicado. Nunca aplique 0001 sobre banco com tabelas da aplicação.
 
 A cópia de dados é feita por `POSTGRES_COPY_URL` e `bun run db:postgres:copy --source /caminho/da/replica.db`. O destino precisa estar migrado e vazio; a origem é lida via snapshot. Leia os limites na [etapa 037](../../docs/etapas/037-executor-copia-postgres.md) antes de usar em uma implantação. O SQLite do piloto não foi migrado.
