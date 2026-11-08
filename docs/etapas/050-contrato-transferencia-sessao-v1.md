@@ -1,6 +1,6 @@
 # P4 / Etapa 050 — contrato inicial de transferência web → servidor local
 
-**Estado em 07/11/2026:** contrato v1, verificador e montador interno de candidato a partir da revisão publicada implementados; ainda não há rota de download, assinatura com chave institucional, servidor desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
+**Estado em 07/11/2026:** contrato v1, verificador, montador interno e snapshot de matéria/anexos por revisão publicada implementados; ainda não há rota de download, assinatura com chave institucional, servidor desktop, distribuição LAN nem autoridade para atos offline. O modo offline oficial permanece bloqueado.
 
 ## Decisão implementada
 
@@ -12,9 +12,9 @@ O contrato contém **dados de preparação**. Uma assinatura válida prova integ
 
 ## Candidato gerado do banco
 
-`src/lib/server/session-transfer-export.ts` monta, em transação serializável, **somente a última revisão publicada de sessão ainda não aberta**. Carrega os documentos pelos IDs congelados em `documentManifestJson` e confere metadados, tamanho e SHA-256 com a linha do banco. Inclui texto da versão mais recente das matérias referenciadas e bytes dos seus anexos locais. O anexo deve estar sob `/tenants/<tenantId>/` dentro da raiz pública, sem symlink, com tamanho cadastrado igual ao real; URL remota, metadado sem arquivo, caminho de outra Câmara ou arquivo ausente bloqueiam a exportação. Uma matéria sem texto integral nem anexo também bloqueia. O resultado é um candidato em memória `{manifest, bytesById}`, ainda **não assinado nem disponibilizado por API**.
+`src/lib/server/session-transfer-export.ts` monta, em transação serializável, **somente a última revisão publicada de sessão ainda não aberta**. Carrega os documentos pelos IDs congelados em `documentManifestJson` e confere metadados, tamanho e SHA-256 com a linha do banco. Inclui os textos e bytes congelados em `matterManifestJson` e `SessionMatterArtifact`; alterações posteriores na matéria, no anexo ou no arquivo original não mudam a revisão. Na publicação, o anexo deve estar sob `/tenants/<tenantId>/` dentro da raiz pública, sem symlink e com tamanho cadastrado igual ao real. Se estiver ausente, for remoto ou inseguro, a pauta ainda pode ser publicada, mas a revisão é marcada como incompleta e o pacote local é bloqueado. Uma matéria sem texto integral nem anexo também bloqueia. O resultado é um candidato em memória `{manifest, bytesById}`, ainda **não assinado nem disponibilizado por API**.
 
-Para sessão oficial, a política e a composição são extraídas da revisão institucional aprovada vinculada à sessão, depois de conferir o SHA-256 do snapshot; mudanças posteriores em `Tenant.settings` não alteram esse candidato. O serviço não busca URLs externas durante a preparação. A linha atual de `MatterAttachment` guarda URL e tamanho, mas não guarda hash ou vínculo à revisão da pauta: anexos acrescentados depois da publicação ainda podem mudar o candidato. Antes do gate P4, a publicação deve congelar um manifesto versionado das matérias/anexos e persistir os bytes sob acervo por Câmara. O exportador permanece interno até essa lacuna, o provisionamento de chave e o modelo de ameaça serem resolvidos.
+Para sessão oficial, a política e a composição são extraídas da revisão institucional aprovada vinculada à sessão, depois de conferir o SHA-256 do snapshot; mudanças posteriores em `Tenant.settings` não alteram esse candidato. O serviço não busca URLs externas durante a preparação. A migração PostgreSQL `0019_session_matter_snapshot.sql` é aditiva; revisões legadas recebem `NULL` e exigem nova revisão publicada antes da preparação local. Os bytes congelados passam a integrar o backup PostgreSQL. O exportador permanece interno até o provisionamento de chave, a importação e o modelo de ameaça serem resolvidos.
 
 ## Prova
 
@@ -22,10 +22,12 @@ Para sessão oficial, a política e a composição são extraídas da revisão i
 
 `bash scripts/test-session-transfer-export.sh` criou banco descartável e passou com quatro casos: PDF e anexo local reais viram bytes verificáveis e assinatura de ensaio; Câmara alheia, URL externa, caminho de outra Câmara e PDF adulterado são recusados; sessão oficial usa configuração histórica aprovada; revisão 2 substitui a 1 sem misturar PDFs e sessão já aberta é recusada. Esse ensaio não habilita transferência em rede nem substitui prova em PostgreSQL.
 
+**Incremento de 07/11:** a publicação e a emenda gravam `matterManifestJson` e `SessionMatterArtifact` na mesma transação da revisão. `bun run typecheck`, `bun run lint`, `bash scripts/test-session-transfer-export.sh` (4 casos, 21 verificações), `bun run test:session:preparation` e `bash scripts/test-postgres-foundation.sh` passaram; este último aplicou a migração 0019, fez cópia/restore e executou os ensaios PostgreSQL. O teste de exportação confirma que versão nova de texto e alteração da URL não mudam revisão antiga; bytes adulterados, manifesto legado e anexo indisponível bloqueiam. Limite: a publicação ainda aceita referência externa, mas a marca como indisponível para o local; nova revisão é necessária depois do reparo. O acervo privado de origem e o pacote assinado seguem pendentes.
+
 ## Próxima entrega P4
 
 1. Fixar o snapshot deliberativo com casos do motor atual e ligação à versão de configuração oficial.
-2. Congelar na publicação os textos, anexos e hashes das matérias por revisão e migrar URLs livres para acervo privado por Câmara; o montador interno atual bloqueia referências não materializadas, mas ainda lê anexos atuais da matéria.
+2. Migrar URLs livres para acervo privado por Câmara, oferecer reparo de anexos indisponíveis por nova revisão publicada e medir volume dos bytes congelados.
 3. Definir identidade do servidor local, provisionamento/rotação da chave pública, assinatura no servidor, download autenticado e importação atômica com ACK por artefato.
 4. Modelar autoridade única, sequência de comandos/eventos, deduplicação, ACK e quarentena; fazer modelo de ameaça antes de expor API LAN.
 

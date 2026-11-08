@@ -2,14 +2,12 @@
  * No route, signing key, device grant or offline authority is exposed here.
  */
 import { createHash } from 'node:crypto'
-import { lstat, readFile, realpath } from 'node:fs/promises'
-import { isAbsolute, join, sep } from 'node:path'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { tenantSettings } from './domain'
+import type { MatterManifest } from './session-matter-snapshot'
 import type { TransferManifestV1 } from '@/lib/session-transfer-contract'
 
-const MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
 
 function jsonObject(raw: string, label: string): Record<string, unknown> {
@@ -26,36 +24,6 @@ function jsonArray(raw: string, label: string): Array<Record<string, unknown>> {
   return value as Array<Record<string, unknown>>
 }
 
-async function localAttachmentBytes(url: string | null, publicRoot: string, tenantId: string): Promise<Uint8Array> {
-  if (!url || !url.startsWith('/') || url.startsWith('//') || /[?#\\]/.test(url)) {
-    throw new Error('Anexo sem cópia local verificável; URL externa bloqueia exportação.')
-  }
-  if (!isAbsolute(publicRoot)) throw new Error('Raiz pública deve ser absoluta.')
-  const root = await realpath(publicRoot)
-  if (!(await lstat(publicRoot)).isDirectory()) throw new Error('Raiz pública inválida.')
-  let relative: string
-  try { relative = decodeURIComponent(url.slice(1)) } catch { throw new Error('URL de anexo inválida.') }
-  const parts = relative.split('/')
-  if (!parts.length || parts.some((part) => !part || part === '.' || part === '..' || part.includes('\\'))) {
-    throw new Error('Caminho de anexo inválido.')
-  }
-  if (parts.length < 3 || parts[0] !== 'tenants' || parts[1] !== tenantId) {
-    throw new Error('Anexo fora do espaço de arquivos desta Câmara.')
-  }
-  let path = root
-  for (const part of parts) {
-    path = join(path, part)
-    if ((await lstat(path)).isSymbolicLink()) throw new Error('Symlink proibido no anexo.')
-  }
-  const resolved = await realpath(path)
-  const leaf = await lstat(path)
-  if (!resolved.startsWith(root + sep) || !leaf.isFile()) throw new Error('Anexo fora da raiz pública.')
-  if (leaf.size === 0 || leaf.size > MAX_ATTACHMENT_BYTES) throw new Error('Tamanho de anexo fora do limite do exportador inicial.')
-  const content = await readFile(path)
-  if (content.length !== leaf.size) throw new Error('Anexo mudou durante a leitura.')
-  return content
-}
-
 export type SessionTransferCandidate = {
   manifest: TransferManifestV1
   bytesById: Map<string, Uint8Array>
@@ -65,7 +33,6 @@ export type SessionTransferCandidate = {
 export async function buildSessionTransferCandidate(args: {
   tenantId: string
   sessionId: string
-  publicRoot: string
 }): Promise<SessionTransferCandidate> {
   return db.$transaction(async (tx) => {
     const session = await tx.session.findFirst({ where: { id: args.sessionId, tenantId: args.tenantId } })
@@ -104,30 +71,43 @@ export async function buildSessionTransferCandidate(args: {
         mimeType: document.mimeType, sizeBytes: document.sizeBytes, sha256: document.sha256 })
     }
 
+    if (!revision.matterManifestJson) throw new Error('Revisão legada sem snapshot de matérias; publique nova revisão antes da preparação local.')
+    const frozen = jsonObject(revision.matterManifestJson, 'Snapshot de matérias') as unknown as MatterManifest
+    if (frozen.version !== 1 || !Array.isArray(frozen.matters) || !Array.isArray(frozen.unavailableAttachmentIds)) {
+      throw new Error('Snapshot de matérias inválido.')
+    }
+    if (frozen.unavailableAttachmentIds.length) throw new Error('Revisão possui anexo sem bytes verificáveis; publique nova revisão após materialização.')
     const matterIds = [...new Set(agenda.map((item) => item.matterId).filter((id): id is string => typeof id === 'string' && id.length > 0))]
-    const matters = await tx.legislativeMatter.findMany({ where: { tenantId: args.tenantId, id: { in: matterIds } },
-      include: { versions: { orderBy: { version: 'desc' }, take: 1 }, attachments: { orderBy: { id: 'asc' } } } })
-    if (matters.length !== matterIds.length) throw new Error('Matéria da pauta ausente nesta Câmara.')
-    const mattersById = new Map(matters.map((matter) => [matter.id, matter]))
+    if (frozen.matters.length !== matterIds.length || frozen.matters.some((item, index) => item.matterId !== matterIds[index])) {
+      throw new Error('Snapshot de matérias diverge da pauta publicada.')
+    }
+    const frozenArtifacts = await tx.sessionMatterArtifact.findMany({ where: { tenantId: args.tenantId, revisionId: revision.id } })
+    const artifactsByAttachmentId = new Map(frozenArtifacts.map((item) => [item.attachmentId, item]))
     const matterSnapshot: TransferManifestV1['matterSnapshot'] = []
-    for (const matterId of matterIds) {
-      const matter = mattersById.get(matterId)!
-      const authors: unknown = JSON.parse(matter.authors)
-      if (!Array.isArray(authors) || authors.some((author) => typeof author !== 'string')) throw new Error('Autores da matéria inválidos.')
-      if (matter.versions.length === 0 && matter.attachments.length === 0) throw new Error('Matéria sem texto ou anexo integral para uso local.')
-      matterSnapshot.push({ matterId, type: matter.type, number: matter.number, year: matter.year,
-        ementa: matter.ementa, authors, latestVersion: matter.versions[0]?.version ?? null,
-        latestText: matter.versions[0]?.text ?? null })
-      for (const attachment of matter.attachments) {
-        const content = await localAttachmentBytes(attachment.url, args.publicRoot, args.tenantId)
-        if (content.byteLength !== attachment.sizeBytes) throw new Error('Anexo diverge do tamanho cadastrado.')
-        const id = `matter-attachment:${attachment.id}`
-        bytesById.set(id, content)
-        artifacts.push({ id, source: 'matter_attachment', sourceId: attachment.id,
-          name: attachment.name, mimeType: 'application/octet-stream',
-          sizeBytes: content.byteLength, sha256: sha256(content) })
+    const referencedAttachmentIds = new Set<string>()
+    for (const matter of frozen.matters) {
+      if (!matter || !Array.isArray(matter.authors) || matter.authors.some((author) => typeof author !== 'string') ||
+          !Array.isArray(matter.attachmentIds) || matter.attachmentIds.some((id) => typeof id !== 'string')) {
+        throw new Error('Snapshot de matéria inválido.')
+      }
+      if (matter.latestText === null && matter.attachmentIds.length === 0) throw new Error('Matéria sem texto ou anexo integral para uso local.')
+      matterSnapshot.push({ matterId: matter.matterId, type: matter.type, number: matter.number, year: matter.year,
+        ementa: matter.ementa, authors: matter.authors, latestVersion: matter.latestVersion, latestText: matter.latestText })
+      for (const attachmentId of matter.attachmentIds) {
+        if (referencedAttachmentIds.has(attachmentId)) throw new Error('Anexo repetido no snapshot.')
+        referencedAttachmentIds.add(attachmentId)
+        const attachment = artifactsByAttachmentId.get(attachmentId)
+        if (!attachment || attachment.content.length !== attachment.sizeBytes || sha256(attachment.content) !== attachment.sha256) {
+          throw new Error('Anexo congelado ausente ou com hash divergente.')
+        }
+        const id = `matter-attachment:${attachmentId}`
+        bytesById.set(id, attachment.content)
+        artifacts.push({ id, source: 'matter_attachment', sourceId: attachmentId,
+          name: attachment.name, mimeType: attachment.mimeType,
+          sizeBytes: attachment.sizeBytes, sha256: attachment.sha256 })
       }
     }
+    if (referencedAttachmentIds.size !== frozenArtifacts.length) throw new Error('Snapshot contém anexo extra.')
 
     const tenant = await tx.tenant.findUnique({ where: { id: args.tenantId } })
     if (!tenant) throw new Error('Câmara ausente.')

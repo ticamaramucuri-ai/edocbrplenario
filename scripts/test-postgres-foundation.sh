@@ -34,6 +34,7 @@ source = Path(sys.argv[1]).read_text()
 source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S)
+source = re.sub(r'\nmodel SessionMatterArtifact \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel MediaPublicObservation \{.*?\n\}\n', '\n', source, flags=re.S)
@@ -46,7 +47,7 @@ for model, fields, indexes in [
                 'contactOmbudsmanPhone', 'contactGeneralEmail', 'contactProtocolEmail', 'contactOmbudsmanEmail',
                 'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState'], []),
-    ('SessionAgendaRevision', ['documentManifestJson'], []),
+    ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'matterArtifacts'], []),
     ('AttendanceEvent', ['commandId'], []),
     ('Voting', ['symbolicTallies'], []),
     ('Publication', ['reviewHash', 'reviewedById', 'reviewedByName', 'reviewedAt', 'reviewReference', 'publishedContentSha256', 'activeAtaSessionKey'], []),
