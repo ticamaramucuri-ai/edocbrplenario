@@ -35,6 +35,15 @@ test('CLI inicializa, vincula e confia sem expor segredo na saída', async () =>
     expect(status.exitCode).toBe(0)
     expect(JSON.parse(new TextDecoder().decode(status.stdout))).toEqual({ tenantId: 'camara-a', sessions: [] })
     if (process.platform === 'linux') {
+      const executable = join(parent, 'edocbr-local-server')
+      const build = Bun.spawnSync(['bash', 'scripts/build-local-server-linux.sh', executable],
+        { cwd: process.cwd(), stdout: 'pipe', stderr: 'pipe' })
+      expect(build.exitCode).toBe(0)
+      const compiledStatus = Bun.spawnSync([executable, 'status', root],
+        { stdin: Buffer.from(`${passphrase}\n`), cwd: process.cwd(), stdout: 'pipe', stderr: 'pipe' })
+      expect(compiledStatus.exitCode).toBe(0)
+      expect(JSON.parse(new TextDecoder().decode(compiledStatus.stdout)))
+        .toEqual({ tenantId: 'camara-a', sessions: [] })
       const credentialPath = join(parent, 'local-service-credential')
       await writeFile(credentialPath, passphrase, { mode: 0o600 })
       const service = Bun.spawn(['bun', 'scripts/local-server.ts', 'run-credential', root,
