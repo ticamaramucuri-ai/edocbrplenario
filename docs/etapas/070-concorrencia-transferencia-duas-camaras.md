@@ -18,7 +18,7 @@ Uma segunda execução passou após acrescentar duas requisições simultâneas 
 
 Os primeiros runs hospedados do PR #41 foram recusados antes de executar jobs; a anotação do GitHub apontou cobrança ou limite da conta. O [run 42691450324](https://github.com/e-docBR/edocBRplenario/actions/runs/42691450324) executou no runner próprio `edocbr-ci-vm` dentro de VM Ubuntu 24.04 na estação de desenvolvimento. `media-smoke` e `postgres-foundation` passaram; `application` passou na terceira tentativa, após instalar `unzip` e Docker Compose v2 no convidado. Os três checks ficaram `SUCCESS` no mesmo SHA de código `1399c22`. O job `application` incluiu lint, tipos, testes, build, recuperação HTTP e acessibilidade com Chromium.
 
-O runner é registrado como efêmero por job e o diretório de trabalho é limpo antes do próximo. A VM usa Docker próprio, sem socket ou volumes do host e sem credenciais de produção. O computador precisa estar ligado para executar a CI; ainda falta automatizar o ciclo de vida da VM e provar uma imagem limpa reproduzível. A documentação deste parágrafo será revalidada pela CI do commit que a inclui.
+O runner é registrado como efêmero por job e o diretório de trabalho é limpo antes do próximo. A VM usa Docker próprio, sem socket ou volumes do host e sem credenciais de produção. O computador precisa estar ligado para executar a CI; ainda falta automatizar o ciclo de vida da VM e provar uma imagem limpa reproduzível. Uma execução posterior da CI nessa VM mostrou que o limite padrão de 5 segundos do teste de 21 votos e 40 leituras pode expirar sob carga, embora não seja um SLO. O teste recebeu prazo explícito de 30 segundos e preserva todas as verificações funcionais. Consultar os checks do SHA atual antes do merge.
 
 ## Limites e próxima etapa
 

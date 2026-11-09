@@ -56,4 +56,4 @@ test('21 vereadores votam e 40 consultas públicas simultâneas veem o mesmo res
   console.log(JSON.stringify({ capacityEvidence: { parliamentarians: 21, concurrentVotes: 21, publicReads: 40,
     votingBatchMs: Math.round(votingBatchMs), voteP95Ms: Math.round(sorted[Math.ceil(sorted.length * 0.95) - 1]),
     publicReadBatchMs: Math.round(performance.now() - publicStart), environment: 'direct route handlers, disposable database' } }))
-})
+}, 30_000)
