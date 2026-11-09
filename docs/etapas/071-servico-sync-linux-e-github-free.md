@@ -8,6 +8,8 @@ O comando `run-credential <raiz> <arquivo-absoluto> [intervalo]` lê a frase do 
 
 `bash scripts/build-local-server-linux.sh` gera um executável Linux x64 autocontido em `dist/local-server/edocbr-local-server` e um arquivo `.sha256`, com carregamento automático de `.env` e `bunfig.toml` desativado. A unidade systemd aponta para o binário em `/opt/edocbr-plenario/bin/edocbr-local-server`, cujo provisionamento ainda depende de instalador. O hash deve ser associado à release e verificado no host de destino; não transportar a identidade privada junto ao binário.
 
+`bash scripts/build-local-server-windows.sh` também gerou um executável PE32+ x64 de aproximadamente 83 MiB por compilação cruzada no Linux. A compilação **não comprova execução no Windows**: serviço do sistema, ACL, credencial automática, instalador e testes em host Windows permanecem pendentes.
+
 O comando `status <raiz>` lê o acervo **sem rede**, verifica assinatura e todos os bytes da revisão importada antes de marcar cada sessão como `ready`. Arquivo alterado resulta em `corrupt`; trava de importação, estágio temporário ou revisão nova órfã resulta em `incomplete`, mesmo quando uma revisão anterior continua íntegra. Ambos retornam código de saída 2. O inventário só lê a Câmara vinculada ao dispositivo. Este status de preparação não concede autoridade para abrir sessão nem executar votação offline.
 
 A CI ficou restrita a PR e `main`, com cancelamento de execuções substituídas, e a sonda pública passou a cada hora. A razão, os limites e a alternativa de runner próprio estão em [Operação GitHub Free](../OPERACAO-GITHUB-FREE.md). O PR #41 permanece sem merge por bloqueio de cobrança/limite no GitHub; esse impedimento não autoriza promover código sem CI.
