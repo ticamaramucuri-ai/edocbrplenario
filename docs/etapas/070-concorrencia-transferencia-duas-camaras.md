@@ -14,6 +14,8 @@ Arquivos: `src/lib/server/local-device-identity.ts`, `scripts/measure-transfer-c
 
 As medições são de uma execução em máquina local, com PostgreSQL descartável e chamadas diretas aos handlers. Incluem o runtime de testes e os dados em memória; **não** representam SLO, capacidade de VPS, throughput HTTP/TLS nem PDFs reais. A falha `P2034` apareceu no log antes da repetição bem-sucedida e permanece observável. Não houve dados institucionais.
 
+Uma segunda execução passou após acrescentar duas requisições simultâneas com **o mesmo nonce**: uma retornou 200 com hash correto e a outra 409. Nessa execução, emissão: **519 ms**; quatro GETs: **399 ms**; RSS inicial **812 MiB**, pico amostrado **1.085 MiB**. A diferença de memória entre execuções mostra que estes números não servem como limite de dimensionamento; medir o processo HTTP isolado e o banco sob carga representativa antes de definir capacidade por VPS.
+
 O [run de PR #41](https://github.com/e-docBR/edocBRplenario/actions/runs/42671383557) terminou em falha duas vezes, ambas **antes de criar qualquer job** (`jobs.total_count = 0`). O workflow `ci.yml` está ativo, sem diferença em relação à `main`, e as Actions estão habilitadas no repositório. A API não expôs motivo mais específico. Não há resultado de CI para este commit; não mesclar nem promover com base apenas no ensaio local.
 
 ## Limites e próxima etapa

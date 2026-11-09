@@ -125,11 +125,18 @@ async function main() {
     const alienResponse = await downloadArtifact(request(alien.item, alienPath, fixtures[1].tenantId),
       { params: Promise.resolve({ id: alien.item.sessionId, artifactId: alienArtifact.id }) })
     assert.equal(alienResponse.status, 401)
+    const replayRequest = request(alien.item, alienPath)
+    const replayResponses = await Promise.all([1, 2].map(() => downloadArtifact(replayRequest,
+      { params: Promise.resolve({ id: alien.item.sessionId, artifactId: alienArtifact.id }) })))
+    assert.deepEqual(replayResponses.map((response) => response.status).sort(), [200, 409])
+    const acceptedReplay = replayResponses.find((response) => response.status === 200)!
+    assert.equal(hash(Buffer.from(await acceptedReplay.arrayBuffer())), alien.item.expected.get(alienArtifact.id))
     console.log(JSON.stringify({ transferCapacityEvidence: { tenants: fixtures.length,
       artifacts: downloads.length, bytes: fixtures.length * sizes.reduce((sum, size) => sum + size, 0),
       issuedMs, downloadsMs, maxArtifactMs: Math.max(...perArtifactMs),
       baselineRssMiB: Math.round(baselineRss / 1048576),
       sampledPeakRssMiB: Math.round(peakRss / 1048576),
+      concurrentReplayStatuses: replayResponses.map((response) => response.status).sort(),
       environment: 'disposable local PostgreSQL; direct route handlers; synthetic PDFs' } }))
   } finally { clearInterval(sampler) }
 }
