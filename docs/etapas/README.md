@@ -117,6 +117,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [069 — Leitura seletiva e limite](069-leitura-seletiva-quota-transferencia.md) | Incremento local ensaiado | Um arquivo por GET e limite de pacote por plano SaaS | Carga representativa, quota agregada, instalador e autoridade local |
 | [070 — Concorrência de duas Câmaras](070-concorrencia-transferencia-duas-camaras.md) | CI em runner próprio aprovada | Quatro PDFs sintéticos concorrentes, hashes/isolamento e repetição de conflito de nonce | HTTP/TLS na VPS, quota agregada, instalador e autoridade local |
 | [071 — Serviço Linux e GitHub Free](071-servico-sync-linux-e-github-free.md) | Incremento local ensaiado | Credencial de serviço sem terminal e CI ajustada à franquia | Instalação Linux/Windows e CI do incremento |
+| [072 — Diário local de eventos](072-diario-eventos-local.md) | Incremento interno em ensaio | SQLite WAL, sequência, dedupe, assinatura e conferência na inicialização | Autoridade única, comandos de domínio, ACK e falha real |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

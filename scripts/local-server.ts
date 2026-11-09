@@ -5,8 +5,9 @@ import { initializeLocalDevice, enrollLocalDevice, trustLocalTransferKey, loadLo
 import { synchronizePreparedSessions } from '../src/lib/local-session-discovery'
 import { readLocalServiceCredential } from '../src/lib/local-service-credential'
 import { inspectLocalPreparations } from '../src/lib/local-preparation-status'
+import { openLocalEventJournal } from '../src/lib/local-event-journal'
 
-const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | status <raiz> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos]'
+const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | status <raiz> | journal-verify <raiz> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos]'
 
 async function readSecret(): Promise<string> {
   if (!process.stdin.isTTY) {
@@ -57,6 +58,14 @@ async function syncOnce(root: string, passphrase: string, signal?: AbortSignal):
     skipped: result.skipped, failed: result.failed })
 }
 
+async function verifyJournal(root: string, passphrase: string): Promise<{ tenantId: string; deviceId: string }> {
+  const { config, privateKey } = await loadLocalDevice({ root, passphrase })
+  const journal = openLocalEventJournal({ root, tenantId: config.tenantId,
+    deviceId: config.deviceId!, privateKey })
+  try { journal.verify() } finally { journal.close() }
+  return { tenantId: config.tenantId, deviceId: config.deviceId! }
+}
+
 async function waitInterval(ms: number, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return
   await new Promise<void>((resolveWait) => {
@@ -92,7 +101,7 @@ async function main(): Promise<void> {
     emit({ keyId: arg1, publicKeySpkiSha256: fingerprint })
     return
   }
-  if (command !== 'status' && command !== 'sync' && command !== 'run' && command !== 'run-credential') throw new Error(usage)
+  if (command !== 'status' && command !== 'journal-verify' && command !== 'sync' && command !== 'run' && command !== 'run-credential') throw new Error(usage)
   if (command === 'run-credential' && !arg1) throw new Error(usage)
   const passphrase = command === 'run-credential' ? await readLocalServiceCredential(arg1!) : await readSecret()
   if (command === 'status') {
@@ -102,6 +111,11 @@ async function main(): Promise<void> {
     if (sessions.some((session) => session.state !== 'ready')) process.exitCode = 2
     return
   }
+  if (command === 'journal-verify') {
+    emit({ ...await verifyJournal(root, passphrase), verified: true })
+    return
+  }
+  await verifyJournal(root, passphrase)
   if (command === 'sync') { await syncOnce(root, passphrase); return }
   const interval = command === 'run-credential' ? arg2 : arg1
   const seconds = interval === undefined ? 60 : Number(interval)

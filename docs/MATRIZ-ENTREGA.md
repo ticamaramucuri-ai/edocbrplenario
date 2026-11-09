@@ -27,6 +27,8 @@
 
 **Atualização P5 em 09/11/2026:** o [incremento 071](etapas/071-servico-sync-linux-e-github-free.md) acrescentou inicialização do processo Linux por credencial protegida, inventário offline que só informa `ready` após conferir assinatura e todos os bytes, executável Linux exercitado e `.exe` Windows gerado por compilação cruzada. O serviço permanece sem instalador e sem teste em hardware piloto; Windows não foi executado; API LAN e autoridade de sessão continuam ausentes. O PR #42 ainda precisa passar na CI do runner próprio.
 
+**Atualização P4/P6 em 09/11/2026:** o [diário local](etapas/072-diario-eventos-local.md) em ensaio grava sequência por sessão, deduplica `commandId` e verifica hash e assinatura após reinício. O diário ainda não executa presença/voto nem recebe concessão de autoridade do SaaS; P6 permanece aberto.
+
 1. Antes de alterar “estado”, abrir a implementação e a prova vinculada; registrar SHA e ambiente no arquivo de etapa. CI verde sem ensaio não vira homologação.
 2. Acrescentar casos negativos entre dois tenants e por papel ao modificar regra, mídia, documento ou sincronização.
 3. Se um gate depender de regimento, usuário, equipamento, destino de backup ou conta social, manter “pendente” até evidência da parte responsável. Não preencher campos oficiais com valores inferidos.

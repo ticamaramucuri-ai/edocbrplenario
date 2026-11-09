@@ -34,6 +34,10 @@ test('CLI inicializa, vincula e confia sem expor segredo na saída', async () =>
     const status = run(['status', root], `${passphrase}\n`)
     expect(status.exitCode).toBe(0)
     expect(JSON.parse(new TextDecoder().decode(status.stdout))).toEqual({ tenantId: 'camara-a', sessions: [] })
+    const journal = run(['journal-verify', root], `${passphrase}\n`)
+    expect(journal.exitCode).toBe(0)
+    expect(JSON.parse(new TextDecoder().decode(journal.stdout)))
+      .toEqual({ tenantId: 'camara-a', deviceId: 'device-1', verified: true })
     if (process.platform === 'linux') {
       const executable = join(parent, 'edocbr-local-server')
       const build = Bun.spawnSync(['bash', 'scripts/build-local-server-linux.sh', executable],
@@ -44,6 +48,10 @@ test('CLI inicializa, vincula e confia sem expor segredo na saída', async () =>
       expect(compiledStatus.exitCode).toBe(0)
       expect(JSON.parse(new TextDecoder().decode(compiledStatus.stdout)))
         .toEqual({ tenantId: 'camara-a', sessions: [] })
+      const compiledJournal = Bun.spawnSync([executable, 'journal-verify', root],
+        { stdin: Buffer.from(`${passphrase}\n`), cwd: process.cwd(), stdout: 'pipe', stderr: 'pipe' })
+      expect(compiledJournal.exitCode).toBe(0)
+      expect(JSON.parse(new TextDecoder().decode(compiledJournal.stdout)).verified).toBe(true)
       const credentialPath = join(parent, 'local-service-credential')
       await writeFile(credentialPath, passphrase, { mode: 0o600 })
       const service = Bun.spawn(['bun', 'scripts/local-server.ts', 'run-credential', root,
