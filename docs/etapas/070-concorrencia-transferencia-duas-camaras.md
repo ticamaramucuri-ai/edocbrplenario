@@ -18,6 +18,8 @@ Uma segunda execução passou após acrescentar duas requisições simultâneas 
 
 O [run de PR #41](https://github.com/e-docBR/edocBRplenario/actions/runs/42671383557) terminou em falha duas vezes, ambas **antes de criar qualquer job** (`jobs.total_count = 0`). O workflow `ci.yml` está ativo, sem diferença em relação à `main`, e as Actions estão habilitadas no repositório. A API não expôs motivo mais específico. Não há resultado de CI para este commit; não mesclar nem promover com base apenas no ensaio local.
 
+O [run posterior do mesmo PR](https://github.com/e-docBR/edocBRplenario/actions/runs/42672974129) finalmente exibiu a anotação do GitHub: *“The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings.”* A causa está na cobrança/limite da conta GitHub, fora do código; a anotação não informa qual das duas condições ocorreu. Regularizar Billing & plans e repetir a CI antes do merge e da promoção.
+
 ## Limites e próxima etapa
 
 P4 continua aberto. Falta medir HTTP real na VPS com volumes e concorrência definidos, quota agregada por Câmara, armazenamento e alertas; testar falha/reinício durante importação; preparar o serviço local supervisionado Windows/Linux (P5). A implantação de produção depende de backup durável, metas RTO/RPO e aceites institucionais; este ensaio não libera o piloto.
