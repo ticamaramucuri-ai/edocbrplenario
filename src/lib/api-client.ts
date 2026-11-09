@@ -639,6 +639,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  uploadMatterAttachment: async (matterId: string, data: { name: string; kind: string; file: File }) => {
+    const form = new FormData()
+    form.set('name', data.name)
+    form.set('kind', data.kind)
+    form.set('file', data.file)
+    const headers = new Headers()
+    const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+    if (actorId) headers.set('x-actor-id', actorId)
+    const response = await fetch(`${BASE}/matters/${encodeURIComponent(matterId)}/attachments`,
+      { method: 'POST', headers, body: form })
+    const result = await response.json()
+    if (!response.ok) throw new ApiRequestError(result as ApiError)
+    return result as { attachment: MatterAttachmentView }
+  },
+  downloadMatterAttachment: async (matterId: string, attachmentId: string) => {
+    const headers = new Headers()
+    const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+    if (actorId) headers.set('x-actor-id', actorId)
+    const response = await fetch(`${BASE}/matters/${encodeURIComponent(matterId)}/attachments/${encodeURIComponent(attachmentId)}/file`, { headers })
+    if (!response.ok) throw new ApiRequestError(await response.json() as ApiError)
+    return response.blob()
+  },
 
   listTasks: (filters?: { status?: string; overdue?: boolean }) => {
     const params = new URLSearchParams()

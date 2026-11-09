@@ -1162,6 +1162,9 @@ model MatterAttachment {
   kind      String   @default("anexo") // texto_integral|anexo|parecer|emenda|outro
   sizeBytes Int      @default(0)
   url       String?
+  mimeType  String?
+  sha256    String?
+  content   Bytes?
   createdAt DateTime @default(now())
 
   matter LegislativeMatter @relation(fields: [matterId], references: [id])

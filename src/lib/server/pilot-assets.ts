@@ -3,6 +3,7 @@ import { lstat } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
 import type { Prisma } from '@prisma/client'
 import { isTenantImageUrl, parliamentarianImageRoot } from './parliamentarian-images'
+import { verifyPrivateMatterAttachment } from './matter-attachment-private'
 
 type Reader = Prisma.TransactionClient
 type Roots = { images?: string; public?: string }
@@ -33,7 +34,8 @@ export async function inspectTenantAssetReferences(db: Reader, tenantId: string,
   const [members, parties, attachments] = await Promise.all([
     db.parliamentarian.findMany({ where: { tenantId }, select: { photoUrl: true, partyEmblemUrl: true } }),
     db.party.findMany({ where: { tenantId }, select: { emblemUrl: true } }),
-    db.matterAttachment.findMany({ where: { matter: { tenantId } }, select: { url: true, sizeBytes: true } }),
+    db.matterAttachment.findMany({ where: { matter: { tenantId } },
+      select: { url: true, sizeBytes: true, content: true, sha256: true, mimeType: true } }),
   ])
   const imageUrls = new Set([
     ...members.flatMap((person) => [person.photoUrl, person.partyEmblemUrl]),
@@ -55,6 +57,10 @@ export async function inspectTenantAssetReferences(db: Reader, tenantId: string,
   let documentsLocal = 0
   const publicRoot = roots.public ?? join(process.cwd(), 'public')
   for (const attachment of attachments) {
+    if (attachment.content !== null || attachment.sha256 !== null) {
+      try { verifyPrivateMatterAttachment(attachment); documentsLocal++ } catch { documentsInvalid++ }
+      continue
+    }
     const url = attachment.url
     if (!url) continue // metadado sem referência; tratado pelo fluxo documental
     if (/^https?:\/\//i.test(url)) { documentsRemote++; continue }
