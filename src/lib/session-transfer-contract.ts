@@ -104,6 +104,36 @@ function assertArtifacts(manifest: TransferManifestV1, bytesById: ReadonlyMap<st
   }
 }
 
+/** Verify origin and scope before accepting any separately downloaded artifact. */
+export function verifySignedTransferManifest(args: {
+  manifest: TransferManifestV1
+  signature: TransferSignatureV1
+  expectedTenantId: string
+  expectedSessionId: string
+  expectedRevisionId?: string
+  minimumRevisionNumber: number
+  trustedKeys: ReadonlyMap<string, KeyObject>
+}): TransferManifestV1 {
+  const valid = assertManifest(args.manifest)
+  if (valid.tenantId !== args.expectedTenantId || valid.sessionId !== args.expectedSessionId) {
+    throw new Error('Manifesto pertence a outra Câmara ou sessão.')
+  }
+  if (args.expectedRevisionId && valid.revisionId !== args.expectedRevisionId) {
+    throw new Error('Manifesto pertence a outra revisão.')
+  }
+  if (valid.revisionNumber < args.minimumRevisionNumber) throw new Error('Revisão antiga não pode substituir a preparada.')
+  const trustedKey = args.trustedKeys.get(args.signature.keyId)
+  if (args.signature.algorithm !== 'Ed25519' || !trustedKey ||
+      trustedKey.asymmetricKeyType !== 'ed25519' || trustedKey.type !== 'public') {
+    throw new Error('Assinatura sem chave confiável.')
+  }
+  const signature = Buffer.from(args.signature.valueBase64, 'base64')
+  if (signature.length !== 64 || !verifyBytes(null, signedBytes(valid), trustedKey, signature)) {
+    throw new Error('Assinatura do manifesto inválida.')
+  }
+  return valid
+}
+
 export function signPreparedPackage(
   manifest: TransferManifestV1,
   bytesById: ReadonlyMap<string, Uint8Array>,
@@ -128,22 +158,7 @@ export function verifyPreparedPackage(args: {
   minimumRevisionNumber: number
   trustedKeys: ReadonlyMap<string, KeyObject>
 }): TransferManifestV1 {
-  const valid = assertManifest(args.manifest)
-  if (valid.tenantId !== args.expectedTenantId || valid.sessionId !== args.expectedSessionId) {
-    throw new Error('Pacote pertence a outra Câmara ou sessão.')
-  }
-  if (args.expectedRevisionId && valid.revisionId !== args.expectedRevisionId) {
-    throw new Error('Pacote pertence a outra revisão.')
-  }
-  if (valid.revisionNumber < args.minimumRevisionNumber) throw new Error('Revisão antiga não pode substituir a preparada.')
-  const trustedKey = args.trustedKeys.get(args.signature.keyId)
-  if (args.signature.algorithm !== 'Ed25519' || !trustedKey || trustedKey.asymmetricKeyType !== 'ed25519' || trustedKey.type !== 'public') {
-    throw new Error('Assinatura sem chave confiável.')
-  }
-  const signature = Buffer.from(args.signature.valueBase64, 'base64')
-  if (signature.length !== 64 || !verifyBytes(null, signedBytes(valid), trustedKey, signature)) {
-    throw new Error('Assinatura do manifesto inválida.')
-  }
+  const valid = verifySignedTransferManifest(args)
   assertArtifacts(valid, args.bytesById)
   return valid
 }

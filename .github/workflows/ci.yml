@@ -30,6 +30,7 @@ jobs:
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-server-cli.test.ts
       - run: bash scripts/test-local-device-identity.sh
       - run: bash scripts/test-session-transfer-export.sh
+      - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-session-transfer-cache.test.ts
       - run: bash scripts/test-matter-attachment-private.sh
       - run: bun run test:clean:test-tenants
       - run: bun run test:bootstrap:empty-tenant

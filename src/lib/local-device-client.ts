@@ -1,9 +1,11 @@
 /** Download and atomically prepare one session on a chamber's designated server. */
-import { type KeyObject } from 'node:crypto'
+import { createHash, type KeyObject } from 'node:crypto'
 import { z } from 'zod'
 import { signedLocalDeviceGet, signedLocalDevicePost } from './local-device-http'
 import { importPreparedPackage, readPreparedPackage, type PreparedRevision } from './local-session-package-store'
-import { readTransferPackage } from './session-transfer-wire'
+import { cacheTransferArtifact, clearTransferCache, readCachedTransferArtifact } from './local-session-transfer-cache'
+import { canonicalManifest, transferManifestV1Schema, verifySignedTransferManifest,
+  type TransferSignatureV1 } from './session-transfer-contract'
 
 type ClientArgs = {
   baseUrl: string
@@ -21,6 +23,50 @@ const artifactSchema = z.object({ id: z.string(), sha256: z.string(), sizeBytes:
 const statusSchema = z.object({ issueId: z.string().min(1), revisionId: z.string().min(1),
   revisionNumber: z.number().int().positive(), manifestSha256: z.string().regex(/^[0-9a-f]{64}$/),
   artifacts: z.array(artifactSchema), acknowledgedAt: z.string().nullable() }).strict()
+const issuedManifestSchema = z.object({ issueId: z.string().min(1).max(200),
+  manifest: transferManifestV1Schema,
+  signature: z.object({ algorithm: z.literal('Ed25519'), keyId: z.string().min(1),
+    valueBase64: z.string().min(1) }).strict() }).strict()
+
+async function boundedJson(response: Response, maxBytes: number): Promise<unknown> {
+  if (!response.body) throw new Error('Resposta de manifesto sem corpo.')
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const item = await reader.read()
+      if (item.done) break
+      total += item.value.byteLength
+      if (total > maxBytes) throw new Error('Manifesto excede o limite de leitura.')
+      chunks.push(item.value)
+    }
+    return JSON.parse(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), total).toString('utf8')) as unknown
+  } finally { await reader.cancel().catch(() => undefined) }
+}
+
+async function boundedArtifact(response: Response, size: number): Promise<Uint8Array> {
+  if (!response.body || !Number.isSafeInteger(size) || size < 0 || size > 50 * 1024 * 1024) {
+    throw new Error('Resposta de artefato ausente ou fora do limite.')
+  }
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const item = await reader.read()
+      if (item.done) break
+      total += item.value.byteLength
+      if (total > size) throw new Error('Artefato recebido excede o tamanho assinado.')
+      chunks.push(item.value)
+    }
+    if (total !== size) throw new Error('Artefato recebido está truncado.')
+    const bytes = new Uint8Array(total)
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+    return bytes
+  } finally { await reader.cancel().catch(() => undefined) }
+}
 
 function artifactReceipt(artifacts: Array<{ id: string; sha256: string; sizeBytes: number }>) {
   return artifacts.map((item) => ({ id: item.id, sha256: item.sha256, sizeBytes: item.sizeBytes }))
@@ -73,23 +119,51 @@ export async function downloadAndPrepareSession(args: ClientArgs): Promise<Prepa
   }
   const { url, init } = signedLocalDeviceGet({ baseUrl: args.baseUrl, tenantId: args.tenantId,
     deviceId: args.deviceId, privateKey: args.privateKey,
-    pathAndQuery: `/api/v1/sessions/${encodeURIComponent(args.sessionId)}/transfer` })
+    pathAndQuery: `/api/v1/sessions/${encodeURIComponent(args.sessionId)}/transfer-manifest` })
   const fetcher = args.fetchImpl ?? fetch
   const response = await fetcher(url, { ...init, signal: args.signal })
-  if (!response.ok) throw new Error(`Transferência da sessão recusada pelo SaaS (HTTP ${response.status}).`)
-  if (response.headers.get('content-type')?.split(';')[0] !== 'application/vnd.edocbr.session-transfer.v1' || !response.body) {
-    throw new Error('Resposta de transferência sem formato ou corpo esperado.')
+  if (!response.ok) throw new Error(`Manifesto da sessão recusado pelo SaaS (HTTP ${response.status}).`)
+  if (response.headers.get('content-type')?.split(';')[0] !== 'application/json') {
+    throw new Error('Resposta de manifesto em formato inválido.')
   }
-  const issueId = response.headers.get('x-edocbr-transfer-issue-id')
-  if (!issueId) throw new Error('Emissão de pacote sem identificador de confirmação.')
-  const wire = await readTransferPackage(response.body)
-  const prepared = await importPreparedPackage({ ...wire, root: args.localRoot, expectedTenantId: args.tenantId,
+  const issued = issuedManifestSchema.parse(await boundedJson(response, 2 * 1024 * 1024))
+  const manifest = verifySignedTransferManifest({ manifest: issued.manifest,
+    signature: issued.signature as TransferSignatureV1,
+    expectedTenantId: args.tenantId, expectedSessionId: args.sessionId,
+    minimumRevisionNumber: 0, trustedKeys: args.trustedKeys })
+  if (manifest.artifacts.length > 500 || manifest.artifacts.reduce((sum, item) => sum + item.sizeBytes, 0) > 512 * 1024 * 1024) {
+    throw new Error('Manifesto excede os limites da transferência local.')
+  }
+  const manifestSha256 = createHash('sha256').update(canonicalManifest(manifest)).digest('hex')
+  const bytesById = new Map<string, Uint8Array>()
+  for (const artifact of manifest.artifacts) {
+    let bytes = await readCachedTransferArtifact({ root: args.localRoot, tenantId: args.tenantId,
+      sessionId: args.sessionId, manifestSha256, artifact })
+    if (!bytes) {
+      const pathAndQuery = `/api/v1/sessions/${encodeURIComponent(args.sessionId)}` +
+        `/transfer-artifacts/${encodeURIComponent(artifact.id)}?issueId=${encodeURIComponent(issued.issueId)}`
+      const request = signedLocalDeviceGet({ baseUrl: args.baseUrl, tenantId: args.tenantId,
+        deviceId: args.deviceId, privateKey: args.privateKey, pathAndQuery })
+      const artifactResponse = await fetcher(request.url, { ...request.init, signal: args.signal })
+      if (!artifactResponse.ok) throw new Error(`Artefato da sessão recusado pelo SaaS (HTTP ${artifactResponse.status}).`)
+      if (artifactResponse.headers.get('content-type')?.split(';')[0] !== 'application/octet-stream') {
+        throw new Error('Resposta de artefato em formato inválido.')
+      }
+      bytes = await boundedArtifact(artifactResponse, artifact.sizeBytes)
+      await cacheTransferArtifact({ root: args.localRoot, tenantId: args.tenantId,
+        sessionId: args.sessionId, manifestSha256, artifact, bytes })
+    }
+    bytesById.set(artifact.id, bytes)
+  }
+  const prepared = await importPreparedPackage({ manifest, signature: issued.signature,
+    bytesById, root: args.localRoot, expectedTenantId: args.tenantId,
     expectedSessionId: args.sessionId, trustedKeys: args.trustedKeys })
   const verified = await readPreparedPackage({ root: args.localRoot, expectedTenantId: args.tenantId,
     expectedSessionId: args.sessionId, trustedKeys: args.trustedKeys })
   if (verified.prepared.manifestSha256 !== prepared.manifestSha256) {
     throw new Error('Revisão local mudou antes da confirmação.')
   }
-  await sendTransferAck(args, issueId, verified)
+  await clearTransferCache({ root: args.localRoot, tenantId: args.tenantId, sessionId: args.sessionId })
+  await sendTransferAck(args, issued.issueId, verified)
   return prepared
 }

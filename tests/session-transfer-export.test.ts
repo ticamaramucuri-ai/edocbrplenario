@@ -11,6 +11,8 @@ import { freezeTransferContext } from '@/lib/server/session-transfer-context'
 import { canonicalManifest, signPreparedPackage, verifyPreparedPackage } from '@/lib/session-transfer-contract'
 import { importPreparedPackage, readPreparedPackage } from '@/lib/local-session-package-store'
 import { GET as downloadTransfer } from '@/app/api/v1/sessions/[id]/transfer/route'
+import { GET as issueTransferManifest } from '@/app/api/v1/sessions/[id]/transfer-manifest/route'
+import { GET as downloadTransferArtifact } from '@/app/api/v1/sessions/[id]/transfer-artifacts/[artifactId]/route'
 import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
 import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signing'
 import { readTransferPackage } from '@/lib/session-transfer-wire'
@@ -113,6 +115,9 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
   expect(response.status).toBe(200)
   expect(response.headers.get('cache-control')).toContain('no-store')
   const wire = await readTransferPackage(response.body!)
+  expect((await issueTransferManifest(new NextRequest(`https://example.invalid/api/v1/sessions/${session.id}/transfer-manifest`), context)).status).toBe(401)
+  expect((await downloadTransferArtifact(new NextRequest(`https://example.invalid/api/v1/sessions/${session.id}/transfer-artifacts/${encodeURIComponent(candidate.manifest.artifacts[0].id)}?issueId=unknown`),
+    { params: Promise.resolve({ id: session.id, artifactId: candidate.manifest.artifacts[0].id }) })).status).toBe(401)
   const trustedKeys = new Map([[signing.active.keyId, (await import('node:crypto')).createPublicKey(signing.publicKeyPem)]])
   const wireLocalRoot = await mkdtemp(join(tmpdir(), 'edocbr-wire-import-'))
   try {
@@ -123,7 +128,9 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
   } finally { await rm(wireLocalRoot, { recursive: true, force: true }) }
   const clientRoot = await mkdtemp(join(tmpdir(), 'edocbr-client-import-'))
   let dropFirstAck = true
+  let secondArtifactFailures = 2
   let transferDownloads = 0
+  const artifactDownloads = new Map<string, number>()
   const routeFetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
     const request = new NextRequest(String(input), { method: init?.method, headers: init?.headers,
       body: init?.body as BodyInit | undefined })
@@ -134,6 +141,18 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
       if (dropFirstAck) { dropFirstAck = false; return new Response(null, { status: 503 }) }
       return acknowledgeTransfer(request, context)
     }
+    if (path.includes('/transfer-artifacts/')) {
+      const artifactId = decodeURIComponent(path.split('/transfer-artifacts/')[1])
+      artifactDownloads.set(artifactId, (artifactDownloads.get(artifactId) ?? 0) + 1)
+      if (artifactId === candidate.manifest.artifacts[1].id && secondArtifactFailures > 0) {
+        const failure = secondArtifactFailures--
+        const original = candidate.bytesById.get(artifactId)!
+        const content = failure === 2 ? original.subarray(0, original.length - 1) : Buffer.alloc(original.length, 0x42)
+        return new Response(new Uint8Array(content), { headers: { 'content-type': 'application/octet-stream' } })
+      }
+      return downloadTransferArtifact(request, { params: Promise.resolve({ id: session.id, artifactId }) })
+    }
+    if (path.endsWith('/transfer-manifest')) { transferDownloads++; return issueTransferManifest(request, context) }
     transferDownloads++
     return downloadTransfer(request, context)
   }) as typeof fetch
@@ -141,9 +160,40 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     deviceId: device.id, privateKey: deviceKeys.privateKey, trustedKeys, localRoot: clientRoot,
     fetchImpl: routeFetch }
   try {
+    const manifestPath = `/api/v1/sessions/${session.id}/transfer-manifest`
+    const manifestRequest = signedLocalDeviceGet({ ...clientArgs, pathAndQuery: manifestPath })
+    const issuedResponse = await issueTransferManifest(new NextRequest(manifestRequest.url, {
+      method: manifestRequest.init.method, headers: manifestRequest.init.headers }), context)
+    expect(issuedResponse.status).toBe(200)
+    const issued = await issuedResponse.json()
+    expect(issued.issueId).toBe(response.headers.get('x-edocbr-transfer-issue-id'))
+    const firstArtifact = candidate.manifest.artifacts[0]
+    const artifactPath = `/api/v1/sessions/${session.id}/transfer-artifacts/${encodeURIComponent(firstArtifact.id)}` +
+      `?issueId=${encodeURIComponent(issued.issueId)}`
+    const artifactRequest = signedLocalDeviceGet({ ...clientArgs, pathAndQuery: artifactPath })
+    const artifactResponse = await downloadTransferArtifact(new NextRequest(artifactRequest.url, {
+      method: artifactRequest.init.method, headers: artifactRequest.init.headers }),
+    { params: Promise.resolve({ id: session.id, artifactId: firstArtifact.id }) })
+    expect(artifactResponse.status).toBe(200)
+    expect(Buffer.from(await artifactResponse.arrayBuffer())).toEqual(Buffer.from(candidate.bytesById.get(firstArtifact.id)!))
+    const unknownIssue = signedLocalDeviceGet({ ...clientArgs,
+      pathAndQuery: artifactPath.replace(issued.issueId, 'unknown') })
+    expect((await downloadTransferArtifact(new NextRequest(unknownIssue.url, {
+      method: unknownIssue.init.method, headers: unknownIssue.init.headers }),
+    { params: Promise.resolve({ id: session.id, artifactId: firstArtifact.id }) })).status).toBe(404)
     expect((await listLocalPreparations(new NextRequest('https://example.invalid/api/v1/local-preparations'),
       { params: Promise.resolve({}) })).status).toBe(401)
+    await expect(downloadAndPrepareSession(clientArgs)).rejects.toThrow('truncado')
+    await expect(readPreparedPackage({ root: clientRoot, expectedTenantId: tenant.id,
+      expectedSessionId: session.id, trustedKeys })).rejects.toThrow('não preparada')
+    expect(artifactDownloads.get(candidate.manifest.artifacts[0].id)).toBe(1)
+    await expect(downloadAndPrepareSession(clientArgs)).rejects.toThrow('diverge do manifesto')
+    expect(artifactDownloads.get(candidate.manifest.artifacts[0].id)).toBe(1)
+    await expect(readPreparedPackage({ root: clientRoot, expectedTenantId: tenant.id,
+      expectedSessionId: session.id, trustedKeys })).rejects.toThrow('não preparada')
     await expect(downloadAndPrepareSession(clientArgs)).rejects.toThrow('importado, mas confirmação recusada')
+    expect(artifactDownloads.get(candidate.manifest.artifacts[0].id)).toBe(1)
+    expect(artifactDownloads.get(candidate.manifest.artifacts[1].id)).toBe(3)
     expect((await readPreparedPackage({ root: clientRoot, expectedTenantId: tenant.id,
       expectedSessionId: session.id, trustedKeys })).manifest.revisionId).toBe(candidate.manifest.revisionId)
     const unacknowledged = await db.localSessionTransferIssue.findFirstOrThrow({ where: {
@@ -159,11 +209,11 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
       `/api/v1/sessions/${session.id}/transfer-status?revisionId=other&manifestSha256=${unacknowledged.manifestSha256}` })
     expect((await transferStatus(new NextRequest(alienStatus.url, {
       method: alienStatus.init.method, headers: alienStatus.init.headers }), context)).status).toBe(404)
-    expect(transferDownloads).toBe(1)
+    expect(transferDownloads).toBe(3)
     const recovered = await synchronizePreparedSessions(clientArgs)
     expect(recovered.failed).toHaveLength(0)
     expect(recovered.prepared).toHaveLength(1)
-    expect(transferDownloads).toBe(1)
+    expect(transferDownloads).toBe(3)
     const imported = recovered.prepared[0]
     expect(imported.revisionId).toBe(candidate.manifest.revisionId)
     const firstIssue = await db.localSessionTransferIssue.findFirstOrThrow({ where: {
@@ -180,7 +230,7 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     expect((await acknowledgeTransfer(ackRequest(badReceipt.replace('0'.repeat(64), '1'.repeat(64)),
       badSigned.init.headers!), context)).status).toBe(401)
     expect((await synchronizePreparedSessions(clientArgs)).prepared[0].manifestSha256).toBe(imported.manifestSha256)
-    expect(transferDownloads).toBe(1)
+    expect(transferDownloads).toBe(3)
     expect(await db.localSessionTransferIssue.count({ where: { tenantId: tenant.id,
       deviceId: device.id, sessionId: session.id } })).toBe(1)
     await expect(downloadAndPrepareSession({ ...clientArgs, baseUrl: 'http://example.invalid' })).rejects.toThrow('HTTPS')
