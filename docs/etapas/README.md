@@ -104,6 +104,13 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [053b — Ciclo de eleição da Mesa](053b-ciclo-eleicao-mesa.md) | Incremento local concluído | Eleição futura, confirmação de posse e cancelamento com ato e auditoria | Ato de posse real e homologação da Câmara |
 | [053c — Fotos públicas de Mucuri](053c-fotos-publicas-mucuri.md) | Importação local concluída | 13 fotos do portal da Câmara com hash de origem e processamento local | Conferência institucional das fotos e emblemas partidários verificados |
 | [058 — Identidade do servidor local](058-identidade-servidor-local.md) | Incremento técnico em ensaio | Chave pública por desktop, designação única por Câmara, revogação e pedido Ed25519 com nonce; MFA no administrador | Bootstrap físico, download autenticado, concorrência PostgreSQL e autoridade de sessão |
+| [059 — Download autenticado](059-download-autenticado-sessao.md) | Incremento técnico em ensaio | Pacote completo para desktop designado e verificação integral | Custódia institucional e retomada parcial |
+| [060 — Cliente de transferência](060-cliente-transferencia-local.md) | Incremento técnico em ensaio | Importação local com assinatura e hashes conferidos | Serviço instalável Windows/Linux |
+| [061 — Descoberta de preparações](061-descoberta-sincronizacao-preparacoes.md) | Incremento técnico em ensaio | Lista paginada por Câmara e sincronização periódica do cliente | Supervisão e operação LAN |
+| [062 — Identidade e processo local](062-identidade-e-processo-local.md) | Incremento técnico em ensaio | Segredo local cifrado e processo de sincronização | Instalação, atualização e custódia operacional |
+| [063 — Confirmação da transferência](063-confirmacao-transferencia-local.md) | Incremento técnico em ensaio | ACK assinado após leitura integral do pacote | ACK parcial e autoridade da sessão |
+| [064 — Retomada do ACK](064-retomada-ack-sem-redownload.md) | Incremento técnico em ensaio | Resposta de ACK perdida recuperada sem baixar novamente o pacote | Retomada de bytes por artefato |
+| [065 — Contexto congelado](065-contexto-congelado-transferencia.md) | Incremento local ensaiado | Composição, regras, versão e MIME fixados na revisão publicada | Acervo privado e transferência parcial |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

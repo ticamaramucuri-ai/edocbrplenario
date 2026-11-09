@@ -7,7 +7,8 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { buildSessionTransferCandidate } from '@/lib/server/session-transfer-export'
 import { captureMatterSnapshot, freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
-import { signPreparedPackage, verifyPreparedPackage } from '@/lib/session-transfer-contract'
+import { freezeTransferContext } from '@/lib/server/session-transfer-context'
+import { canonicalManifest, signPreparedPackage, verifyPreparedPackage } from '@/lib/session-transfer-contract'
 import { importPreparedPackage, readPreparedPackage } from '@/lib/local-session-package-store'
 import { GET as downloadTransfer } from '@/app/api/v1/sessions/[id]/transfer/route'
 import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
@@ -59,9 +60,12 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     agendaJson: JSON.stringify([{ id: agenda.id, order: 0, matterId: matter.id, title: agenda.title }]),
     policyJson: JSON.stringify({ minimumAgendaMatters: 1 }),
     documentManifestJson: JSON.stringify([{ id: document.id, kind: document.kind, version: document.version,
-      name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }]) } })
-  await db.$transaction((tx) => freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: tenant.id,
-    agenda: [{ matterId: matter.id }], publicRoot }))
+      name: document.name, mimeType: document.mimeType, sizeBytes: document.sizeBytes, sha256: document.sha256 }]) } })
+  await db.$transaction(async (tx) => {
+    await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: tenant.id,
+      agenda: [{ matterId: matter.id }], publicRoot })
+    await freezeTransferContext(tx, { revisionId: revision.id, tenantId: tenant.id, sessionId: session.id })
+  })
   ids = { tenant: tenant.id, other: other.id, session: session.id, matter: matter.id,
     attachment: attachment.id, document: document.id }
 
@@ -213,6 +217,10 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
 
 test('edições posteriores não mudam revisão publicada; fontes inseguras ficam indisponíveis em revisão nova', async () => {
   const original = await buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })
+  const parliamentarian = await db.parliamentarian.findFirstOrThrow({ where: { tenantId: ids.tenant } })
+  await db.parliamentarian.update({ where: { id: parliamentarian.id }, data: { name: 'Nome posterior', party: 'ZZZ', active: false } })
+  await db.tenant.update({ where: { id: ids.tenant }, data: { settings: JSON.stringify({ quorumMinimum: 99 }) } })
+  await db.session.update({ where: { id: ids.session }, data: { version: { increment: 1 } } })
   await db.matterVersion.create({ data: { matterId: ids.matter, version: 2, text: 'Texto posterior', authorName: 'Autora' } })
   await db.matterAttachment.update({ where: { id: ids.attachment }, data: { url: 'https://example.invalid/anexo.pdf' } })
   let capture = await db.$transaction((tx) => captureMatterSnapshot(tx, { tenantId: ids.tenant,
@@ -229,9 +237,13 @@ test('edições posteriores não mudam revisão publicada; fontes inseguras fica
   expect(capture.manifest.unavailableAttachmentIds).toEqual([ids.attachment])
   await db.matterAttachment.update({ where: { id: ids.attachment }, data: { url: `/tenants/${ids.tenant}/anexo.pdf` } })
   const stable = await buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })
+  expect(canonicalManifest(stable.manifest)).toBe(canonicalManifest(original.manifest))
   expect(stable.manifest.matterSnapshot[0].latestText).toBe('Texto integral de ensaio')
   expect(stable.bytesById.get(`matter-attachment:${ids.attachment}`)).toEqual(original.bytesById.get(`matter-attachment:${ids.attachment}`))
   const revision = await db.sessionAgendaRevision.findFirstOrThrow({ where: { sessionId: ids.session, revision: 1 } })
+  await db.sessionAgendaRevision.update({ where: { id: revision.id }, data: { transferContextJson: null } })
+  await expect(buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })).rejects.toThrow('Revisão legada sem contexto')
+  await db.sessionAgendaRevision.update({ where: { id: revision.id }, data: { transferContextJson: revision.transferContextJson } })
   await db.sessionAgendaRevision.update({ where: { id: revision.id }, data: { matterManifestJson: null } })
   await expect(buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })).rejects.toThrow('Revisão legada')
   await db.sessionAgendaRevision.update({ where: { id: revision.id }, data: { matterManifestJson: JSON.stringify({ version: 1,
@@ -242,6 +254,9 @@ test('edições posteriores não mudam revisão publicada; fontes inseguras fica
   await db.sessionMatterArtifact.update({ where: { id: artifact.id }, data: { content: Buffer.from('alterado') } })
   await expect(buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })).rejects.toThrow('hash divergente')
   await db.sessionMatterArtifact.update({ where: { id: artifact.id }, data: { content: Buffer.from(original.bytesById.get(`matter-attachment:${ids.attachment}`)!) } })
+  await db.sessionDocument.update({ where: { id: ids.document }, data: { mimeType: 'application/octet-stream' } })
+  await expect(buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })).rejects.toThrow('diverge')
+  await db.sessionDocument.update({ where: { id: ids.document }, data: { mimeType: 'application/pdf' } })
   await db.sessionDocument.update({ where: { id: ids.document }, data: { content: Buffer.from('alterado') } })
   await expect(buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })).rejects.toThrow('diverge')
 })
@@ -254,6 +269,9 @@ test('sessão oficial usa configuração aprovada histórica, não settings alte
     version: 1, snapshotJson, snapshotSha256: hash(snapshotJson), approvalReference: 'teste',
     approvedById: 'tester', approvedByName: 'Pessoa teste' } })
   await db.session.update({ where: { id: ids.session }, data: { official: true, officialConfigurationId: approved.id } })
+  const revision = await db.sessionAgendaRevision.findFirstOrThrow({ where: { sessionId: ids.session, revision: 1 } })
+  await db.sessionAgendaRevision.update({ where: { id: revision.id }, data: { transferContextJson: null } })
+  await db.$transaction((tx) => freezeTransferContext(tx, { revisionId: revision.id, tenantId: ids.tenant, sessionId: ids.session }))
   await db.sessionDocument.update({ where: { id: ids.document }, data: {
     content: Buffer.from('%PDF-1.4\nPauta sintética\n%%EOF') } })
   const candidate = await buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })
@@ -271,9 +289,12 @@ test('exportador escolhe a última revisão publicada e não mistura documento a
     agendaJson: JSON.stringify([{ id: 'agenda-v2', order: 0, matterId: ids.matter, title: 'Pauta revisada' }]),
     policyJson: JSON.stringify({ minimumAgendaMatters: 1 }),
     documentManifestJson: JSON.stringify([{ id: document.id, kind: document.kind, version: document.version,
-      name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }]) } })
-  await db.$transaction((tx) => freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: ids.tenant,
-    agenda: [{ matterId: ids.matter }], publicRoot }))
+      name: document.name, mimeType: document.mimeType, sizeBytes: document.sizeBytes, sha256: document.sha256 }]) } })
+  await db.$transaction(async (tx) => {
+    await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: ids.tenant,
+      agenda: [{ matterId: ids.matter }], publicRoot })
+    await freezeTransferContext(tx, { revisionId: revision.id, tenantId: ids.tenant, sessionId: ids.session })
+  })
   const candidate = await buildSessionTransferCandidate({ tenantId: ids.tenant, sessionId: ids.session })
   expect(candidate.manifest.revisionNumber).toBe(2)
   expect(candidate.manifest.artifacts.some((item) => item.sourceId === ids.document)).toBe(false)

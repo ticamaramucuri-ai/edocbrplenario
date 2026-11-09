@@ -4,7 +4,7 @@
 import { createHash } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { tenantSettings } from './domain'
+import { readTransferContext } from './session-transfer-context'
 import type { MatterManifest } from './session-matter-snapshot'
 import type { TransferManifestV1 } from '@/lib/session-transfer-contract'
 
@@ -61,7 +61,8 @@ export async function buildSessionTransferCandidate(args: {
     for (const reference of documentReferences) {
       const document = documentsById.get(reference.id as string)
       if (!document || document.kind !== reference.kind || document.version !== reference.version ||
-          document.name !== reference.name || document.sizeBytes !== reference.sizeBytes || document.sha256 !== reference.sha256 ||
+          document.name !== reference.name || document.mimeType !== reference.mimeType ||
+          document.sizeBytes !== reference.sizeBytes || document.sha256 !== reference.sha256 ||
           document.content.length !== document.sizeBytes || sha256(document.content) !== document.sha256) {
         throw new Error('Documento diverge da revisão publicada.')
       }
@@ -109,43 +110,14 @@ export async function buildSessionTransferCandidate(args: {
     }
     if (referencedAttachmentIds.size !== frozenArtifacts.length) throw new Error('Snapshot contém anexo extra.')
 
-    const tenant = await tx.tenant.findUnique({ where: { id: args.tenantId } })
-    if (!tenant) throw new Error('Câmara ausente.')
-    let roster: TransferManifestV1['rosterSnapshot']
-    let settingsSource = tenant.settings
-    if (session.official) {
-      if (!session.officialConfigurationId) throw new Error('Sessão oficial sem configuração aprovada.')
-      const approved = await tx.officialConfigurationRevision.findFirst({
-        where: { id: session.officialConfigurationId, tenantId: args.tenantId },
-      })
-      if (!approved || sha256(Buffer.from(approved.snapshotJson)) !== approved.snapshotSha256) {
-        throw new Error('Configuração oficial ausente ou com hash divergente.')
-      }
-      const snapshot = jsonObject(approved.snapshotJson, 'Configuração oficial')
-      const approvedTenant = snapshot.tenant as Record<string, unknown> | undefined
-      const people = snapshot.parliamentarians as Array<Record<string, unknown>> | undefined
-      const positions = snapshot.boardPositions as Array<Record<string, unknown>> | undefined
-      if (!approvedTenant || typeof approvedTenant.settings !== 'string' || !Array.isArray(people) || !Array.isArray(positions)) {
-        throw new Error('Snapshot institucional incompleto.')
-      }
-      settingsSource = approvedTenant.settings
-      roster = people.map((person) => ({ parliamentarianId: String(person.id), displayName: String(person.name),
-        party: String(person.party), active: person.active === true,
-        boardRole: String(positions.find((position) => position.parliamentarianId === person.id && position.status === 'confirmed')?.role ?? '') || null }))
-    } else {
-      const people = await tx.parliamentarian.findMany({ where: { tenantId: args.tenantId }, orderBy: { id: 'asc' } })
-      roster = people.map((person) => ({ parliamentarianId: person.id,
-        displayName: person.displayName || person.name, party: person.party, active: person.active,
-        boardRole: person.boardRole }))
-    }
-    const deliberationPolicySnapshot = { ...tenantSettings({ settings: settingsSource }, roster.filter((person) => person.active).length) }
+    const context = readTransferContext(revision.transferContextJson)
     const manifest: TransferManifestV1 = {
       format: 'edocbr.session-transfer', schemaVersion: 1,
       tenantId: args.tenantId, sessionId: session.id, revisionId: revision.id,
-      revisionNumber: revision.revision, sessionVersion: session.version,
-      officialConfigurationId: session.officialConfigurationId, createdAt: revision.createdAt.toISOString(),
-      agendaSnapshot: agenda, policySnapshot: policy, deliberationPolicySnapshot,
-      matterSnapshot, rosterSnapshot: roster, artifacts,
+      revisionNumber: revision.revision, sessionVersion: context.sessionVersion,
+      officialConfigurationId: context.officialConfigurationId, createdAt: revision.createdAt.toISOString(),
+      agendaSnapshot: agenda, policySnapshot: policy, deliberationPolicySnapshot: context.deliberationPolicySnapshot,
+      matterSnapshot, rosterSnapshot: context.rosterSnapshot, artifacts,
     }
     return { manifest, bytesById }
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 30_000 })

@@ -22,6 +22,7 @@ import { createSessionNotice } from '@/lib/server/session-notice'
 import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
 import { inspectOfficialConfiguration } from '@/lib/server/official-configuration'
 import { freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
+import { freezeTransferContext } from '@/lib/server/session-transfer-context'
 import { join } from 'node:path'
 
 export const dynamic = 'force-dynamic'
@@ -164,7 +165,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const agenda = await tx.agendaItem.findMany({
         where: { sessionId: session.id }, orderBy: [{ order: 'asc' }, { id: 'asc' }],
       })
-      const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: session.id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, sizeBytes: true, sha256: true } })
+      const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: session.id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, mimeType: true, sizeBytes: true, sha256: true } })
       const latestDocuments = documents.filter((document, index) => documents.findIndex((candidate) => candidate.kind === document.kind) === index)
       const matters = agenda.filter((item) => item.section === 'ordem_do_dia'
         && item.matterId && !['retirado', 'adiado'].includes(item.status)).length
@@ -172,7 +173,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         throw new DomainError('SESSION_PRECONDITION', 409, 'Pauta incompleta', `Esta Câmara exige ao menos ${policy.minimumAgendaMatters} matéria(s) na ordem do dia; há ${matters}.`)
       }
       publication = {
-        documentManifestJson: JSON.stringify(latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }))),
+        documentManifestJson: JSON.stringify(latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, mimeType: document.mimeType, sizeBytes: document.sizeBytes, sha256: document.sha256 }))),
         agendaJson: JSON.stringify(agenda.map((item) => ({
           id: item.id, order: item.order, section: item.section, matterId: item.matterId,
           title: item.title, kind: item.kind, batchItems: item.batchItems,
@@ -226,6 +227,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       } })
       await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: session.tenantId,
         agenda: JSON.parse(publication.agendaJson), publicRoot: join(process.cwd(), 'public') })
+      await freezeTransferContext(tx, { revisionId: revision.id, tenantId: session.tenantId, sessionId: session.id })
       await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: session.id,
         revision: 1, noticeSha256: notice.noticeSha256, issuedAt: now })
     }
