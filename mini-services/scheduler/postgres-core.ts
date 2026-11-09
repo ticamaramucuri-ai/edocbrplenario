@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client'
 import { gatherTenantHealthMetrics, healthScoreFromMetrics } from '../../src/lib/server/tenant-health'
 
 export type KindResult = { status: 'ok' | 'error' | 'skipped'; note: string }
-export const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot', 'notice.deadline_alerts'] as const
+export const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot', 'notice.deadline_alerts', 'transfer.issue_cleanup'] as const
 type AlertSpec = { kind: string; severity: string; message: string; actionHint: string; meta: Record<string, unknown>; key: string; value: string }
 type Probe = (url: string) => Promise<boolean>
 const SERVICES = [
@@ -13,6 +13,11 @@ const SERVICES = [
 ]
 
 export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
+  async function ensureTransferCleanupJob(now = new Date()): Promise<void> {
+    await db.scheduledJob.upsert({ where: { kind: 'transfer.issue_cleanup' }, update: {},
+      create: { kind: 'transfer.issue_cleanup', title: 'Limpeza de emissões locais não confirmadas',
+        everySeconds: 3600, nextRunAt: new Date(now.getTime() + 3600_000) } })
+  }
   async function upsertAlert(spec: AlertSpec): Promise<boolean> {
     const open = await db.platformAlert.findMany({ where: { kind: spec.kind, ackAt: null }, select: { meta: true } })
     const exists = open.some((row) => {
@@ -175,6 +180,17 @@ export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
         const result = await scanNoticeDeadlineAlerts(now)
         return { status: 'ok', note: `${result.due} prazo(s) em atenção; ${result.created} notificação(ões) nova(s).` }
       }
+      case 'transfer.issue_cleanup': {
+        const cutoff = new Date(now.getTime() - 30 * 86400_000)
+        const stale = await db.localSessionTransferIssue.findMany({ where: {
+          acknowledgedAt: null, issuedAt: { lt: cutoff },
+        }, orderBy: { issuedAt: 'asc' }, take: 500, select: { id: true } })
+        if (!stale.length) return { status: 'ok', note: 'Nenhuma emissão não confirmada vencida.' }
+        const deleted = await db.localSessionTransferIssue.deleteMany({ where: {
+          id: { in: stale.map((item) => item.id) }, acknowledgedAt: null, issuedAt: { lt: cutoff },
+        } })
+        return { status: 'ok', note: `${deleted.count} emissão(ões) não confirmada(s) removida(s); limite de 500 por execução.` }
+      }
       default: throw new Error(`Kind de agendamento desconhecido: "${kind}".`)
     }
   }
@@ -226,5 +242,5 @@ export function createPostgresScheduler(db: PrismaClient, probe: Probe) {
     return claimed
   }
 
-  return { runKind, runManual, tick }
+  return { ensureTransferCleanupJob, runKind, runManual, tick }
 }

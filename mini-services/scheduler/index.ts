@@ -508,6 +508,19 @@ function runTenantHealthSnapshot(): { status: 'ok' | 'error'; note: string } {
 // ─── Executor dos kinds ─────────────────────────────────────────────────────
 
 type KindResult = { status: 'ok' | 'error' | 'skipped'; note: string }
+const staleTransferIssues = db.prepare(
+  'SELECT id FROM LocalSessionTransferIssue WHERE acknowledgedAt IS NULL AND issuedAt < ? ORDER BY issuedAt LIMIT 500'
+)
+const deleteStaleTransferIssue = db.prepare(
+  'DELETE FROM LocalSessionTransferIssue WHERE id = ? AND acknowledgedAt IS NULL AND issuedAt < ?'
+)
+
+function runTransferIssueCleanup(): KindResult {
+  const cutoff = Date.now() - 30 * 86400_000
+  const stale = runQuery<{ id: string }>(staleTransferIssues, cutoff)
+  for (const item of stale) runWrite(deleteStaleTransferIssue, item.id, cutoff)
+  return { status: 'ok', note: `${stale.length} emissão(ões) não confirmada(s) selecionada(s); limite de 500 por execução.` }
+}
 
 async function runKind(kind: string): Promise<KindResult> {
   switch (kind) {
@@ -519,6 +532,8 @@ async function runKind(kind: string): Promise<KindResult> {
       return runHealthCheck()
     case 'tenant.health_snapshot':
       return runTenantHealthSnapshot()
+    case 'transfer.issue_cleanup':
+      return runTransferIssueCleanup()
     case 'notice.deadline_alerts': {
       const { scanNoticeDeadlineAlerts } = await import('../../src/lib/server/notice-deadline-alerts')
       const result = await scanNoticeDeadlineAlerts()
@@ -529,7 +544,7 @@ async function runKind(kind: string): Promise<KindResult> {
   }
 }
 
-const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot', 'notice.deadline_alerts']
+const KNOWN_KINDS = ['alert.scan', 'export.watchdog', 'health.check', 'tenant.health_snapshot', 'notice.deadline_alerts', 'transfer.issue_cleanup']
 
 // ─── Tick de 30s (agenda recalcada após CADA execução agendada) ─────────────
 

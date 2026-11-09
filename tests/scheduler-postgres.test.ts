@@ -21,6 +21,9 @@ test('scheduler PostgreSQL aplica regras por Câmara, evita alertas duplicados e
   await db.mailDelivery.create({ data: { tenantId: b.id, subscriptionId: mailB.id, tokenHash: 'stale-hash', status: 'pending', createdAt: new Date(now.getTime() - 16 * 60_000) } })
   const exportJob = await db.exportJob.create({ data: { tenantId: a.id, status: 'running', createdAt: new Date(now.getTime() - 11 * 60_000) } })
   const scheduler = createPostgresScheduler(db, async (url) => !url.includes('3003'))
+  await scheduler.ensureTransferCleanupJob(now)
+  await scheduler.ensureTransferCleanupJob(now)
+  expect(await db.scheduledJob.count({ where: { kind: 'transfer.issue_cleanup' } })).toBe(1)
 
   expect((await scheduler.runKind('alert.scan', now)).status).toBe('ok')
   const ownAlerts = await db.platformAlert.findMany({ where: { ackAt: null } })
@@ -74,4 +77,22 @@ test('scheduler PostgreSQL aplica regras por Câmara, evita alertas duplicados e
   const results = await Promise.all([slowScheduler.runManual('health.check'), slowScheduler.runManual('health.check')])
   expect(results.map(result => result.status).sort()).toEqual(['ok', 'skipped'])
   expect((await db.scheduledJob.findUniqueOrThrow({ where: { id: manual.id } })).nextRunAt.getTime()).toBe(now.getTime() + 60_000)
+
+  const device = await db.localServerDevice.create({ data: { tenantId: b.id, name: 'Servidor de ensaio',
+    publicKeyPem: 'synthetic', publicKeySpkiSha256: crypto.randomUUID(), approvalReference: 'ensaio',
+    createdById: 'operator' } })
+  const oldDate = new Date(now.getTime() - 31 * 86400_000)
+  const issueBase = { tenantId: b.id, deviceId: device.id, sessionId: session.id, revisionNumber: 1,
+    artifactHashesJson: '[]' }
+  const oldPending = await db.localSessionTransferIssue.create({ data: { ...issueBase,
+    revisionId: `old-${suffix}`, manifestSha256: 'a'.repeat(64), issuedAt: oldDate } })
+  const oldAcknowledged = await db.localSessionTransferIssue.create({ data: { ...issueBase,
+    revisionId: `ack-${suffix}`, manifestSha256: 'b'.repeat(64), issuedAt: oldDate, acknowledgedAt: oldDate } })
+  const recentPending = await db.localSessionTransferIssue.create({ data: { ...issueBase,
+    revisionId: `recent-${suffix}`, manifestSha256: 'c'.repeat(64), issuedAt: now } })
+  expect((await scheduler.runKind('transfer.issue_cleanup', now)).status).toBe('ok')
+  expect(await db.localSessionTransferIssue.findUnique({ where: { id: oldPending.id } })).toBeNull()
+  expect(await db.localSessionTransferIssue.findUnique({ where: { id: oldAcknowledged.id } })).not.toBeNull()
+  expect(await db.localSessionTransferIssue.findUnique({ where: { id: recentPending.id } })).not.toBeNull()
+  expect((await scheduler.runKind('transfer.issue_cleanup', now)).note).toContain('Nenhuma')
 })

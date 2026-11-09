@@ -3,7 +3,7 @@ import { createHash, type KeyObject } from 'node:crypto'
 import { z } from 'zod'
 import { signedLocalDeviceGet, signedLocalDevicePost } from './local-device-http'
 import { importPreparedPackage, readPreparedPackage, type PreparedRevision } from './local-session-package-store'
-import { cacheTransferArtifact, clearTransferCache, readCachedTransferArtifact } from './local-session-transfer-cache'
+import { cacheTransferArtifact, clearTransferCache, pruneTransferCache, readCachedTransferArtifact } from './local-session-transfer-cache'
 import { canonicalManifest, transferManifestV1Schema, verifySignedTransferManifest,
   type TransferSignatureV1 } from './session-transfer-contract'
 
@@ -135,6 +135,8 @@ export async function downloadAndPrepareSession(args: ClientArgs): Promise<Prepa
     throw new Error('Manifesto excede os limites da transferência local.')
   }
   const manifestSha256 = createHash('sha256').update(canonicalManifest(manifest)).digest('hex')
+  await pruneTransferCache({ root: args.localRoot, tenantId: args.tenantId,
+    sessionId: args.sessionId, keepManifestSha256: manifestSha256 })
   const bytesById = new Map<string, Uint8Array>()
   for (const artifact of manifest.artifacts) {
     let bytes = await readCachedTransferArtifact({ root: args.localRoot, tenantId: args.tenantId,

@@ -1475,6 +1475,7 @@ async function main() {
     { kind: 'health.check', title: 'Health check dos serviços', everySeconds: 300 },
     { kind: 'tenant.health_snapshot', title: 'Snapshot diário de saúde dos tenants', everySeconds: 86400 },
     { kind: 'notice.deadline_alerts', title: 'Avisos de prazo de convocação', everySeconds: 300 },
+    { kind: 'transfer.issue_cleanup', title: 'Limpeza de emissões locais não confirmadas', everySeconds: 3600 },
   ]
   for (const j of scheduledJobs) {
     await db.scheduledJob.create({

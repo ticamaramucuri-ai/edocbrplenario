@@ -1,9 +1,9 @@
 import { afterAll, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, symlink, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { cacheTransferArtifact, clearTransferCache, readCachedTransferArtifact } from '@/lib/local-session-transfer-cache'
+import { cacheTransferArtifact, clearTransferCache, pruneTransferCache, readCachedTransferArtifact } from '@/lib/local-session-transfer-cache'
 
 const root = await mkdtemp(join(tmpdir(), 'edocbr-partial-cache-'))
 afterAll(async () => { await rm(root, { recursive: true, force: true }) })
@@ -33,4 +33,30 @@ test('cache parcial aceita só bytes íntegros da emissão e nunca marca a revis
   expect(await readFile(path)).toEqual(bytes)
   await clearTransferCache({ root, tenantId: 'camara-a', sessionId: 'sessao-a' })
   expect(await readCachedTransferArtifact(args)).toBeNull()
+})
+
+test('limpeza preserva a revisão corrente e dois caches recentes, isolada por Câmara', async () => {
+  const bytes = Buffer.from('conteúdo')
+  const artifact = { id: 'one', sha256: sha256(bytes), sizeBytes: bytes.length }
+  const current = sha256('current')
+  const tenantId = 'camara-cache'
+  const sessionId = 'sessao-cache'
+  const now = new Date('2026-11-09T12:00:00Z')
+  const base = { root, tenantId, sessionId, artifact }
+  const manifests = ['old', 'recent-one', 'recent-two', 'recent-three', 'current'].map(sha256)
+  for (const manifestSha256 of manifests) {
+    await cacheTransferArtifact({ ...base, manifestSha256, bytes })
+    const directory = join(root, 'tenants', sha256(tenantId), 'sessions', sha256(sessionId), 'partial', manifestSha256)
+    const offset = manifests.indexOf(manifestSha256) === 0 ? 8 : 1
+    const age = new Date(now.getTime() - offset * 86400_000 + manifests.indexOf(manifestSha256) * 1000)
+    await utimes(directory, age, age)
+  }
+  await cacheTransferArtifact({ ...base, tenantId: 'outra-camara', manifestSha256: manifests[0], bytes })
+  expect(await pruneTransferCache({ root, tenantId, sessionId, keepManifestSha256: current, now })).toBe(2)
+  expect(await readCachedTransferArtifact({ ...base, manifestSha256: current })).not.toBeNull()
+  expect(await readCachedTransferArtifact({ ...base, manifestSha256: manifests[0] })).toBeNull()
+  expect(await readCachedTransferArtifact({ ...base, manifestSha256: manifests[1] })).toBeNull()
+  expect(await readCachedTransferArtifact({ ...base, manifestSha256: manifests[2] })).not.toBeNull()
+  expect(await readCachedTransferArtifact({ ...base, manifestSha256: manifests[3] })).not.toBeNull()
+  expect(await readCachedTransferArtifact({ ...base, tenantId: 'outra-camara', manifestSha256: manifests[0] })).not.toBeNull()
 })

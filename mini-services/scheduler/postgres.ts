@@ -17,6 +17,7 @@ const scheduler = createPostgresScheduler(db, async (url) => {
     return response.ok
   } catch { return false }
 })
+await scheduler.ensureTransferCleanupJob()
 
 const server = createServer((req, res) => {
   const pathname = (req.url ?? '').split('?')[0] ?? '/'

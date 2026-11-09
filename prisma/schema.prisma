@@ -156,6 +156,7 @@ model LocalSessionTransferIssue {
 
   @@unique([tenantId, deviceId, revisionId, manifestSha256])
   @@index([tenantId, sessionId, issuedAt])
+  @@index([acknowledgedAt, issuedAt])
 }
 
 // Aprovação interna versionada da configuração institucional da Câmara.
@@ -1563,7 +1564,7 @@ model RoadmapTask {
 
 model ScheduledJob {
   id           String    @id @default(cuid())
-  kind         String    @unique // alert.scan|export.watchdog|health.check|tenant.health_snapshot|notice.deadline_alerts
+  kind         String    @unique // alert.scan|export.watchdog|health.check|tenant.health_snapshot|notice.deadline_alerts|transfer.issue_cleanup
   title        String
   everySeconds Int       @default(300) // mínimo 60s no PATCH
   lastRunAt    DateTime?

@@ -100,6 +100,7 @@ port="$(docker port "$container" 5432/tcp | sed 's/.*://')"
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py status
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
+test "$(docker exec "$container" psql -At -U postgres -d postgres -c 'SELECT count(*) FROM pg_indexes WHERE indexname = '\''LocalSessionTransferIssue_acknowledgedAt_issuedAt_idx'\''')" = 1
 docker exec "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c \
   "INSERT INTO \"Tenant\" (id, slug, name, city, uf, \"updatedAt\") VALUES ('tenant-restore-proof', 'restore-proof', 'Ensaio', 'Teste', 'BA', now());" >/dev/null
 docker exec "$container" pg_dump -U postgres -d postgres -Fc > "$temporary/backup.dump"
