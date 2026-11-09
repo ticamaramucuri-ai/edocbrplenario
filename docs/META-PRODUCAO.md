@@ -64,6 +64,8 @@ Essas entradas não serão presumidas. O trabalho com dados fictícios pode avan
 
 ## Controle da meta
 
+**Bloqueio de entrega em 09/11/2026:** a CI do [PR #41](https://github.com/e-docBR/edocBRplenario/pull/41) não iniciou os jobs. O GitHub informou pagamento recente com falha **ou** limite de gastos insuficiente na conta. A regularização em **Billing & plans** é necessária para retomar o gate GitHub → VPS; o ensaio local não substitui CI verde. Ver [etapa 070](etapas/070-concorrencia-transferencia-duas-camaras.md).
+
 Cada incremento deve registrar no `docs/etapas/` objetivo, mudança, teste, SHA, ambiente, resultado, limite e próximo passo; atualizar a matriz e o plano mestre quando o estado mudar. PR e CI verde precedem promoção à VPS. Acompanharemos **gate fechado**, não porcentagem subjetiva. A meta só será concluída quando o R4 tiver evidência e aceites, e a release estiver operando com monitoramento, backup, suporte e revisão periódica. Datas e orçamento serão definidos depois de equipe, escopo do primeiro piloto, hardware e dependências externas confirmados.
 
 **Ritmo de controle:** ao final de cada incremento, registrar o gate P afetado como aberto ou fechado, falhas bloqueantes, responsável e próxima prova. Antes de R3, realizar uma revisão de prontidão com produto, engenharia, operação e representantes da Câmara. Após R3, acompanhar incidentes, atraso de sincronização, idade do backup íntegro, restauração exercitada, disponibilidade e suporte; qualquer falha bloqueante suspende a ampliação até nova prova.
