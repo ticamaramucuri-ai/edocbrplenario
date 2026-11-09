@@ -12,7 +12,7 @@ O comando `run-credential <raiz> <arquivo-absoluto> [intervalo]` lê a frase do 
 
 O comando `status <raiz>` lê o acervo **sem rede**, verifica assinatura e todos os bytes da revisão importada antes de marcar cada sessão como `ready`. Arquivo alterado resulta em `corrupt`; trava de importação, estágio temporário ou revisão nova órfã resulta em `incomplete`, mesmo quando uma revisão anterior continua íntegra. Ambos retornam código de saída 2. O inventário só lê a Câmara vinculada ao dispositivo. Este status de preparação não concede autoridade para abrir sessão nem executar votação offline.
 
-A CI ficou restrita a PR e `main`, com cancelamento de execuções substituídas, e a sonda pública passou a cada hora. A razão, os limites e a alternativa de runner próprio estão em [Operação GitHub Free](../OPERACAO-GITHUB-FREE.md). O PR #41 permanece sem merge por bloqueio de cobrança/limite no GitHub; esse impedimento não autoriza promover código sem CI.
+A CI ficou restrita a PR e `main`, com cancelamento de execuções substituídas, e a sonda pública passou a cada hora. O [PR #41](https://github.com/e-docBR/edocBRplenario/pull/41) foi integrado após os três checks passarem em runner próprio isolado, sem consumir minutos hospedados; o [procedimento e os limites](../OPERACAO-GITHUB-FREE.md) continuam valendo. Este incremento do PR #42 precisa de seus próprios checks verdes antes do merge e da promoção.
 
 ## Verificação e próximo gate
 
