@@ -1,6 +1,6 @@
 # Meta de entrega em produção — edocBR Plenário
 
-**Estado em 07/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**. P4 congela matérias/anexos e ensaia importação, assinatura por Câmara, identidade do desktop designado e download autenticado; ainda não possui chave institucional provisionada nem serviço desktop. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
+**Estado em 09/11/2026:** meta ativa. A implantação atual em `edocbrplenario.com.br` é **homologação sintética**, no commit `3730f11`. P4/P5 já ensaiam manifesto, matérias/anexos congelados, importação, assinatura por Câmara, identidade do desktop designado, descoberta, download autenticado, ACK integral e recuperação de ACK perdido sem novo download. Ainda não existem chave institucional provisionada, serviço desktop instalável, autoridade local ou sincronização dos atos. Este documento define o resultado a alcançar; o [plano mestre](PLANO-MESTRE.md) governa escopo, sequência P0–P13 e gates técnicos, e a [matriz de entrega](MATRIZ-ENTREGA.md) registra a evidência por função.
 
 ## Resultado exigido
 
@@ -24,6 +24,20 @@ Entregar o edocBR Plenário como SaaS configurável para várias Câmaras, com p
 | **M8 — integração e expansão** | P12–P13 | Fluxos Nextcloud/Alfresco com ACL, ACK, reconciliação e reversão homologados; segunda Câmara entra sem código próprio; capacidade, suporte e recuperação contínua demonstrados. Este gate libera R4. |
 
 P9 pode avançar em laboratório enquanto M2–M4 são construídos. Nenhum ensaio paralelo substitui o gate anterior. O voto secreto permanece fora da liberação até projeto e revisão próprios. A decisão sobre voto offline no primeiro piloto deve constar do escopo R3 antes de sua homologação.
+
+## Sequência executável a partir da linha de base
+
+| Ordem | Entrega seguinte | Prova de conclusão | Estado em 09/11 |
+|---|---|---|---|
+| **1 — estabilizar a preparação** | Congelar na revisão publicada a composição, as regras e a versão usadas no manifesto; bloquear exportação de revisão incompleta; concluir a retomada de transferência por artefato e o acervo privado | O mesmo `revisionId` produz os mesmos hashes mesmo após mudança de cadastro; transferência interrompida retoma sem aceitar bytes adulterados; dois tenants isolados | P3/P4 em desenvolvimento |
+| **2 — tornar o núcleo instalável** | Serviço supervisionado Windows/Linux, armazenamento local, importação automática, prontidão, certificado LAN e acesso de Mesa, parlamentar e telão | Instalação limpa nos dois sistemas, reinício e fechamento da janela sem derrubar serviço; tablet, celular e notebook recebem a mesma revisão e documentos | P5 pendente |
+| **3 — definir a autoridade do ato** | Executor local com escritor único, comandos idempotentes, eventos sequenciados, ACK durável, reconciliação e promoção de reserva | Voto/presença confirmados permanecem após falha de energia; WAN perdida e restaurada não cria dupla autoridade nem duplica ato; conflito fica em quarentena | P4/P6 pendentes |
+| **4 — concluir a sessão de ponta a ponta** | Presença, fala, votação, telão, ata, publicação e replay no fluxo local ↔ SaaS; acessibilidade e ensaio audiovisual | Casos regimentais aprovados conferidos por pessoa independente; publicação só após reconciliação; áudio e vídeo observados externamente; gravação íntegra | P7–P9 pendentes |
+| **5 — preparar a operação real** | Segurança do desktop, segredos e MFA, backup SaaS/local, alerta com responsável, restauração e suporte | Host novo recupera aplicação, banco e acervo a partir de cópia durável; RTO/RPO medidos contra metas pactuadas; atualização/rollback e suspensão ensaiados | P1/P10 abertos |
+| **6 — liberar Mucuri com escopo assinado** | Configuração oficial, equipamentos, contas, treinamento, ensaio longo e sessão assistida | Todos os aceites e o pré-voo de P11 fechados para uma release identificada; registro explícito da contingência e do escopo de voto offline | P2/P3/P11 aguardam insumos da Câmara |
+| **7 — integrar e escalar** | Nextcloud e Alfresco por contrato de autoridade e ACL; segunda Câmara configurada sem mudança de código | Leitura, entrega, ACK, divergência e reversão homologados; segunda Câmara isolada; releases e recuperação recorrentes em operação | P12/P13 posteriores ao piloto |
+
+Cada ordem pode conter vários PRs. O avanço depende da prova indicada, não do número de commits. A ordem 5 pode ser trabalhada em paralelo com 1–4, mas precisa estar fechada antes do piloto.
 
 ## Definição de pronto para produção
 
@@ -51,3 +65,5 @@ Essas entradas não serão presumidas. O trabalho com dados fictícios pode avan
 ## Controle da meta
 
 Cada incremento deve registrar no `docs/etapas/` objetivo, mudança, teste, SHA, ambiente, resultado, limite e próximo passo; atualizar a matriz e o plano mestre quando o estado mudar. PR e CI verde precedem promoção à VPS. Acompanharemos **gate fechado**, não porcentagem subjetiva. A meta só será concluída quando o R4 tiver evidência e aceites, e a release estiver operando com monitoramento, backup, suporte e revisão periódica. Datas e orçamento serão definidos depois de equipe, escopo do primeiro piloto, hardware e dependências externas confirmados.
+
+**Ritmo de controle:** ao final de cada incremento, registrar o gate P afetado como aberto ou fechado, falhas bloqueantes, responsável e próxima prova. Antes de R3, realizar uma revisão de prontidão com produto, engenharia, operação e representantes da Câmara. Após R3, acompanhar incidentes, atraso de sincronização, idade do backup íntegro, restauração exercitada, disponibilidade e suporte; qualquer falha bloqueante suspende a ampliação até nova prova.
