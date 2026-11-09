@@ -38,6 +38,7 @@ jobs:
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-device-keystore.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-server-cli.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-event-journal.test.ts
+      - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/session-authority-contract.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-service-credential.test.ts
       - run: bash scripts/test-local-device-identity.sh
       - run: bash scripts/test-session-transfer-export.sh
