@@ -25,6 +25,8 @@
 
 **Atualização P4 em 09/11/2026:** a [etapa 070](etapas/070-concorrencia-transferencia-duas-camaras.md) mediu emissão e quatro GETs concorrentes para duas Câmaras fictícias (48 MiB), com assinatura, hash e isolamento conferidos. A correção de conflito de nonce (`P2034`) passou no PostgreSQL descartável. A linha “Pacote web → desktop” ainda exige medição HTTP/TLS na VPS, quota agregada e instalação local para avançar de gate.
 
+**Atualização P5 em 09/11/2026:** o [incremento 071](etapas/071-servico-sync-linux-e-github-free.md) acrescentou inicialização do processo Linux por credencial protegida e inventário offline que só informa `ready` após conferir assinatura e todos os bytes. O serviço permanece sem instalador e sem teste em hardware piloto; API LAN e autoridade de sessão continuam ausentes. O PR #42 ainda precisa passar na CI do runner próprio.
+
 1. Antes de alterar “estado”, abrir a implementação e a prova vinculada; registrar SHA e ambiente no arquivo de etapa. CI verde sem ensaio não vira homologação.
 2. Acrescentar casos negativos entre dois tenants e por papel ao modificar regra, mídia, documento ou sincronização.
 3. Se um gate depender de regimento, usuário, equipamento, destino de backup ou conta social, manter “pendente” até evidência da parte responsável. Não preencher campos oficiais com valores inferidos.
