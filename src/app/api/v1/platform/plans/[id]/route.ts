@@ -18,6 +18,7 @@ const patchSchema = z.object({
     .object({
       maxParliamentarians: z.number().int().min(0).max(10000).optional(),
       maxSessionsPerMonth: z.number().int().min(0).max(10000).optional(),
+      maxTransferPackageMiB: z.number().int().min(1).max(512).optional(),
       features: z.array(z.string().min(1)).max(50).optional(),
     })
     .strict()
@@ -42,7 +43,8 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx: { params: Promise<
     },
   })
 
-  let limits: { maxParliamentarians?: number; maxSessionsPerMonth?: number; features?: string[] } = {}
+  let limits: { maxParliamentarians?: number; maxSessionsPerMonth?: number;
+    maxTransferPackageMiB?: number; features?: string[] } = {}
   try {
     limits = JSON.parse(updated.limits)
   } catch {
@@ -58,6 +60,7 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx: { params: Promise<
       limits: {
         maxParliamentarians: typeof limits.maxParliamentarians === 'number' ? limits.maxParliamentarians : null,
         maxSessionsPerMonth: typeof limits.maxSessionsPerMonth === 'number' ? limits.maxSessionsPerMonth : null,
+        maxTransferPackageMiB: typeof limits.maxTransferPackageMiB === 'number' ? limits.maxTransferPackageMiB : null,
         features: Array.isArray(limits.features) ? limits.features.map(String) : [],
       },
       createdAt: updated.createdAt.toISOString(),

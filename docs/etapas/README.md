@@ -114,6 +114,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [066 — PDF privado da matéria](066-anexo-privado-materia.md) | Incremento local ensaiado | Upload e download autenticados, hash e captura dos bytes na revisão | Quotas, publicação aprovada e transferência parcial |
 | [067 — Retomada por artefato](067-retomada-transferencia-artefato.md) | Incremento local ensaiado | Manifesto assinado, download individual, cache conferido por hash e ACK após importação integral | Retenção de emissões/cache, carga, serviço instalável e autoridade local |
 | [068 — Retenção da transferência](068-retencao-transferencia-local.md) | Incremento local ensaiado | Limpeza de emissão sem ACK antiga e cache parcial limitado por Câmara/sessão | Carga, quotas, serviço instalável e autoridade local |
+| [069 — Leitura seletiva e limite](069-leitura-seletiva-quota-transferencia.md) | Incremento local ensaiado | Um arquivo por GET e limite de pacote por plano SaaS | Carga representativa, quota agregada, instalador e autoridade local |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

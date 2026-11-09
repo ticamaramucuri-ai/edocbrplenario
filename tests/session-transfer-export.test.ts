@@ -15,6 +15,7 @@ import { GET as issueTransferManifest } from '@/app/api/v1/sessions/[id]/transfe
 import { GET as downloadTransferArtifact } from '@/app/api/v1/sessions/[id]/transfer-artifacts/[artifactId]/route'
 import { localDeviceRequestMessage } from '@/lib/server/local-device-identity'
 import { provisionTransferSigningKey } from '@/lib/server/session-transfer-signing'
+import { issueSessionTransfer } from '@/lib/server/session-transfer-issuance'
 import { readTransferPackage } from '@/lib/session-transfer-wire'
 import { downloadAndPrepareSession } from '@/lib/local-device-client'
 import { GET as listLocalPreparations } from '@/app/api/v1/local-preparations/route'
@@ -167,6 +168,8 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     expect(issuedResponse.status).toBe(200)
     const issued = await issuedResponse.json()
     expect(issued.issueId).toBe(response.headers.get('x-edocbr-transfer-issue-id'))
+    const storedIssue = await db.localSessionTransferIssue.findUniqueOrThrow({ where: { id: issued.issueId } })
+    expect(storedIssue.manifestJson).toBe(canonicalManifest(candidate.manifest))
     const firstArtifact = candidate.manifest.artifacts[0]
     const artifactPath = `/api/v1/sessions/${session.id}/transfer-artifacts/${encodeURIComponent(firstArtifact.id)}` +
       `?issueId=${encodeURIComponent(issued.issueId)}`
@@ -176,6 +179,33 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     { params: Promise.resolve({ id: session.id, artifactId: firstArtifact.id }) })
     expect(artifactResponse.status).toBe(200)
     expect(Buffer.from(await artifactResponse.arrayBuffer())).toEqual(Buffer.from(candidate.bytesById.get(firstArtifact.id)!))
+    const alienArtifactRequest = signedLocalDeviceGet({ ...clientArgs, tenantId: other.id,
+      pathAndQuery: artifactPath })
+    expect((await downloadTransferArtifact(new NextRequest(alienArtifactRequest.url, {
+      method: alienArtifactRequest.init.method, headers: alienArtifactRequest.init.headers }),
+    { params: Promise.resolve({ id: session.id, artifactId: firstArtifact.id }) })).status).toBe(401)
+    const selectedResponse = async (artifactId: string) => {
+      const pathAndQuery = `/api/v1/sessions/${session.id}/transfer-artifacts/${encodeURIComponent(artifactId)}` +
+        `?issueId=${encodeURIComponent(issued.issueId)}`
+      const signed = signedLocalDeviceGet({ ...clientArgs, pathAndQuery })
+      return downloadTransferArtifact(new NextRequest(signed.url, {
+        method: signed.init.method, headers: signed.init.headers }),
+      { params: Promise.resolve({ id: session.id, artifactId }) })
+    }
+    const frozenAttachment = await db.sessionMatterArtifact.findFirstOrThrow({ where: {
+      revisionId: candidate.manifest.revisionId, attachmentId: attachment.id } })
+    await db.sessionMatterArtifact.update({ where: { id: frozenAttachment.id },
+      data: { content: Buffer.from('bytes adulterados') } })
+    expect((await selectedResponse(firstArtifact.id)).status).toBe(200)
+    expect((await selectedResponse(candidate.manifest.artifacts[1].id)).status).toBe(409)
+    await db.sessionMatterArtifact.update({ where: { id: frozenAttachment.id },
+      data: { content: Buffer.from(candidate.bytesById.get(candidate.manifest.artifacts[1].id)!) } })
+    await db.localSessionTransferIssue.update({ where: { id: issued.issueId }, data: { manifestJson: '{}' } })
+    expect((await selectedResponse(firstArtifact.id)).status).toBe(409)
+    await db.localSessionTransferIssue.update({ where: { id: issued.issueId }, data: { manifestJson: null } })
+    expect((await selectedResponse(firstArtifact.id)).status).toBe(200)
+    await db.localSessionTransferIssue.update({ where: { id: issued.issueId },
+      data: { manifestJson: storedIssue.manifestJson } })
     const unknownIssue = signedLocalDeviceGet({ ...clientArgs,
       pathAndQuery: artifactPath.replace(issued.issueId, 'unknown') })
     expect((await downloadTransferArtifact(new NextRequest(unknownIssue.url, {
@@ -258,6 +288,31 @@ test('revisão publicada exporta bytes de PDF e anexo local, texto e política a
     expect(cycle.failed).toHaveLength(0)
     expect(transferDownloads).toBe(beforeCycleDownloads)
   } finally { await rm(clientRoot, { recursive: true, force: true }) }
+  const quotaPlan = await db.plan.create({ data: { name: 'transfer-quota-ensaios',
+    limits: JSON.stringify({ maxTransferPackageMiB: 1 }) } })
+  await db.subscription.create({ data: { tenantId: tenant.id, planId: quotaPlan.id, status: 'active' } })
+  const largePdf = Buffer.alloc(1024 * 1024 + 128, 0x41)
+  const largeHash = hash(largePdf)
+  try {
+    await db.sessionDocument.update({ where: { id: document.id }, data: {
+      content: largePdf, sizeBytes: largePdf.length, sha256: largeHash } })
+    const references = JSON.parse(revision.documentManifestJson) as Array<Record<string, unknown>>
+    references[0].sizeBytes = largePdf.length
+    references[0].sha256 = largeHash
+    await db.sessionAgendaRevision.update({ where: { id: revision.id },
+      data: { documentManifestJson: JSON.stringify(references) } })
+    await expect(issueSessionTransfer({ tenantId: tenant.id, sessionId: session.id,
+      deviceId: device.id })).rejects.toMatchObject({ code: 'PLAN_LIMIT', status: 402 })
+    await db.plan.update({ where: { id: quotaPlan.id },
+      data: { limits: JSON.stringify({ maxTransferPackageMiB: 2 }) } })
+    expect((await issueSessionTransfer({ tenantId: tenant.id, sessionId: session.id,
+      deviceId: device.id })).manifest.artifacts[0].sizeBytes).toBe(largePdf.length)
+  } finally {
+    await db.sessionDocument.update({ where: { id: document.id }, data: {
+      content, sizeBytes: content.length, sha256: hash(content) } })
+    await db.sessionAgendaRevision.update({ where: { id: revision.id },
+      data: { documentManifestJson: revision.documentManifestJson } })
+  }
   expect((await downloadTransfer(signedRequest, context)).status).toBe(409)
   const revoked = request(tenant.id)
   await db.localServerDesignation.update({ where: { tenantId: tenant.id }, data: { deviceId: null } })

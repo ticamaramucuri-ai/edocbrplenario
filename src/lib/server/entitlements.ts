@@ -12,6 +12,7 @@ import { DomainError } from './errors'
 export type PlanLimits = {
   maxParliamentarians?: number
   maxSessionsPerMonth?: number
+  maxTransferPackageMiB?: number
   features?: string[]
 }
 
@@ -24,6 +25,9 @@ export function parsePlanLimits(raw: string): PlanLimits {
     return {
       maxParliamentarians: typeof parsed.maxParliamentarians === 'number' ? parsed.maxParliamentarians : undefined,
       maxSessionsPerMonth: typeof parsed.maxSessionsPerMonth === 'number' ? parsed.maxSessionsPerMonth : undefined,
+      maxTransferPackageMiB: Number.isSafeInteger(parsed.maxTransferPackageMiB) &&
+        parsed.maxTransferPackageMiB! >= 1 && parsed.maxTransferPackageMiB! <= 512
+        ? parsed.maxTransferPackageMiB : undefined,
       features: Array.isArray(parsed.features) ? parsed.features.map(String) : [],
     }
   } catch {

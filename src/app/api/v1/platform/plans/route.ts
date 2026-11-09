@@ -15,7 +15,8 @@ import { requirePermission } from '@/lib/server/rbac'
 export const dynamic = 'force-dynamic'
 
 function toPlanView(plan: { id: string; name: string; priceCents: number; limits: string; active: boolean; createdAt: Date; updatedAt: Date }, subscriptions = 0) {
-  let limits: { maxParliamentarians?: number; maxSessionsPerMonth?: number; features?: string[] } = {}
+  let limits: { maxParliamentarians?: number; maxSessionsPerMonth?: number;
+    maxTransferPackageMiB?: number; features?: string[] } = {}
   try {
     limits = JSON.parse(plan.limits)
   } catch {
@@ -29,6 +30,7 @@ function toPlanView(plan: { id: string; name: string; priceCents: number; limits
     limits: {
       maxParliamentarians: typeof limits.maxParliamentarians === 'number' ? limits.maxParliamentarians : null,
       maxSessionsPerMonth: typeof limits.maxSessionsPerMonth === 'number' ? limits.maxSessionsPerMonth : null,
+      maxTransferPackageMiB: typeof limits.maxTransferPackageMiB === 'number' ? limits.maxTransferPackageMiB : null,
       features: Array.isArray(limits.features) ? limits.features.map(String) : [],
     },
     subscriptions,
@@ -49,6 +51,7 @@ const limitsSchema = z
   .object({
     maxParliamentarians: z.number().int().min(0).max(10000).optional(),
     maxSessionsPerMonth: z.number().int().min(0).max(10000).optional(),
+    maxTransferPackageMiB: z.number().int().min(1).max(512).optional(),
     features: z.array(z.string().min(1)).max(50).optional(),
   })
   .strict()

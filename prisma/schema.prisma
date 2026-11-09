@@ -146,6 +146,7 @@ model LocalSessionTransferIssue {
   revisionId         String
   revisionNumber     Int
   manifestSha256     String
+  manifestJson       String?
   artifactHashesJson String
   issuedAt           DateTime  @default(now())
   acknowledgedAt     DateTime?
@@ -301,7 +302,7 @@ model Plan {
   id         String   @id @default(cuid())
   name       String   @unique
   priceCents Int      @default(0)
-  limits     String   @default("{}") // JSON {maxParliamentarians, maxSessionsPerMonth, features: string[]}
+  limits     String   @default("{}") // JSON {maxParliamentarians, maxSessionsPerMonth, maxTransferPackageMiB, features: string[]}
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

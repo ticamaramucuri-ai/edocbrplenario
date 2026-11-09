@@ -603,6 +603,7 @@ export default function ConsoleModule() {
                 <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
                   <li>{p.limits.maxParliamentarians ? `Até ${p.limits.maxParliamentarians} vereadores` : 'Vereadores ilimitados'}</li>
                   <li>{p.limits.maxSessionsPerMonth ? `${p.limits.maxSessionsPerMonth} sessões/mês` : 'Sessões ilimitadas'}</li>
+                  <li>Pacote local: até {p.limits.maxTransferPackageMiB ?? 512} MiB por sessão</li>
                 </ul>
                 <div className="mt-3 flex flex-wrap gap-1">
                   {p.limits.features.length > 0 ? (
@@ -782,6 +783,7 @@ function NewPlanDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
   const [price, setPrice] = useState('299')
   const [maxParl, setMaxParl] = useState('10')
   const [maxSess, setMaxSess] = useState('12')
+  const [maxTransferMiB, setMaxTransferMiB] = useState('512')
   const [features, setFeatures] = useState('')
 
   const create = useMutation({
@@ -792,6 +794,7 @@ function NewPlanDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
         limits: {
           maxParliamentarians: Number(maxParl) || null,
           maxSessionsPerMonth: Number(maxSess) || null,
+          maxTransferPackageMiB: Number(maxTransferMiB),
           features: features.split(',').map((f) => f.trim()).filter(Boolean),
         },
       }),
@@ -822,6 +825,11 @@ function NewPlanDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
               <Input id="plan-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-transfer-mib">Pacote local por sessão (MiB, 1–512)</Label>
+            <Input id="plan-transfer-mib" inputMode="numeric" min={1} max={512}
+              value={maxTransferMiB} onChange={(e) => setMaxTransferMiB(e.target.value)} />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="plan-parl">Máx. vereadores</Label>
@@ -839,7 +847,9 @@ function NewPlanDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button disabled={!name.trim() || create.isPending} onClick={() => create.mutate()}>
+          <Button disabled={!name.trim() || !Number.isInteger(Number(maxTransferMiB)) ||
+            Number(maxTransferMiB) < 1 || Number(maxTransferMiB) > 512 || create.isPending}
+            onClick={() => create.mutate()}>
             {create.isPending ? 'Criando…' : 'Criar plano'}
           </Button>
         </DialogFooter>

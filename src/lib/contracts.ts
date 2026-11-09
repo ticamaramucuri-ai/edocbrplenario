@@ -1296,6 +1296,7 @@ export type MeHistoryView = {
 export type PlanLimits = {
   maxParliamentarians: number | null
   maxSessionsPerMonth: number | null
+  maxTransferPackageMiB: number | null
   features: string[]
 }
 
