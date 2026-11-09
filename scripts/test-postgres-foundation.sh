@@ -51,7 +51,7 @@ for model, fields, indexes in [
                 'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces', 'localSessionTransferIssues'], []),
     ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState', 'localTransferIssues'], []),
     ('AuthSession', ['mfaVerifiedAt'], []),
-    ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'matterArtifacts'], []),
+    ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'transferContextJson', 'matterArtifacts'], []),
     ('AttendanceEvent', ['commandId'], []),
     ('Voting', ['symbolicTallies'], []),
     ('Publication', ['reviewHash', 'reviewedById', 'reviewedByName', 'reviewedAt', 'reviewReference', 'publishedContentSha256', 'activeAtaSessionKey'], []),

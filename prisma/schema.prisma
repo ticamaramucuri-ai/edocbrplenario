@@ -508,6 +508,7 @@ model SessionAgendaRevision {
   policyJson  String
   documentManifestJson String @default("[]")
   matterManifestJson String?
+  transferContextJson String?
   changeJson  String?
   justification String?
   noticeJson  String?

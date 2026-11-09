@@ -41,7 +41,7 @@ O [CHANGELOG](CHANGELOG.md) é histórico de mudanças, não indicador de homolo
 | Artefato | Situação em 07/11 | Quando fechar / responsável funcional |
 |---|---|---|
 | Matriz viva requisito → código → teste → evidência → aceite | [Matriz de entrega](MATRIZ-ENTREGA.md) criada; contratos e provas do desktop entram conforme implementação | Atualizar em cada fase; engenharia e produto |
-| Contrato de pacote web → desktop e sincronização bidirecional | ADR-027 define invariantes; esquema/API versionados não existem | P4; engenharia de domínio e desktop |
+| Contrato de pacote web → desktop e sincronização bidirecional | Pacote v1, identidade, download, ACK e contexto da revisão ensaiados; contrato bidirecional dos atos e autoridade ainda pendente | P4/P6; engenharia de domínio e desktop |
 | Modelo de ameaça SaaS/LAN/desktop/dispositivos | Fragmentos em ADR e testes; revisão unificada pendente | Antes da API LAN e do voto offline; segurança |
 | Matriz de autoridade e contingência sem internet | ADR-027 é direção; procedimento regimental/operacional precisa de aprovação | P4/P6/P10; Mesa, jurídico e operação |
 | Guia de instalação Windows/Linux, certificados, atualização e reserva | Não existe | P5/P10; operação local |

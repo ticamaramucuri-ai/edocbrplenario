@@ -15,6 +15,7 @@ import { emitOutbox } from '@/lib/server/outbox'
 import { createSessionNotice } from '@/lib/server/session-notice'
 import { snapshotNoticeRecipients } from '@/lib/server/session-notice-recipients'
 import { freezeMatterSnapshot } from '@/lib/server/session-matter-snapshot'
+import { freezeTransferContext } from '@/lib/server/session-transfer-context'
 import { join } from 'node:path'
 
 export const dynamic = 'force-dynamic'
@@ -135,9 +136,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Conflito de versão', 'A sessão mudou. Recarregue a pauta.')
     const updated = await tx.session.findUniqueOrThrow({ where: { id } })
     const issuedAt = new Date()
-    const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, sizeBytes: true, sha256: true } })
+    const documents = await tx.sessionDocument.findMany({ where: { tenantId: session.tenantId, sessionId: id }, orderBy: [{ kind: 'asc' }, { version: 'desc' }], select: { id: true, kind: true, version: true, name: true, mimeType: true, sizeBytes: true, sha256: true } })
     const latestDocuments = documents.filter((document, index) => documents.findIndex((candidate) => candidate.kind === document.kind) === index)
-    const documentManifest = latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, sizeBytes: document.sizeBytes, sha256: document.sha256 }))
+    const documentManifest = latestDocuments.map((document) => ({ id: document.id, kind: document.kind, version: document.version, name: document.name, mimeType: document.mimeType, sizeBytes: document.sizeBytes, sha256: document.sha256 }))
     const policySnapshot = { enabledSessionTypes: change.policy.enabledSessionTypes, requireSecretaryForPublication: change.policy.requireSecretaryForPublication,
       minimumAgendaMatters: change.policy.minimumAgendaMatters, minimumNoticeHours: change.policy.minimumNoticeHours,
       minimumAmendmentHours: change.policy.minimumAmendmentHours, urgentNoticeExceptionTypes: change.policy.urgentNoticeExceptionTypes,
@@ -158,6 +159,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     } })
     await freezeMatterSnapshot(tx, { revisionId: revision.id, tenantId: session.tenantId,
       agenda: change.after, publicRoot: join(process.cwd(), 'public') })
+    await freezeTransferContext(tx, { revisionId: revision.id, tenantId: session.tenantId, sessionId: id })
     await snapshotNoticeRecipients(tx, { tenantId: session.tenantId, sessionId: id,
       revision: change.revision, noticeSha256: notice.noticeSha256, issuedAt })
     await writeAudit(tx, { tenantId: session.tenantId, actor, action: 'agenda.amended', aggregateType: 'session', aggregateId: id,

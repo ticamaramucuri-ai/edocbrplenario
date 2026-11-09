@@ -25,7 +25,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: { id: true, number: true, year: true, scheduledAt: true, updatedAt: true,
       agendaRevisions: { orderBy: { revision: 'desc' }, take: 1,
-        select: { id: true, revision: true, matterManifestJson: true } } },
+        select: { id: true, revision: true, matterManifestJson: true, transferContextJson: true } } },
   })
   const page = sessions.slice(0, 100)
   return Response.json({ sessions: page.map((session) => ({
@@ -33,7 +33,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     scheduledAt: session.scheduledAt, updatedAt: session.updatedAt,
     revisionId: session.agendaRevisions[0]?.id ?? null,
     revisionNumber: session.agendaRevisions[0]?.revision ?? null,
-    readyForTransfer: Boolean(session.agendaRevisions[0]?.matterManifestJson),
+    readyForTransfer: Boolean(session.agendaRevisions[0]?.matterManifestJson && session.agendaRevisions[0]?.transferContextJson),
   })), nextCursor: sessions.length > 100 ? page.at(-1)?.id : null },
   { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
 })

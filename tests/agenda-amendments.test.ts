@@ -48,6 +48,9 @@ test('emenda publicada tem prévia, revisão pública e isolamento por Câmara',
   expect((await applied.json()).amendment.revision).toBe(2)
   const issued = await db.sessionAgendaRevision.findFirstOrThrow({ where: { sessionId, revision: 2 } })
   expect(issued.noticeSha256).toHaveLength(64)
+  const amendedSession = await db.session.findUniqueOrThrow({ where: { id: sessionId } })
+  expect(JSON.parse(issued.transferContextJson!)).toMatchObject({ sessionVersion: amendedSession.version,
+    rosterSnapshot: [{ parliamentarianId: president.id }] })
   expect(JSON.parse(issued.noticeJson!).justification).toBe(add.justification)
   expect((await amend(actor.id, { ...add, mode: 'apply' })).status).toBe(409)
   expect(await db.sessionAgendaRevision.count({ where: { sessionId } })).toBe(2)

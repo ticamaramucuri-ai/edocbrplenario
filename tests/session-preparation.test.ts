@@ -61,6 +61,9 @@ test('preparação: duas criações recebem números distintos, ficam em rascunh
   const updated = await db.session.findUniqueOrThrow({ where: { id: created[0].id } })
   expect(updated.status).toBe('scheduled')
   expect(updated.agendaPublished).toBe(true)
+  const revision = await db.sessionAgendaRevision.findFirstOrThrow({ where: { sessionId: updated.id, revision: 1 } })
+  expect(JSON.parse(revision.transferContextJson!)).toMatchObject({ sessionVersion: updated.version,
+    rosterSnapshot: [{ parliamentarianId: president.id }] })
   expect((await db.session.findUniqueOrThrow({ where: { id: created[1].id } })).status).toBe('draft')
 
   const addAfterPublication = await addAgendaMatter(new NextRequest(
