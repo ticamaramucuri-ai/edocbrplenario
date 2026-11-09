@@ -99,7 +99,7 @@ async function main(): Promise<void> {
     const { config, trustedKeys } = await loadLocalDevice({ root, passphrase })
     const sessions = await inspectLocalPreparations({ root, tenantId: config.tenantId, trustedKeys })
     emit({ tenantId: config.tenantId, sessions })
-    if (sessions.some((session) => session.state === 'corrupt')) process.exitCode = 2
+    if (sessions.some((session) => session.state !== 'ready')) process.exitCode = 2
     return
   }
   if (command === 'sync') { await syncOnce(root, passphrase); return }

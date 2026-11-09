@@ -9,11 +9,24 @@ const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 
 export type LocalPreparationStatus = {
   sessionId: string
-  state: 'ready' | 'corrupt'
+  state: 'ready' | 'incomplete' | 'corrupt'
   prepared?: PreparedRevision
   artifactCount?: number
   totalBytes?: number
   reason?: string
+}
+
+async function hasInterruptedImport(path: string, revisionNumber: number): Promise<boolean> {
+  const entries = await readdir(path, { withFileTypes: true })
+  if (entries.some((entry) => entry.name === '.import-lock' ||
+      entry.name.startsWith('.import-') || entry.name.startsWith('.current-'))) return true
+  let revisions: Dirent<string>[]
+  try { revisions = await readdir(join(path, 'revisions'), { withFileTypes: true }) }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error }
+  return revisions.some((entry) => {
+    const match = /^(\d{8})-[0-9a-f]{64}$/.exec(entry.name)
+    return !entry.isDirectory() || !match || Number(match[1]) > revisionNumber
+  })
 }
 
 export async function inspectLocalPreparations(args: {
@@ -48,7 +61,10 @@ export async function inspectLocalPreparations(args: {
       sessionId = pointer.sessionId
       const { prepared, manifest } = await readPreparedPackage({ root: args.root,
         expectedTenantId: args.tenantId, expectedSessionId: sessionId, trustedKeys: args.trustedKeys })
-      statuses.push({ sessionId, state: 'ready', prepared, artifactCount: manifest.artifacts.length,
+      const interrupted = await hasInterruptedImport(join(directory, entry.name), prepared.revisionNumber)
+      statuses.push({ sessionId, state: interrupted ? 'incomplete' : 'ready', prepared,
+        reason: interrupted ? 'Importação em andamento ou interrompida; conferir antes de abrir a sessão.' : undefined,
+        artifactCount: manifest.artifacts.length,
         totalBytes: manifest.artifacts.reduce((sum, artifact) => sum + artifact.sizeBytes, 0) })
     } catch (error) {
       statuses.push({ sessionId, state: 'corrupt',

@@ -116,3 +116,22 @@ test('inventário offline só declara pronta uma revisão com assinatura e bytes
       .toEqual([{ sessionId: 'session-1', state: 'corrupt' }])
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+test('inventário offline sinaliza importação interrompida sem perder a revisão anterior', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'edocbr-local-inventory-'))
+  try {
+    const args = { root, expectedTenantId: 'tenant-1', expectedSessionId: 'session-1', trustedKeys }
+    await importPreparedPackage({ ...args, ...packageFor(1) })
+    const session = join(root, 'tenants', segment('tenant-1'), 'sessions', segment('session-1'))
+    const inventory = async () => (await inspectLocalPreparations({ root, tenantId: 'tenant-1', trustedKeys }))[0]
+    await mkdir(join(session, '.import-lock'))
+    expect((await inventory()).state).toBe('incomplete')
+    expect((await inventory()).prepared?.revisionNumber).toBe(1)
+    await rm(join(session, '.import-lock'), { recursive: true })
+    const orphan = join(session, 'revisions', `00000002-${segment('revision-2')}`)
+    await mkdir(orphan)
+    expect((await inventory()).state).toBe('incomplete')
+    await rm(orphan, { recursive: true })
+    expect((await inventory()).state).toBe('ready')
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
