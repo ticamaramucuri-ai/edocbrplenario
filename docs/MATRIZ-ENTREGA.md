@@ -1,6 +1,6 @@
 # Matriz viva de entrega e aceite
 
-**Baseline:** 07/11/2026 · **Plano:** [PLANO-MESTRE.md](PLANO-MESTRE.md). Esta matriz liga capacidade, implementação, teste, evidência e gate. Atualizar a linha afetada em cada incremento. “Implementado/ensaiado” não equivale a aceite institucional; o estado vale apenas para o escopo descrito.
+**Baseline:** 09/11/2026 · **Plano:** [PLANO-MESTRE.md](PLANO-MESTRE.md). Esta matriz liga capacidade, implementação, teste, evidência e gate. Atualizar a linha afetada em cada incremento. “Implementado/ensaiado” não equivale a aceite institucional; o estado vale apenas para o escopo descrito.
 
 | Fluxo | Estado atual | Código/contrato e teste principal | Evidência atual | Próximo gate |
 |---|---|---|---|---|
@@ -22,6 +22,8 @@
 | Nextcloud, Alfresco, identidade/assinatura | Contrato proposto; adaptadores não ativados | [Arquitetura de integração](integracoes/arquitetura-edocbr.md); APIs/outbox genéricos | Sem prova institucional ponta a ponta | P12 após P11: fonte de verdade, ACL, leitura, ACK, reconciliação e aceite técnico/legislativo |
 
 ## Como revisar esta matriz
+
+**Atualização P4 em 09/11/2026:** a [etapa 070](etapas/070-concorrencia-transferencia-duas-camaras.md) mediu emissão e quatro GETs concorrentes para duas Câmaras fictícias (48 MiB), com assinatura, hash e isolamento conferidos. A correção de conflito de nonce (`P2034`) passou no PostgreSQL descartável. A linha “Pacote web → desktop” ainda exige medição HTTP/TLS na VPS, quota agregada e instalação local para avançar de gate.
 
 1. Antes de alterar “estado”, abrir a implementação e a prova vinculada; registrar SHA e ambiente no arquivo de etapa. CI verde sem ensaio não vira homologação.
 2. Acrescentar casos negativos entre dois tenants e por papel ao modificar regra, mídia, documento ou sincronização.
