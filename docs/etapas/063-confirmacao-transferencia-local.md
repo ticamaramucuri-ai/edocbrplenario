@@ -1,6 +1,6 @@
 # P4/P5 — confirmação assinada da transferência ao desktop
 
-**Estado em 08/11/2026:** implementado em laboratório com banco SQLite e migração PostgreSQL 0021; CI e promoção desta PR ainda pendentes. A confirmação não concede autoridade de sessão nem prova presença física de operador.
+**Estado em 09/11/2026:** PR #28 integrada no SHA `d2f8ffd92b6362a2dc6990739824ccd020399628`; CI da `main` 42494469785 aprovada. A migração 0021 foi aplicada na VPS sintética, com 21 migrações, app/realtime/webhooks/scheduler saudáveis e `health=ready`. Pela URL pública, `/api/v1/health?ready=1` respondeu 200 com esse SHA e o POST de ACK sem identidade respondeu 401. A confirmação não concede autoridade de sessão nem prova presença física de operador.
 
 ## Entrega
 
@@ -8,7 +8,7 @@ Ao servir `GET /api/v1/sessions/:id/transfer`, o SaaS registra `LocalSessionTran
 
 Depois de importar e reler a revisão no disco, o cliente envia `POST /api/v1/sessions/:id/transfer-ack`. A assinatura Ed25519 v2 cobre Câmara, dispositivo, método, caminho, timestamp, nonce e SHA-256 dos bytes exatos do JSON; o servidor confere o digest, consome nonce persistido e compara integralmente a confirmação com a emissão. `acknowledgedAt` é escrito condicionalmente e permanece estável em repetição válida. O corpo é limitado a 256 KiB. Emissão de outra Câmara ou dispositivo não é visível. Hash/revisão/artefato divergente retorna 409; corpo alterado após assinatura retorna 401.
 
-Se a resposta do ACK se perder, a revisão já importada continua íntegra. O ciclo seguinte baixa o mesmo pacote, verifica idempotentemente e repete a confirmação com novo nonce. O teste de ponta a ponta cobre essa perda, releitura, ACK posterior, emissão única e ataques de alteração. A migração 0021 é aditiva e não modifica Câmaras existentes.
+Se a resposta do ACK se perder, a revisão já importada continua íntegra. O ciclo seguinte pode repetir o download e a confirmação de modo idempotente; a [etapa 064](064-retomada-ack-sem-redownload.md) acrescenta consulta de emissão para evitar esse redownload. O teste de ponta a ponta cobre perda, releitura, ACK posterior, emissão única e ataques de alteração. A migração 0021 é aditiva e não modifica Câmaras existentes.
 
 ## Limite e próximo passo
 

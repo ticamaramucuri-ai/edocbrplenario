@@ -2,7 +2,7 @@
 import type { KeyObject } from 'node:crypto'
 import { z } from 'zod'
 import { signedLocalDeviceGet } from './local-device-http'
-import { downloadAndPrepareSession } from './local-device-client'
+import { downloadAndPrepareSession, recoverPreparedSession } from './local-device-client'
 import type { PreparedRevision } from './local-session-package-store'
 
 const sessionSchema = z.object({
@@ -60,7 +60,11 @@ export async function synchronizePreparedSessions(args: ClientIdentity & {
   const skipped: string[] = []
   for (const session of sessions) {
     if (!session.readyForTransfer) { skipped.push(session.id); continue }
-    try { prepared.push(await downloadAndPrepareSession({ ...args, sessionId: session.id })) }
+    try {
+      const client = { ...args, sessionId: session.id }
+      prepared.push(await recoverPreparedSession({ ...client, expectedRevisionId: session.revisionId ?? '' }) ??
+        await downloadAndPrepareSession(client))
+    }
     catch (error) { failed.push({ sessionId: session.id, reason: error instanceof Error ? error.message : 'Falha desconhecida' }) }
   }
   return { prepared, failed, skipped }
