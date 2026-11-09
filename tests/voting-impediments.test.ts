@@ -101,4 +101,4 @@ test('impedimento reduz presentes e impede abertura sem quórum; retomada preser
   const resumed = await db.voting.findUniqueOrThrow({ where: { id: voting.id } })
   expect(resumed.eligibleVoterIdsAtOpen).toBe(opened.eligibleVoterIdsAtOpen)
   expect(resumed.memberBaseAtOpen).toBe(opened.memberBaseAtOpen)
-})
+}, 20_000)

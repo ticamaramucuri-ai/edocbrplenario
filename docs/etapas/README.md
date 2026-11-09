@@ -119,6 +119,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [071 — Serviço Linux e GitHub Free](071-servico-sync-linux-e-github-free.md) | Incremento local ensaiado | Credencial de serviço sem terminal e CI ajustada à franquia | Instalação Linux/Windows e CI do incremento |
 | [072 — Diário local de eventos](072-diario-eventos-local.md) | Incremento interno em ensaio | SQLite WAL, sequência, dedupe, assinatura e conferência na inicialização | Autoridade única, comandos de domínio, ACK e falha real |
 | [073 — Contrato de autoridade da sessão](073-contrato-autoridade-sessao.md) | Incremento criptográfico em ensaio | Grant Ed25519 vinculado a Câmara, sessão, dispositivo, revisão, manifesto e época | Emissão exclusiva no SaaS, persistência e gate de comandos |
+| [074 — Estabilidade CI de impedimentos](074-estabilidade-ci-impedimentos.md) | Correção de teste em revisão | Prazo explícito para caso longo na VM própria, sem alterar as asserções | CI verde no PR e no `main` |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
