@@ -64,7 +64,7 @@ Essas entradas não serão presumidas. O trabalho com dados fictícios pode avan
 
 ## Controle da meta
 
-**Bloqueio de entrega em 09/11/2026:** a CI do [PR #41](https://github.com/e-docBR/edocBRplenario/pull/41) não iniciou os jobs. O GitHub informou pagamento recente com falha **ou** limite de gastos insuficiente na conta. A regularização em **Billing & plans** é necessária para retomar o gate GitHub → VPS; o ensaio local não substitui CI verde. Ver [etapa 070](etapas/070-concorrencia-transferencia-duas-camaras.md).
+**Operação no plano gratuito em 09/11/2026:** os jobs hospedados foram recusados por cobrança ou limite, mas o [PR #41](https://github.com/e-docBR/edocBRplenario/pull/41) passou nos três jobs de CI em runner próprio isolado e foi integrado. O repositório privado executa CI no PR e em `main`; a sonda externa foi reduzida para uma execução por hora. A [estratégia GitHub Free](OPERACAO-GITHUB-FREE.md) registra o custo de detecção e o ciclo do runner. Nenhuma promoção é liberada sem CI verde no SHA correspondente.
 
 Cada incremento deve registrar no `docs/etapas/` objetivo, mudança, teste, SHA, ambiente, resultado, limite e próximo passo; atualizar a matriz e o plano mestre quando o estado mudar. PR e CI verde precedem promoção à VPS. Acompanharemos **gate fechado**, não porcentagem subjetiva. A meta só será concluída quando o R4 tiver evidência e aceites, e a release estiver operando com monitoramento, backup, suporte e revisão periódica. Datas e orçamento serão definidos depois de equipe, escopo do primeiro piloto, hardware e dependências externas confirmados.
 
