@@ -4,8 +4,9 @@ import { readFile } from 'node:fs/promises'
 import { initializeLocalDevice, enrollLocalDevice, trustLocalTransferKey, loadLocalDevice } from '../src/lib/local-device-keystore'
 import { synchronizePreparedSessions } from '../src/lib/local-session-discovery'
 import { readLocalServiceCredential } from '../src/lib/local-service-credential'
+import { inspectLocalPreparations } from '../src/lib/local-preparation-status'
 
-const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos]'
+const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | status <raiz> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos]'
 
 async function readSecret(): Promise<string> {
   if (!process.stdin.isTTY) {
@@ -91,9 +92,16 @@ async function main(): Promise<void> {
     emit({ keyId: arg1, publicKeySpkiSha256: fingerprint })
     return
   }
-  if (command !== 'sync' && command !== 'run' && command !== 'run-credential') throw new Error(usage)
+  if (command !== 'status' && command !== 'sync' && command !== 'run' && command !== 'run-credential') throw new Error(usage)
   if (command === 'run-credential' && !arg1) throw new Error(usage)
   const passphrase = command === 'run-credential' ? await readLocalServiceCredential(arg1!) : await readSecret()
+  if (command === 'status') {
+    const { config, trustedKeys } = await loadLocalDevice({ root, passphrase })
+    const sessions = await inspectLocalPreparations({ root, tenantId: config.tenantId, trustedKeys })
+    emit({ tenantId: config.tenantId, sessions })
+    if (sessions.some((session) => session.state === 'corrupt')) process.exitCode = 2
+    return
+  }
   if (command === 'sync') { await syncOnce(root, passphrase); return }
   const interval = command === 'run-credential' ? arg2 : arg1
   const seconds = interval === undefined ? 60 : Number(interval)

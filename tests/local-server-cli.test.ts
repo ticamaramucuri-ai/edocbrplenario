@@ -31,6 +31,9 @@ test('CLI inicializa, vincula e confia sem expor segredo na saída', async () =>
     const trusted = run(['trust', root, 'k-test', pemPath, fingerprint])
     expect(trusted.exitCode).toBe(0)
     expect((await loadLocalDevice({ root, passphrase })).trustedKeys.has('k-test')).toBe(true)
+    const status = run(['status', root], `${passphrase}\n`)
+    expect(status.exitCode).toBe(0)
+    expect(JSON.parse(new TextDecoder().decode(status.stdout))).toEqual({ tenantId: 'camara-a', sessions: [] })
     if (process.platform === 'linux') {
       const credentialPath = join(parent, 'local-service-credential')
       await writeFile(credentialPath, passphrase, { mode: 0o600 })

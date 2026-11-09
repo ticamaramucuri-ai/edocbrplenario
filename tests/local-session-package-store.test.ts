@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { importPreparedPackage, readPreparedPackage } from '@/lib/local-session-package-store'
+import { inspectLocalPreparations } from '@/lib/local-preparation-status'
 import { signPreparedPackage, type TransferManifestV1 } from '@/lib/session-transfer-contract'
 
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
@@ -95,5 +96,23 @@ test('reimportação recompõe diretório órfão deixado antes da troca do pont
     const next = packageFor(2)
     expect((await importPreparedPackage({ ...args, ...next })).revisionNumber).toBe(2)
     expect((await readPreparedPackage(args)).bytesById.get('document:1')).toEqual(next.bytesById.get('document:1'))
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('inventário offline só declara pronta uma revisão com assinatura e bytes íntegros', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'edocbr-local-inventory-'))
+  try {
+    expect(await inspectLocalPreparations({ root, tenantId: 'tenant-1', trustedKeys })).toEqual([])
+    const args = { root, expectedTenantId: 'tenant-1', expectedSessionId: 'session-1', trustedKeys }
+    await importPreparedPackage({ ...args, ...packageFor(1) })
+    const inventory = () => inspectLocalPreparations({ root, tenantId: 'tenant-1', trustedKeys })
+    expect((await inventory()).map(({ sessionId, state, artifactCount }) => ({ sessionId, state, artifactCount })))
+      .toEqual([{ sessionId: 'session-1', state: 'ready', artifactCount: 1 }])
+    expect(await inspectLocalPreparations({ root, tenantId: 'tenant-2', trustedKeys })).toEqual([])
+    const file = join(root, 'tenants', segment('tenant-1'), 'sessions', segment('session-1'),
+      'revisions', `00000001-${segment('revision-1')}`, 'artifacts', '000000.bin')
+    await writeFile(file, 'adulterado')
+    expect((await inventory()).map(({ sessionId, state }) => ({ sessionId, state })))
+      .toEqual([{ sessionId: 'session-1', state: 'corrupt' }])
   } finally { await rm(root, { recursive: true, force: true }) }
 })
