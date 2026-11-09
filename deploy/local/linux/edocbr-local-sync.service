@@ -1,0 +1,31 @@
+[Unit]
+Description=edocBR Plenário - sincronização local
+After=network.target
+ConditionPathExists=/var/lib/edocbr-plenario/device.json
+
+[Service]
+Type=exec
+User=edocbr-plenario
+Group=edocbr-plenario
+WorkingDirectory=/opt/edocbr-plenario
+StateDirectory=edocbr-plenario
+StateDirectoryMode=0700
+LoadCredentialEncrypted=local-passphrase:/etc/credstore.encrypted/edocbr-plenario.local-passphrase
+ExecStart=/usr/local/bin/bun /opt/edocbr-plenario/scripts/local-server.ts run-credential /var/lib/edocbr-plenario %d/local-passphrase 60
+Restart=on-failure
+RestartSec=10s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

@@ -31,5 +31,16 @@ test('CLI inicializa, vincula e confia sem expor segredo na saída', async () =>
     const trusted = run(['trust', root, 'k-test', pemPath, fingerprint])
     expect(trusted.exitCode).toBe(0)
     expect((await loadLocalDevice({ root, passphrase })).trustedKeys.has('k-test')).toBe(true)
+    if (process.platform === 'linux') {
+      const credentialPath = join(parent, 'local-service-credential')
+      await writeFile(credentialPath, passphrase, { mode: 0o600 })
+      const service = Bun.spawn(['bun', 'scripts/local-server.ts', 'run-credential', root,
+        credentialPath, '30'], { cwd: process.cwd(), stdin: 'ignore', stdout: 'pipe', stderr: 'pipe' })
+      await new Promise((resolveWait) => setTimeout(resolveWait, 1500))
+      service.kill('SIGTERM')
+      expect(await service.exited).toBe(0)
+      const stderr = await new Response(service.stderr).text()
+      expect(stderr).not.toContain(passphrase)
+    }
   } finally { await rm(parent, { recursive: true, force: true }) }
 })
