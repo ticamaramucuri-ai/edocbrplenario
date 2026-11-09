@@ -1,6 +1,6 @@
 # P4 — transferência concorrente de duas Câmaras
 
-**Estado em 09/11/2026:** ensaio local em PostgreSQL descartável aprovado; CI remota impedida antes de iniciar jobs; promoção à VPS pendente.
+**Estado em 09/11/2026:** ensaio local em PostgreSQL descartável aprovado; três jobs de CI aprovados em runner próprio isolado no GitHub Free; promoção à VPS pendente.
 
 ## Objetivo e mudança
 
@@ -16,9 +16,9 @@ As medições são de uma execução em máquina local, com PostgreSQL descartá
 
 Uma segunda execução passou após acrescentar duas requisições simultâneas com **o mesmo nonce**: uma retornou 200 com hash correto e a outra 409. Nessa execução, emissão: **519 ms**; quatro GETs: **399 ms**; RSS inicial **812 MiB**, pico amostrado **1.085 MiB**. A diferença de memória entre execuções mostra que estes números não servem como limite de dimensionamento; medir o processo HTTP isolado e o banco sob carga representativa antes de definir capacidade por VPS.
 
-O [run de PR #41](https://github.com/e-docBR/edocBRplenario/actions/runs/42671383557) terminou em falha duas vezes, ambas **antes de criar qualquer job** (`jobs.total_count = 0`). O workflow `ci.yml` está ativo, sem diferença em relação à `main`, e as Actions estão habilitadas no repositório. A API não expôs motivo mais específico. Não há resultado de CI para este commit; não mesclar nem promover com base apenas no ensaio local.
+Os primeiros runs hospedados do PR #41 foram recusados antes de executar jobs; a anotação do GitHub apontou cobrança ou limite da conta. O [run 42691450324](https://github.com/e-docBR/edocBRplenario/actions/runs/42691450324) executou no runner próprio `edocbr-ci-vm` dentro de VM Ubuntu 24.04 na estação de desenvolvimento. `media-smoke` e `postgres-foundation` passaram; `application` passou na terceira tentativa, após instalar `unzip` e Docker Compose v2 no convidado. Os três checks ficaram `SUCCESS` no mesmo SHA de código `1399c22`. O job `application` incluiu lint, tipos, testes, build, recuperação HTTP e acessibilidade com Chromium.
 
-O [run posterior do mesmo PR](https://github.com/e-docBR/edocBRplenario/actions/runs/42672974129) finalmente exibiu a anotação do GitHub: *“The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings.”* A causa está na cobrança/limite da conta GitHub, fora do código; a anotação não informa qual das duas condições ocorreu. Regularizar Billing & plans e repetir a CI antes do merge e da promoção.
+O runner é registrado como efêmero por job e o diretório de trabalho é limpo antes do próximo. A VM usa Docker próprio, sem socket ou volumes do host e sem credenciais de produção. O computador precisa estar ligado para executar a CI; ainda falta automatizar o ciclo de vida da VM e provar uma imagem limpa reproduzível. A documentação deste parágrafo será revalidada pela CI do commit que a inclui.
 
 ## Limites e próxima etapa
 
