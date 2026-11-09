@@ -10,6 +10,7 @@ import { localDeviceRequestMessage, localDeviceRequestMessageV2 } from '@/lib/lo
 export { localDeviceRequestMessage } from '@/lib/local-device-request'
 
 const WINDOW_MS = 120_000
+const SERIALIZATION_RETRIES = 4
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex')
 
 /** Device management needs a real, non-impersonated tenant admin login with MFA. */
@@ -74,23 +75,30 @@ export async function authenticateLocalDeviceRequest(req: Request, tenantId: str
   let valid = false
   try { valid = verifySignature(null, message, createPublicKey(device.publicKeyPem), signature) } catch { /* deny */ }
   if (!valid) throw unauthenticated('Assinatura do servidor local inválida.')
-  try {
-    await db.$transaction(async (tx) => {
-      const selected = await tx.localServerDesignation.findUnique({ where: { tenantId } })
-      const stillActive = await tx.localServerDevice.findFirst({ where: { id: deviceId, tenantId, status: 'registered' } })
-      if (selected?.deviceId !== deviceId || !stillActive) throw unauthenticated('Servidor local não designado para esta Câmara.')
-      const nonceHash = sha256(nonce)
-      const previous = await tx.localDeviceRequestNonce.findUnique({ where: {
-        tenantId_deviceId_nonceHash: { tenantId, deviceId, nonceHash } } })
-      if (previous) throw new DomainError('LOCAL_DEVICE_REPLAY', 409, 'Pedido repetido', 'O pedido deste servidor local já foi recebido.')
-      await tx.localDeviceRequestNonce.create({ data: { tenantId, deviceId, nonceHash,
-        expiresAt: new Date(Number(timestamp) + WINDOW_MS) } })
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      throw new DomainError('LOCAL_DEVICE_REPLAY', 409, 'Pedido repetido', 'O pedido deste servidor local já foi recebido.')
+  for (let attempt = 0; attempt <= SERIALIZATION_RETRIES; attempt++) {
+    try {
+      await db.$transaction(async (tx) => {
+        const selected = await tx.localServerDesignation.findUnique({ where: { tenantId } })
+        const stillActive = await tx.localServerDevice.findFirst({ where: { id: deviceId, tenantId, status: 'registered' } })
+        if (selected?.deviceId !== deviceId || !stillActive) throw unauthenticated('Servidor local não designado para esta Câmara.')
+        const nonceHash = sha256(nonce)
+        const previous = await tx.localDeviceRequestNonce.findUnique({ where: {
+          tenantId_deviceId_nonceHash: { tenantId, deviceId, nonceHash } } })
+        if (previous) throw new DomainError('LOCAL_DEVICE_REPLAY', 409, 'Pedido repetido', 'O pedido deste servidor local já foi recebido.')
+        await tx.localDeviceRequestNonce.create({ data: { tenantId, deviceId, nonceHash,
+          expiresAt: new Date(Number(timestamp) + WINDOW_MS) } })
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
+      return device
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw new DomainError('LOCAL_DEVICE_REPLAY', 409, 'Pedido repetido', 'O pedido deste servidor local já foi recebido.')
+      }
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034' && attempt < SERIALIZATION_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1) + Math.floor(Math.random() * 10)))
+        continue
+      }
+      throw error
     }
-    throw error
   }
-  return device
+  throw new Error('Local device authentication retries exhausted.')
 }

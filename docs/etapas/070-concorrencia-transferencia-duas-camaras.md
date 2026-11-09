@@ -1,0 +1,19 @@
+# P4 — transferência concorrente de duas Câmaras
+
+**Estado em 09/11/2026:** ensaio local em PostgreSQL descartável aprovado; CI e promoção à VPS pendentes desta revisão.
+
+## Objetivo e mudança
+
+Medir uma emissão e quatro downloads concorrentes com duas Câmaras fictícias, documentos em bytes no PostgreSQL, assinatura do manifesto, conferência de tamanho/hash e tentativa de acesso cruzado. O ensaio inicial revelou `P2034` na transação serializável que consome o nonce de autenticação do servidor local: um GET retornou 500. A autenticação agora repete até quatro vezes **somente** o conflito transitório `P2034`, com intervalo curto; em cada tentativa reconfere designação, revogação e nonce. Duplicação de nonce continua resultando em `LOCAL_DEVICE_REPLAY` (409).
+
+Arquivos: `src/lib/server/local-device-identity.ts`, `scripts/measure-transfer-capacity.ts` e `scripts/test-postgres-foundation.sh`.
+
+## Evidência
+
+`bun run typecheck`, `bun run lint` e `bun run build` passaram. `bash scripts/test-postgres-foundation.sh` passou, incluindo as 25 migrações PostgreSQL, testes existentes, backup/restauração e o novo ensaio. O resultado em execução direta dos handlers foi: **2 Câmaras, 4 PDFs sintéticos, 50.331.648 bytes (48 MiB)**; emissão concorrente em **333 ms**, quatro GETs em **320 ms**, GET mais lento em **319 ms**; RSS antes da emissão **552 MiB** e pico amostrado **727 MiB**. Todos os hashes e tamanhos coincidiram com os manifestos assinados. O pedido de um tenant para o artefato do outro foi recusado com 401.
+
+As medições são de uma execução em máquina local, com PostgreSQL descartável e chamadas diretas aos handlers. Incluem o runtime de testes e os dados em memória; **não** representam SLO, capacidade de VPS, throughput HTTP/TLS nem PDFs reais. A falha `P2034` apareceu no log antes da repetição bem-sucedida e permanece observável. Não houve dados institucionais.
+
+## Limites e próxima etapa
+
+P4 continua aberto. Falta medir HTTP real na VPS com volumes e concorrência definidos, quota agregada por Câmara, armazenamento e alertas; testar falha/reinício durante importação; preparar o serviço local supervisionado Windows/Linux (P5). A implantação de produção depende de backup durável, metas RTO/RPO e aceites institucionais; este ensaio não libera o piloto.

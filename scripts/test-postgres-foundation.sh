@@ -210,4 +210,6 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/session-readiness.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/session-capacity.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  bun scripts/measure-transfer-capacity.ts
 echo "PostgreSQL: DDL aplicado, backup/restauração comprovados; $tables tabelas, 1 tenant restaurado."
