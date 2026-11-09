@@ -1,6 +1,6 @@
 # P3/P4 — leitura seletiva e limite do pacote local
 
-**Estado em 09/11/2026:** implementado e ensaiado localmente com dados fictícios. PR, CI e staging serão registrados após revisão.
+**Estado em 09/11/2026:** [PR #39](https://github.com/e-docBR/edocBRplenario/pull/39) incorporada; CI da `main` [42666953401](https://github.com/e-docBR/edocBRplenario/actions/runs/42666953401) verde; VPS sintética promovida ao SHA `12cc4a710ffed84fd7717c224f158ae61e2073f7`.
 
 ## Entrega
 
@@ -10,7 +10,7 @@ O plano SaaS pode definir `maxTransferPackageMiB` entre 1 e 512 MiB. O console e
 
 ## Prova e limites
 
-`bash scripts/test-session-transfer-export.sh` passou com emissão e GET seletivo, adulteração do artefato pedido, manutenção de outro arquivo íntegro, manifesto persistido inválido, compatibilidade com emissão legada e limite de plano de 1/2 MiB. `bash scripts/test-postgres-foundation.sh` passou com 25 migrações, scheduler, backup/restauração e 83 tabelas. `bun run typecheck`, `bun run lint` e `bun run build` passaram. **CI e promoção:** pendentes nesta redação inicial.
+`bash scripts/test-session-transfer-export.sh` passou com emissão e GET seletivo, adulteração do artefato pedido, manutenção de outro arquivo íntegro, manifesto persistido inválido, compatibilidade com emissão legada e limite de plano de 1/2 MiB. `bash scripts/test-postgres-foundation.sh` passou com 25 migrações, scheduler, backup/restauração e 83 tabelas. `bun run typecheck`, `bun run lint` e `bun run build` passaram. Na VPS, a migração 0025 foi aplicada e app, realtime, webhooks e scheduler ficaram saudáveis. `GET /api/v1/health?ready=1` respondeu 200 com `database: ready` e o SHA promovido; a rota seletiva sem autenticação respondeu 401.
 
 O ensaio de quota usou cerca de 1 MiB em banco descartável. Ainda faltam medição com PDFs representativos, duas Câmaras concorrentes, observador externo e teste de pico de memória. A emissão inicial continua a materializar o pacote completo para assinar o manifesto; este incremento reduz o custo dos GETs seguintes. Não estabelece quota agregada de armazenamento, largura de banda ou retenção institucional. A política comercial e os valores por Câmara exigem aprovação antes do piloto.
 
