@@ -1,6 +1,6 @@
 # P4 — retomada da transferência por artefato
 
-**Estado em 09/11/2026:** implementado e ensaiado localmente com dados fictícios. PR, CI e promoção à staging serão registrados após a revisão. P4 e P5 continuam abertos.
+**Estado em 09/11/2026:** [PR #35](https://github.com/e-docBR/edocBRplenario/pull/35) incorporada; CI da `main` [42642475064](https://github.com/e-docBR/edocBRplenario/actions/runs/42642475064) verde; VPS sintética promovida ao SHA `b2bc11bb3583dcfb077390ac6ab6e790261b21fc`. P4 e P5 continuam abertos.
 
 ## Entrega
 
@@ -10,7 +10,7 @@ O cliente guarda cada artefato somente após conferir tamanho e SHA-256, em cach
 
 ## Prova e limite
 
-`bash scripts/test-session-transfer-export.sh` passou com 4 testes/74 expectativas: autenticação, isolamento da emissão, interrupção por resposta truncada, bytes adulterados, reutilização do primeiro artefato e ACK após importação. Os testes de contrato, wire, importador e cache parcial passaram com 12 testes/51 expectativas. `bun run typecheck`, `bun run lint` e `bun run build` passaram. O teste de cache prova separação entre Câmaras/revisões, recusa de hash inválido, arquivo adulterado e link simbólico.
+`bash scripts/test-session-transfer-export.sh` passou com 4 testes/74 expectativas: autenticação, isolamento da emissão, interrupção por resposta truncada, bytes adulterados, reutilização do primeiro artefato e ACK após importação. Os testes de contrato, wire, importador e cache parcial passaram com 12 testes/51 expectativas. `bun run typecheck`, `bun run lint` e `bun run build` passaram. O teste de cache prova separação entre Câmaras/revisões, recusa de hash inválido, arquivo adulterado e link simbólico. Na VPS, o script de promoção confirmou app, realtime, webhooks e scheduler saudáveis e 23 migrações aplicadas. `GET /api/v1/health?ready=1` respondeu 200 com `database: ready` e o SHA promovido; as rotas novas de manifesto e artefato sem autenticação responderam 401.
 
 Este incremento não instala nem supervisiona o serviço Windows/Linux; não abre API LAN ou voto offline. A rota de cada artefato ainda recompõe o candidato completo da revisão, o que exige otimização e medição para sessões grandes. Emissões antigas e caches de transferências que nunca terminam precisam de retenção/limpeza operacional. Também faltam quotas por Câmara, custódia institucional das chaves, cancelamento e ensaio em dois computadores com interrupção real de rede/energia. Nenhum desses pontos é homologação institucional.
 
