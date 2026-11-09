@@ -1,6 +1,6 @@
 # P3/P4 — PDF privado da matéria
 
-**Estado em 09/11/2026:** implementação e ensaios locais concluídos; CI, PR e promoção à VPS pendentes.
+**Estado em 09/11/2026:** [PR #33](https://github.com/e-docBR/edocBRplenario/pull/33) incorporada, CI de `main` [42629354089](https://github.com/e-docBR/edocBRplenario/actions/runs/42629354089) verde e VPS sintética promovida ao SHA `75fe2836ea295b5379c1c2fd6e084b2fe3ddc3b3`.
 
 ## Objetivo e mudança
 
@@ -13,6 +13,8 @@ Na publicação ou emenda de pauta, `captureMatterSnapshot` usa os bytes privado
 ## Prova
 
 `bash scripts/test-matter-attachment-private.sh` passou com envio válido/inválido, acesso sem identidade, acesso de outra Câmara, lista sem bytes, download íntegro, snapshot sem raiz pública e bloqueio após adulteração. `bash scripts/test-session-transfer-export.sh`, `bun run test:pilot:preflight`, `bun run typecheck`, `bun run lint` e `bash scripts/test-postgres-foundation.sh` passaram. O ensaio PostgreSQL aplicou 23 migrações, conciliou 83 tabelas e restaurou banco e arquivos em ambiente descartável.
+
+Na VPS, a migração 0023 foi aplicada e app, realtime, webhooks e scheduler ficaram saudáveis. O health público `GET /api/v1/health?ready=1` respondeu 200 com `database: ready` e o SHA promovido. A nova rota de arquivo privado sem autenticação respondeu 401. A staging continua com tenant fictício; esta prova não substitui upload institucional ou teste de carga com PDFs de 50 MB.
 
 ## Limites e próxima etapa
 
