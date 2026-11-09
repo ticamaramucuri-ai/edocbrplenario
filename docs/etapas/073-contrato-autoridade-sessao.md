@@ -1,6 +1,6 @@
 # P6 — contrato de autoridade da sessão
 
-**Estado em 09/11/2026:** contrato criptográfico local implementado em branch; sem concessão operacional e sem votação offline.
+**Estado em 09/11/2026:** contrato criptográfico integrado ao `main` pelo [PR #45](https://github.com/e-docBR/edocBRplenario/pull/45), com [CI do PR](https://github.com/e-docBR/edocBRplenario/actions/runs/42718772292) e [CI do `main`](https://github.com/e-docBR/edocBRplenario/actions/runs/42720235446) verdes nos três jobs. O SHA `7f15f65b4fecb5835ab644ea0610bc39cc78adbb` foi promovido à VPS de homologação sintética; a prontidão e a versão pública foram verificadas. Sem concessão operacional e sem votação offline.
 
 ## Entrega e evidência
 

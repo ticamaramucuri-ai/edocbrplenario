@@ -1,6 +1,6 @@
 # P4/P6 — diário local sequenciado e assinado
 
-**Estado em 09/11/2026:** [PR #44](https://github.com/e-docBR/edocBRplenario/pull/44) aberta sobre `main` após a integração da #42; implementação interna e ensaio sintético locais. A CI hospedada anterior foi recusada por cobrança/limite; o branch foi rebased para o runner próprio isolado e ainda precisa de checks verdes no SHA atual. O PR #43 foi fechado automaticamente quando sua antiga branch base foi removida. Nenhuma votação offline foi liberada.
+**Estado em 09/11/2026:** [PR #44](https://github.com/e-docBR/edocBRplenario/pull/44) integrada ao `main` como `77bfe5ba38d42c43535038f825eba5d7989d33e1`; a [CI do `main`](https://github.com/e-docBR/edocBRplenario/actions/runs/42716358446) passou nos três jobs do runner próprio isolado. O PR #43 foi fechado automaticamente quando sua antiga branch base foi removida. Nenhuma votação offline foi liberada.
 
 ## Entrega
 
