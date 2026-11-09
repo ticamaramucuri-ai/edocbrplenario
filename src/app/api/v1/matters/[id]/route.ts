@@ -14,6 +14,7 @@ import {
   toProceedingView,
   toMatterVersionView,
   toMatterAttachmentView,
+  matterAttachmentMetadata,
   toRelatedMatterView,
   toMatterOutcomeView,
 } from '@/lib/server/serializers'
@@ -31,7 +32,7 @@ export const GET = apiHandler(async (req: Request, ctx, _correlationId) => {
       where: { matterId: matter.id },
       orderBy: { version: 'asc' },
     }),
-    db.matterAttachment.findMany({ where: { matterId: matter.id }, orderBy: { createdAt: 'asc' } }),
+    db.matterAttachment.findMany({ where: { matterId: matter.id }, orderBy: { createdAt: 'asc' }, select: matterAttachmentMetadata }),
     db.relatedMatter.findMany({
       where: { OR: [{ matterId: matter.id }, { relatedMatterId: matter.id }] },
       include: { matter: true, relatedMatter: true },

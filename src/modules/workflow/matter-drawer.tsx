@@ -16,6 +16,7 @@ import {
   ArchiveRestore,
   CalendarPlus,
   Copy,
+  Download,
   FileCheck2,
   FilePlus2,
   FileText,
@@ -409,14 +410,14 @@ export default function MatterDrawer({
                 </h4>
                 {canWrite && (
                   <Button size="sm" variant="outline" onClick={() => setAttachmentOpen(true)}>
-                    <Upload className="size-3.5" /> Registrar anexo
+                    <Upload className="size-3.5" /> Adicionar anexo
                   </Button>
                 )}
               </div>
               {attachmentsQ.isLoading ? (
                 <Skeleton className="h-12 w-full" />
               ) : attachments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum anexo registrado (metadados).</p>
+                <p className="text-sm text-muted-foreground">Nenhum anexo registrado.</p>
               ) : (
                 <ul className="max-h-56 space-y-2 overflow-y-auto custom-scroll pr-1">
                   {attachments.map((a) => (
@@ -432,7 +433,22 @@ export default function MatterDrawer({
                           {fmtDateTime(a.createdAt)}
                         </p>
                       </div>
-                      {a.url && (
+                      {a.sha256 && (
+                        <Button size="sm" variant="ghost" onClick={async () => {
+                          try {
+                            const blob = await api.downloadMatterAttachment(matter.id, a.id)
+                            const objectUrl = URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.href = objectUrl
+                            link.download = a.name
+                            link.click()
+                            setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+                          } catch { toast.error('Não foi possível baixar o anexo privado.') }
+                        }}>
+                          <Download className="size-3.5" /> Baixar
+                        </Button>
+                      )}
+                      {!a.sha256 && a.url && (
                         <a
                           href={a.url}
                           target="_blank"
@@ -442,7 +458,7 @@ export default function MatterDrawer({
                           <Link2 className="size-3.5" aria-hidden /> Abrir
                         </a>
                       )}
-                      {!a.url && <span className="text-xs text-muted-foreground">Arquivo não disponível</span>}
+                      {!a.sha256 && !a.url && <span className="text-xs text-muted-foreground">Arquivo não disponível</span>}
                     </li>
                   ))}
                 </ul>
@@ -559,10 +575,11 @@ function NewAttachmentDialog({
   const [name, setName] = useState('')
   const [kind, setKind] = useState('anexo')
   const [url, setUrl] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: () =>
+    mutationFn: () => file ? api.uploadMatterAttachment(matter.id, { name: name.trim(), kind, file }) :
       api.createMatterAttachment(matter.id, {
         name: name.trim(),
         kind,
@@ -574,6 +591,7 @@ function NewAttachmentDialog({
       setName('')
       setKind('anexo')
       setUrl('')
+      setFile(null)
       setError(null)
       onOpenChange(false)
     },
@@ -592,9 +610,9 @@ function NewAttachmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar anexo</DialogTitle>
+          <DialogTitle>Adicionar anexo</DialogTitle>
           <DialogDescription>
-            Metadados apenas (o armazenamento do arquivo é externo). Informe a URL quando disponível.
+            Envie um PDF privado para preparar a sessão local. Referências por URL ficam pendentes até o arquivo ser materializado.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
@@ -619,14 +637,23 @@ function NewAttachmentDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="att-url">URL (opcional)</Label>
-            <Input id="att-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
+            <Label htmlFor="att-file">Arquivo PDF privado</Label>
+            <Input id="att-file" type="file" accept="application/pdf,.pdf" onChange={(e) => {
+              const selected = e.target.files?.[0] ?? null
+              setFile(selected)
+              if (selected && !name.trim()) setName(selected.name)
+            }} />
+            <p className="text-xs text-muted-foreground">Até 50 MB. O arquivo fica no acervo privado da Câmara.</p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="att-url">URL legada (sem arquivo)</Label>
+            <Input id="att-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" disabled={!!file} />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={mutation.isPending}>
-            {mutation.isPending ? 'Registrando…' : 'Registrar anexo'}
+            {mutation.isPending ? 'Salvando…' : file ? 'Enviar PDF' : 'Registrar referência'}
           </Button>
         </DialogFooter>
       </DialogContent>

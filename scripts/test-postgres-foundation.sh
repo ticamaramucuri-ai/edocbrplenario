@@ -58,6 +58,7 @@ for model, fields, indexes in [
     ('Transmission', ['publicObservationId', 'observations'], []),
     ('CitizenSubscription', ['mailDeliveries'], []),
     ('Parliamentarian', ['partyEmblemUrl'], []),
+    ('MatterAttachment', ['mimeType', 'sha256', 'content'], []),
     ('BoardPosition', ['status'], []),
     ('Party', ['emblemUrl'], []),
     ('OutboxEvent', ['leaseOwner', 'leaseUntil'], ['status, leaseUntil, createdAt']),

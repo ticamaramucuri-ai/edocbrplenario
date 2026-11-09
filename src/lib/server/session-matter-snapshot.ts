@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { lstat, readFile, realpath } from 'node:fs/promises'
 import { isAbsolute, join, sep } from 'node:path'
 import type { Prisma } from '@prisma/client'
+import { verifyPrivateMatterAttachment } from './matter-attachment-private'
 
 const MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
@@ -79,10 +80,13 @@ export async function captureMatterSnapshot(tx: Prisma.TransactionClient, args: 
       latestText: matter.versions[0]?.text ?? null, attachmentIds: matter.attachments.map((item) => item.id) })
     for (const attachment of matter.attachments) {
       try {
-        const content = await localAttachmentBytes(attachment.url, args.publicRoot, args.tenantId)
+        const content = attachment.content !== null || attachment.sha256 !== null
+          ? verifyPrivateMatterAttachment(attachment)
+          : await localAttachmentBytes(attachment.url, args.publicRoot, args.tenantId)
         if (content.byteLength !== attachment.sizeBytes) throw new Error('Tamanho cadastrado diverge.')
         artifacts.push({ tenantId: args.tenantId, attachmentId: attachment.id, name: attachment.name,
-          mimeType: 'application/octet-stream', sizeBytes: content.byteLength, sha256: sha256(content), content })
+          mimeType: attachment.content !== null ? 'application/pdf' : 'application/octet-stream',
+          sizeBytes: content.byteLength, sha256: sha256(content), content })
       } catch {
         // A pauta pode ser publicada; a preparação local ficará bloqueada até nova revisão íntegra.
         manifest.unavailableAttachmentIds.push(attachment.id)

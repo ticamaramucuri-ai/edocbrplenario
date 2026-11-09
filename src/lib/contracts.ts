@@ -835,6 +835,8 @@ export type MatterAttachmentView = {
   kind: string
   sizeBytes: number
   url: string | null
+  mimeType: string | null
+  sha256: string | null
   createdAt: string
 }
 

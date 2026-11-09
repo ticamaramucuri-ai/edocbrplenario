@@ -111,6 +111,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [063 — Confirmação da transferência](063-confirmacao-transferencia-local.md) | Incremento técnico em ensaio | ACK assinado após leitura integral do pacote | ACK parcial e autoridade da sessão |
 | [064 — Retomada do ACK](064-retomada-ack-sem-redownload.md) | Incremento técnico em ensaio | Resposta de ACK perdida recuperada sem baixar novamente o pacote | Retomada de bytes por artefato |
 | [065 — Contexto congelado](065-contexto-congelado-transferencia.md) | Incremento local ensaiado | Composição, regras, versão e MIME fixados na revisão publicada | Acervo privado e transferência parcial |
+| [066 — PDF privado da matéria](066-anexo-privado-materia.md) | Incremento local ensaiado | Upload e download autenticados, hash e captura dos bytes na revisão | Quotas, publicação aprovada e transferência parcial |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 

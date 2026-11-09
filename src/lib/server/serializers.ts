@@ -658,7 +658,11 @@ export function toMatterVersionView(v: MatterVersionRow): MatterVersionView {
   }
 }
 
-export function toMatterAttachmentView(a: MatterAttachmentRow): MatterAttachmentView {
+export const matterAttachmentMetadata = { id: true, matterId: true, name: true, kind: true,
+  sizeBytes: true, url: true, mimeType: true, sha256: true, createdAt: true } as const
+
+export function toMatterAttachmentView(a: Pick<MatterAttachmentRow,
+  'id' | 'matterId' | 'name' | 'kind' | 'sizeBytes' | 'url' | 'mimeType' | 'sha256' | 'createdAt'>): MatterAttachmentView {
   return {
     id: a.id,
     matterId: a.matterId,
@@ -666,6 +670,8 @@ export function toMatterAttachmentView(a: MatterAttachmentRow): MatterAttachment
     kind: a.kind,
     sizeBytes: a.sizeBytes,
     url: a.url ?? null,
+    mimeType: a.mimeType,
+    sha256: a.sha256,
     createdAt: iso(a.createdAt) as string,
   }
 }
