@@ -121,6 +121,7 @@ Cada incremento do [plano mestre](../PLANO-MESTRE.md) deve referenciar um arquiv
 | [073 — Contrato de autoridade da sessão](073-contrato-autoridade-sessao.md) | Incremento criptográfico em ensaio | Grant Ed25519 vinculado a Câmara, sessão, dispositivo, revisão, manifesto e época | Emissão exclusiva no SaaS, persistência e gate de comandos |
 | [074 — Estabilidade CI de impedimentos](074-estabilidade-ci-impedimentos.md) | Integrada, CI verde | Prazo explícito para caso longo na VM própria, sem alterar as asserções | Monitorar duração sob carga do runner |
 | [075 — Reserva de autoridade por sessão](075-reserva-autoridade-sessao.md) | Implementação interna em ensaio | Uma linha por sessão, época crescente, ACK, designação e três processos PostgreSQL | Cercar escritores web, endpoint e gate local |
+| [076 — Fontes locais no build](076-fontes-locais-build.md) | Correção local validada; CI pendente | Geist/Geist Mono incorporadas com licença e hashes; typecheck, lint e build locais passaram | CI do PR e do `main`, seguida de promoção do mesmo SHA à VPS sintética |
 
 O plano diretor define a direção do produto; este diretório registra o que foi realmente implementado e testado. Evidências e limites devem ser atualizados no mesmo arquivo quando surgir uma correção da etapa.
 
