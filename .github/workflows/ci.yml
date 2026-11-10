@@ -22,7 +22,7 @@ jobs:
         with:
           bun-version: 1.4.2
       - name: Install FFmpeg for recording archive tests
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y ffmpeg
       - run: bun install --frozen-lockfile
       - run: bun install --cwd mini-services/realtime --frozen-lockfile
       - run: bun run db:generate
@@ -92,7 +92,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
-      - run: sudo apt-get update && sudo apt-get install -y postgresql-client sqlite3
+      - run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y postgresql-client sqlite3
       - run: bun install --frozen-lockfile
       - run: bun install --cwd mini-services/realtime --frozen-lockfile
       - run: bun run test:postgres:foundation
@@ -107,7 +107,7 @@ jobs:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
       - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y ffmpeg
       - name: Download verified MediaMTX v1.21.2
         run: |
           curl -fLsS -o mediamtx_v1.21.2_linux_amd64.tar.gz https://github.com/bluenviron/mediamtx/releases/download/v1.21.2/mediamtx_v1.21.2_linux_amd64.tar.gz
