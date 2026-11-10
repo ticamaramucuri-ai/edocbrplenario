@@ -13,7 +13,7 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 
 export type AuditInput = {
   tenantId: string
-  actor: Pick<ResolvedActor, 'name' | 'role'>
+  actor: Pick<ResolvedActor, 'name'> & { role: string }
   action: string
   aggregateType: string
   aggregateId?: string | null

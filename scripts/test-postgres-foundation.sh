@@ -35,7 +35,7 @@ source = re.sub(r'\nmodel RateLimitHit \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel OfficialConfigurationRevision \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionDocument \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionMatterArtifact \{.*?\n\}\n', '\n', source, flags=re.S)
-for model in ['LocalServerDevice', 'LocalServerDesignation', 'LocalDeviceRequestNonce', 'LocalSessionTransferIssue']:
+for model in ['LocalServerDevice', 'LocalServerDesignation', 'LocalDeviceRequestNonce', 'LocalSessionTransferIssue', 'LocalSessionAuthorityLease']:
     source = re.sub(rf'\nmodel {model} \{{.*?\n\}}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SessionNoticeDelivery \{.*?\n\}\n', '\n', source, flags=re.S)
 source = re.sub(r'\nmodel SymbolicTallyRevision \{.*?\n\}\n', '\n', source, flags=re.S)
@@ -48,8 +48,8 @@ for model, fields, indexes in [
                 'contactAddress', 'contactPostalCode', 'contactGeneralPhone', 'contactAlternatePhone',
                 'contactOmbudsmanPhone', 'contactGeneralEmail', 'contactProtocolEmail', 'contactOmbudsmanEmail',
                 'contactWebsiteUrl', 'contactServiceHours', 'contactSessionHours',
-                'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces', 'localSessionTransferIssues'], []),
-    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState', 'localTransferIssues'], []),
+                'localServerDevices', 'localServerDesignation', 'localDeviceRequestNonces', 'localSessionTransferIssues', 'localSessionAuthorityLeases'], []),
+    ('Session', ['official', 'officialConfigurationId', 'documents', 'noticeDeliveries', 'displayState', 'localTransferIssues', 'localAuthorityLease'], []),
     ('AuthSession', ['mfaVerifiedAt'], []),
     ('SessionAgendaRevision', ['documentManifestJson', 'matterManifestJson', 'transferContextJson', 'matterArtifacts'], []),
     ('AttendanceEvent', ['commandId'], []),
@@ -101,6 +101,7 @@ POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
 POSTGRES_MIGRATION_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" python3 scripts/postgres-migrate.py apply
 test "$(docker exec "$container" psql -At -U postgres -d postgres -c 'SELECT count(*) FROM pg_indexes WHERE indexname = '\''LocalSessionTransferIssue_acknowledgedAt_issuedAt_idx'\''')" = 1
+test "$(docker exec "$container" psql -At -U postgres -d postgres -c 'SELECT count(*) FROM pg_indexes WHERE indexname = '\''LocalSessionAuthorityLease_pkey'\''')" = 1
 docker exec "$container" psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c \
   "INSERT INTO \"Tenant\" (id, slug, name, city, uf, \"updatedAt\") VALUES ('tenant-restore-proof', 'restore-proof', 'Ensaio', 'Teste', 'BA', now());" >/dev/null
 docker exec "$container" pg_dump -U postgres -d postgres -Fc > "$temporary/backup.dump"
@@ -188,6 +189,8 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/postgres-services-e2e.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/local-device-identity.test.ts
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  bun test tests/session-authority-lease.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
   bun test tests/rate-limit-postgres.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \

@@ -1,6 +1,6 @@
 # ADR-030 — contrato assinado de autoridade da sessão
 
-**Estado:** contrato implementado; concessão, persistência, revogação e execução oficial pendentes · **Data:** 09/11/2026.
+**Estado:** contrato e reserva transacional implementados; endpoint, cercamento dos escritores web, revogação e execução oficial pendentes · **Data:** 09/11/2026.
 
 ## Decisão
 
@@ -10,6 +10,8 @@ A época será incrementada de modo transacional pelo SaaS na emissão ou comuta
 
 ## Limites e próximos gates
 
-`src/lib/session-authority-contract.ts` implementa somente assinatura e verificação. Ainda não há endpoint de emissão, exclusão mútua no banco central, prova de revogação durante queda de WAN, armazenamento do maior epoch, vínculo do diário ao grant, comando de voto ou conciliação. Assinatura válida não prova que o SaaS não concedeu uma época superior a outro desktop. Nenhum ato oficial deve ser habilitado por este contrato isolado.
+`src/lib/session-authority-contract.ts` implementa assinatura e verificação. `src/lib/server/session-authority-lease.ts` reserva uma única concessão vigente por sessão em transação serializável, após conferir designação, sessão publicada, revisão atual e ACK integral. O mesmo desktop recebe a concessão existente ou renova próximo do vencimento; outro desktop só recebe após o vencimento, sempre com época maior. A reserva é auditada. A chave de assinatura é injetada no serviço, ainda sem custódia institucional ou endpoint público. A FK impede excluir o dispositivo atualmente referenciado; a época permanece na linha da sessão após a troca.
 
-Próximo incremento: transação de emissão por sessão no PostgreSQL com único dispositivo ativo, geração monotônica e auditoria; depois persistência local do grant e do maior epoch, gate de comandos, outbox e teste de comutação com dois processos. Seguir [ADR-029](ADR-029-diario-local-de-eventos.md) e [ADR-027](ADR-027-saas-nucleo-local-operacao-offline.md).
+Ainda não há cercamento de todas as mutações web, prova de revogação durante queda de WAN, armazenamento local da maior época, vínculo do diário ao grant, comando de voto ou conciliação. Assinatura válida não prova que o SaaS não concedeu uma época superior a outro desktop. Nenhum ato oficial deve ser habilitado por este contrato isolado.
+
+A transação passou em PostgreSQL descartável com três processos independentes. Próximo incremento: provisionar chave confiável, cercar os escritores web durante a autoridade local e expor emissão autenticada só depois desses gates. Em seguida persistir o grant e a maior época no desktop, conectar comandos, outbox e reconciliação. Seguir [ADR-029](ADR-029-diario-local-de-eventos.md) e [ADR-027](ADR-027-saas-nucleo-local-operacao-offline.md).

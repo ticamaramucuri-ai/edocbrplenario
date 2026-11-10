@@ -83,6 +83,7 @@ model Tenant {
   localServerDesignation LocalServerDesignation?
   localDeviceRequestNonces LocalDeviceRequestNonce[]
   localSessionTransferIssues LocalSessionTransferIssue[]
+  localSessionAuthorityLeases LocalSessionAuthorityLease[]
 }
 
 // Identidade do servidor local; a chave pública do equipamento é distinta da
@@ -103,6 +104,7 @@ model LocalServerDevice {
   designations LocalServerDesignation[]
   requestNonces LocalDeviceRequestNonce[]
   transferIssues LocalSessionTransferIssue[]
+  authorityLeases LocalSessionAuthorityLease[]
 
   @@unique([tenantId, publicKeySpkiSha256])
   @@index([tenantId, status])
@@ -158,6 +160,28 @@ model LocalSessionTransferIssue {
   @@unique([tenantId, deviceId, revisionId, manifestSha256])
   @@index([tenantId, sessionId, issuedAt])
   @@index([acknowledgedAt, issuedAt])
+}
+
+// Uma única concessão vigente por sessão. A época cresce em toda renovação/troca.
+// Isto não libera comandos locais até os escritores web e a reconciliação serem cercados.
+model LocalSessionAuthorityLease {
+  sessionId      String   @id
+  tenantId       String
+  deviceId       String
+  revisionId     String
+  manifestSha256 String
+  epoch          Int
+  issuedAt       DateTime
+  expiresAt      DateTime
+  signingKeyId   String
+  signedGrantJson String
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  device  LocalServerDevice @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, expiresAt])
+  @@index([tenantId, deviceId, expiresAt])
 }
 
 // Aprovação interna versionada da configuração institucional da Câmara.
@@ -466,6 +490,7 @@ model Session {
   recording         SessionRecording?
   displayState      DisplayState?
   localTransferIssues LocalSessionTransferIssue[]
+  localAuthorityLease LocalSessionAuthorityLease?
 
   @@unique([tenantId, number, year])
   @@index([tenantId, status])
