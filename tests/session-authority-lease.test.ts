@@ -88,6 +88,16 @@ test('pedidos simultâneos repetem o mesmo epoch, sem conceder duas autoridades'
   expect(await db.auditEvent.count({ where: { tenantId: f.tenant.id, action: 'local_authority.reserved' } })).toBe(1)
 }, 20_000)
 
+test('reenvio recusa divergência entre concessão assinada e linha persistida', async () => {
+  const f = await fixture()
+  await f.acknowledge(f.devices[0].id)
+  await reserveSessionAuthorityLease(f.request())
+  await db.localSessionAuthorityLease.update({ where: { sessionId: f.session.id }, data: { epoch: 0 } })
+  await expect(reserveSessionAuthorityLease(f.request(f.devices[0].id, at(1)))).rejects.toMatchObject({
+    code: 'LOCAL_AUTHORITY_PRECONDITION',
+  })
+})
+
 if (process.env.DATABASE_URL?.startsWith('postgresql:')) {
   test('três processos PostgreSQL recebem a mesma concessão sem duplicar época ou auditoria', async () => {
     const f = await fixture()

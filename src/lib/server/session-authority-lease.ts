@@ -64,6 +64,12 @@ export async function reserveSessionAuthorityLease(args: {
           if (current.signingKeyId !== args.keyId) throw conflict('Chave de assinatura mudou durante a concessão vigente.')
           if (current.expiresAt.getTime() - now.getTime() > RENEWAL_WINDOW_MS) {
             const stored = JSON.parse(current.signedGrantJson) as SignedSessionAuthorityGrant
+            if (stored?.grant?.epoch !== current.epoch ||
+                stored.grant.issuedAt !== current.issuedAt.toISOString() ||
+                stored.grant.expiresAt !== current.expiresAt.toISOString() ||
+                stored.signature?.keyId !== current.signingKeyId) {
+              throw precondition('Concessão assinada diverge do estado persistido.')
+            }
             verifySessionAuthorityGrant(stored, { tenantId: args.tenantId, sessionId: args.sessionId,
               deviceId: args.deviceId, revisionId: args.revisionId,
               manifestSha256: args.manifestSha256,
