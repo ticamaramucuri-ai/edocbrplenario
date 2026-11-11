@@ -5,6 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { openLocalEventJournal } from '@/lib/local-event-journal'
+import { signSessionAuthorityGrant } from '@/lib/session-authority-contract'
 
 test('diário local persiste sequência, deduplica comando e rejeita escopo ou payload alterado', async () => {
   const root = await mkdtemp(join(tmpdir(), 'edocbr-journal-'))
@@ -71,4 +72,43 @@ test('escrita é bloqueada quando o último evento muda enquanto o processo est�
       eventType: 'presence.recorded', actorId: 'operador-1', payload: { present: false } }))
       .toThrow('Último evento')
   } finally { journal.close(); await rm(root, { recursive: true, force: true }) }
+})
+
+test('desktop persiste a maior época assinada e rejeita concessão antiga após reinício', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'edocbr-journal-'))
+  const deviceKey = generateKeyPairSync('ed25519')
+  const saasKey = generateKeyPairSync('ed25519')
+  const journalArgs = { root, tenantId: 'camara-a', deviceId: 'desktop-a', privateKey: deviceKey.privateKey }
+  const context = { sessionId: 'sessao-1', revisionId: 'revisao-3',
+    manifestSha256: 'a'.repeat(64), trustedKeys: new Map([['saas-1', saasKey.publicKey]]),
+    now: new Date('2026-11-11T12:00:00Z') }
+  const signed = (epoch: number, expiresAt = '2026-11-11T12:10:00Z') =>
+    signSessionAuthorityGrant({ format: 'edocbr.session-authority', schemaVersion: 1,
+      tenantId: 'camara-a', sessionId: 'sessao-1', deviceId: 'desktop-a',
+      revisionId: 'revisao-3', manifestSha256: 'a'.repeat(64), epoch,
+      issuedAt: '2026-11-11T11:59:00Z', notBefore: '2026-11-11T12:00:00Z',
+      expiresAt }, 'saas-1', saasKey.privateKey)
+  try {
+    const journal = openLocalEventJournal(journalArgs)
+    expect(journal.acceptAuthorityGrant({ ...context, signed: signed(7) }).epoch).toBe(7)
+    journal.close()
+
+    const reopened = openLocalEventJournal(journalArgs)
+    expect(reopened.acceptAuthorityGrant({ ...context, signed: signed(7) }).epoch).toBe(7)
+    expect(() => reopened.acceptAuthorityGrant({ ...context, signed: signed(6) })).toThrow('obsoleta')
+    expect(() => reopened.acceptAuthorityGrant({ ...context,
+      signed: signed(7, '2026-11-11T12:09:00Z') })).toThrow('diverge')
+    expect(reopened.acceptAuthorityGrant({ ...context, signed: signed(8) }).epoch).toBe(8)
+    expect(() => reopened.acceptAuthorityGrant({ ...context, signed: signed(7) })).toThrow('obsoleta')
+    expect(() => reopened.acceptAuthorityGrant({ ...context, signed: {
+      ...signed(9), grant: { ...signed(9).grant, deviceId: 'desktop-b' },
+    } })).toThrow('Assinatura')
+    reopened.close()
+
+    const tamper = new Database(join(root, 'events.sqlite'))
+    tamper.query('UPDATE authority_epoch SET signed_grant_hash = ? WHERE session_id = ?')
+      .run('b'.repeat(64), 'sessao-1')
+    tamper.close()
+    expect(() => openLocalEventJournal(journalArgs)).toThrow('adulterada')
+  } finally { await rm(root, { recursive: true, force: true }) }
 })
