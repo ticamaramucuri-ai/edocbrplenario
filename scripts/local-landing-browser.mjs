@@ -17,6 +17,11 @@ function check(condition, message) {
 }
 
 async function auditA11y(page, label) {
+  // Axe deve medir as cores finais: o fade de abertura mistura temporariamente
+  // o texto do diálogo com o fundo e produz falsos erros de contraste.
+  await page.locator('[role="dialog"]').evaluateAll(async (dialogs) => {
+    await Promise.all(dialogs.flatMap((dialog) => dialog.getAnimations().map((animation) => animation.finished.catch(() => {}))))
+  })
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     // Exclui regras visuais que dependem de fontes remotas completas em headless linux se houver
