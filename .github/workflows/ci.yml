@@ -82,6 +82,7 @@ jobs:
       - run: bun run test:recovery:image-http
       - run: bun run test:recovery:acervo-http
       - run: bunx playwright install chromium
+      - run: bun run test:landing:browser
       - run: bun run test:a11y:plenario
 
   postgres-foundation:

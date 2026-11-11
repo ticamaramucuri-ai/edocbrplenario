@@ -30,7 +30,7 @@ async function auditA11y(page, label) {
           id: v.id,
           impact: v.impact,
           description: v.description,
-          nodes: v.nodes.map((n) => n.target),
+          nodes: v.nodes.map((n) => ({ target: n.target, failureSummary: n.failureSummary })),
         })),
         null,
         2
@@ -98,14 +98,22 @@ async function main() {
     console.log(`[3/4] Testando Verificador Criptográfico e Auto-Onboarding...`)
     const verifierInput = page.locator('#verificador input').first()
     await verifierInput.waitFor({ state: 'visible', timeout: 5000 })
+    check((await verifierInput.inputValue()) === '', 'Verificador não deve sugerir código fictício como documento real')
+    check(!(await page.locator('#verificador').getByText('VÁLIDO E ÍNTEGRO').count()), 'Verificador não deve mostrar validade antes da consulta')
+    await verifierInput.fill(`INEXISTENTE-${randomUUID()}`)
     const verifyBtn = page.locator('#verificador button').first()
+    const verifyResponsePromise = page.waitForResponse((res) => res.url().includes('/api/v1/public/verify?code='))
     await verifyBtn.click()
-    await page.waitForTimeout(600)
-    console.log('  ✓ Consulta do verificador criptográfico executada')
+    const verifyResponse = await verifyResponsePromise
+    check(verifyResponse.status() === 200, 'Consulta pública deve responder HTTP 200')
+    check((await verifyResponse.json()).found === false, 'Código inexistente deve retornar found=false')
+    await page.locator('#verificador').getByText('NÃO LOCALIZADO').waitFor({ state: 'visible' })
+    console.log('  ✓ Código inexistente consultado e exibido como não localizado')
 
     // Testar Formulário de Onboarding
     const suffix = randomUUID().slice(0, 6)
     const chamberInput = page.locator('#onb-chamber')
+    check((await chamberInput.inputValue()) === '', 'Formulário deve começar sem dados de uma Câmara fictícia')
     await chamberInput.fill(`Câmara Municipal de Teste ${suffix}`)
 
     const cityInput = page.locator('#onb-city')
@@ -124,15 +132,21 @@ async function main() {
 
     // Marcar consentimento LGPD
     const lgpdCheckbox = page.locator('input[type="checkbox"]').first()
+    check(!(await lgpdCheckbox.isChecked()), 'Consentimento deve exigir escolha ativa')
+    const submitBtn = page.locator('#onboarding button[type="submit"]').first()
+    await submitBtn.click()
+    await page.getByText('É necessário concordar com os termos de tratamento de dados').waitFor({ state: 'visible' })
     await lgpdCheckbox.check()
 
     // Submeter formulário
-    const submitBtn = page.locator('button[type="submit"]').first()
+    const onboardingResponsePromise = page.waitForResponse((res) => res.url().includes('/api/v1/public/onboarding') && res.request().method() === 'POST')
     await submitBtn.click()
-
-    // Aguardar mensagem de sucesso ou alerta de rate-limit
-    await page.waitForTimeout(1500)
-    console.log('  ✓ Formulário de auto-onboarding submetido com validação Zod e consentimento LGPD')
+    const onboardingResponse = await onboardingResponsePromise
+    check(onboardingResponse.status() === 201, `Pedido de demonstração deve responder HTTP 201, recebido ${onboardingResponse.status()}`)
+    const onboardingBody = await onboardingResponse.json()
+    check(onboardingBody.request?.status === 'pendente', 'Pedido deve aguardar análise humana')
+    await page.getByRole('dialog', { name: /Pedido Registrado com Sucesso/i }).waitFor({ state: 'visible' })
+    console.log('  ✓ Pedido de demonstração registrado como pendente')
 
     // Auditoria de acessibilidade na página de apresentação
     await auditA11y(page, 'Página /apresentacao')
