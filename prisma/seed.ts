@@ -10,6 +10,7 @@ import { computeReceipt } from '../src/lib/server/receipts'
 import { computeDocHash, computeDocumentSignature } from '../src/lib/server/document-signatures'
 import { computeTenantHealth } from '../src/lib/server/tenant-health'
 import { createSessionNotice } from '../src/lib/server/session-notice'
+import { canonicalAuditBody, computeChainHash } from '../src/lib/server/audit'
 
 const db = new PrismaClient()
 
@@ -75,6 +76,27 @@ async function audit(input: AuditInput) {
       createdAt: input.createdAt,
     },
   })
+}
+
+/**
+ * O seed insere alguns logins históricos depois das ações recentes para compor
+ * a telemetria demonstrativa. Reencadeia por data/ID antes de liberar a base,
+ * para que o próximo writeAudit possa anexar ao head temporal sem bifurcar.
+ */
+async function rebuildAuditChains() {
+  const rows = await db.auditEvent.findMany({ select: { tenantId: true } })
+  const tenantIds = [...new Set(rows.map((row) => row.tenantId))]
+  for (const tenantId of tenantIds) {
+    const events = await db.auditEvent.findMany({
+      where: { tenantId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    })
+    let prevHash: string | null = null
+    for (const event of events) {
+      const chainHash = computeChainHash(prevHash, canonicalAuditBody(event))
+      await db.auditEvent.update({ where: { id: event.id }, data: { prevHash, chainHash } })
+      prevHash = chainHash
+    }
+  }
 }
 
 async function main() {
@@ -1685,6 +1707,8 @@ async function main() {
   console.log(`  Parlamentares: ${parlData.length} + ${parl2Data.length}`)
   console.log(`  Matérias: ${matterData.length} + ${matter2Data.length}`)
   console.log(`  Sessões: 3 + 2 (tenant 2: 1 encerrada com votação, 1 futura) — ano ${YEAR}`)
+  await rebuildAuditChains()
+
   console.log(`  Fases 9–12: senhas demo (${DEMO_PASSWORD}), 5 faturas (1 vencida), 5 publicações (1 revogada), 3 audiências (1 aberta com 4 perguntas)`)
   console.log(`  Fases 13–16: ${templatesSeed.length} modelos (Vila Nova) + 1 (Serra Azul), agenda/pesquisa/ajuda/observabilidade nos módulos`)
   console.log('  Onda 4: sanção (PL 41) + veto total (PL 49) + emenda vinculada, votação com opções regimentais, recibos do REQ 120, 5 assinaturas de cidadãos, usuário de suporte, 2 alertas e 1 export concluído')

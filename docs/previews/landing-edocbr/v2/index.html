@@ -1,0 +1,1933 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>edocBR Plenário — Plataforma de Governança Legislativa, Deliberação e Transparência</title>
+  <style>
+    @font-face {
+      font-family: 'Geist';
+      src: url('../../../../src/assets/fonts/Geist-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geist Mono';
+      src: url('../../../../src/assets/fonts/GeistMono-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    :root {
+      --bg-obsidian: #020b18;
+      --bg-navy-deep: #04152d;
+      --bg-navy: #072348;
+      --bg-navy-soft: #0d3262;
+      --gold-300: #f3d486;
+      --gold-400: #e5b95c;
+      --gold-500: #d49b35;
+      --gold-600: #a87619;
+      --emerald-400: #34d399;
+      --emerald-500: #10b981;
+      --emerald-600: #059669;
+      --emerald-700: #047857;
+      --crimson-400: #f87171;
+      --crimson-500: #ef4444;
+      --crimson-600: #dc2626;
+      --amber-400: #fbbf24;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--slate-50);
+      color: var(--slate-900);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, p { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    code, .mono { font-family: 'Geist Mono', monospace; }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 1: DARK ARCHITECTURAL HERO & COCKPIT MULTI-CAMADA
+       ═══════════════════════════════════════════════════════════════════════ */
+    .screen-hero {
+      background:
+        radial-gradient(ellipse 80% 55% at 72% 28%, rgba(212, 155, 53, 0.16), transparent 60%),
+        radial-gradient(ellipse 65% 50% at 20% 80%, rgba(16, 185, 129, 0.09), transparent 55%),
+        linear-gradient(180deg, #020b18 0%, #051936 58%, #072247 100%);
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+      padding-bottom: 56px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 50% 35%, black 35%, transparent 85%);
+      pointer-events: none;
+    }
+
+    /* Top Telemetry Strip */
+    .telemetry-bar {
+      background: rgba(2, 8, 18, 0.75);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      color: var(--slate-300);
+      position: relative;
+      z-index: 2;
+    }
+    .telemetry-inner {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .telemetry-left, .telemetry-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      box-shadow: 0 0 10px var(--emerald-400);
+      display: inline-block;
+    }
+    .pill-gold {
+      background: rgba(212, 155, 53, 0.16);
+      border: 1px solid rgba(212, 155, 53, 0.4);
+      color: var(--gold-300);
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Main Navbar */
+    .navbar {
+      position: relative;
+      z-index: 2;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(4, 21, 45, 0.6);
+      backdrop-filter: blur(14px);
+    }
+    .navbar-inner {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-lockup img {
+      height: 34px;
+      width: auto;
+    }
+    .brand-sep {
+      width: 1px;
+      height: 22px;
+      background: rgba(255,255,255,0.22);
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: var(--gold-300);
+    }
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+      margin: 0 18px;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-lg {
+      height: 48px;
+      padding: 0 24px;
+      font-size: 14px;
+      border-radius: 9px;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #ecc56a 0%, #d49b35 100%);
+      color: #161004;
+      box-shadow: 0 8px 24px rgba(212, 155, 53, 0.28), inset 0 1px 0 rgba(255,255,255,0.45);
+    }
+    .btn-glass {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #ffffff;
+    }
+    .btn-navy {
+      background: linear-gradient(135deg, #072348 0%, #03152e 100%);
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(4, 21, 45, 0.2);
+    }
+
+    /* Hero Content Split */
+    .hero-body {
+      position: relative;
+      z-index: 2;
+      padding-top: 52px;
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: 44px;
+      align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 13px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(212, 155, 53, 0.35);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--gold-300);
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 46px;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      font-weight: 400;
+      color: #ffffff;
+      margin-bottom: 20px;
+    }
+    .hero-title span {
+      background: linear-gradient(90deg, #f6dc99 0%, #d49b35 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: #bfd0e6;
+      margin-bottom: 28px;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .h-metric {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .h-metric b {
+      display: block;
+      font-size: 14px;
+      color: var(--gold-300);
+      margin-bottom: 3px;
+    }
+    .h-metric span {
+      font-size: 11px;
+      color: #9bb2ce;
+      line-height: 1.38;
+      display: block;
+    }
+
+    /* ─── COCKPIT REALISTA DA MESA DIRETORA + PWA ─── */
+    .cockpit-stage {
+      position: relative;
+      padding-right: 14px;
+      padding-bottom: 22px;
+    }
+    .cockpit-window {
+      background: #0b192e;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 16px;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 155, 53, 0.15);
+      overflow: hidden;
+    }
+    .cockpit-topbar {
+      height: 42px;
+      background: #061121;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px;
+      color: #94abc7;
+    }
+    .traffic-lights {
+      display: flex;
+      gap: 6px;
+    }
+    .traffic-lights i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .tl-r { background: #ef4444; }
+    .tl-y { background: #f59e0b; }
+    .tl-g { background: #10b981; }
+    .cmd-bar {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 3px 12px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      color: #b7c9df;
+    }
+    .cockpit-body {
+      display: grid;
+      grid-template-columns: 158px 1fr;
+      background: #f8fafc;
+      color: var(--slate-900);
+    }
+    .c-sidebar {
+      background: #041226;
+      color: #cbd5e1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .c-sidebar-tenant {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+    .c-sidebar-tenant strong {
+      display: block;
+      font-size: 10.5px;
+      color: #fff;
+    }
+    .c-sidebar-tenant small {
+      font-size: 9px;
+      color: var(--gold-300);
+    }
+    .c-nav-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #94a3b8;
+    }
+    .c-nav-item.active {
+      background: linear-gradient(90deg, rgba(212,155,53,0.18), rgba(212,155,53,0.04));
+      color: #fff;
+      font-weight: 700;
+      border-left: 3px solid var(--gold-400);
+    }
+    .c-nav-badge {
+      font-size: 9px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.1);
+      color: #e2e8f0;
+    }
+    .c-workspace {
+      padding: 16px 18px;
+      background: #f4f7fb;
+    }
+    .c-ws-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--slate-200);
+    }
+    .c-ws-head h4 {
+      font-size: 13.5px;
+      color: var(--bg-navy-deep);
+    }
+    .c-ws-head p {
+      font-size: 10px;
+      color: var(--slate-500);
+      margin-top: 2px;
+    }
+    .epoch-chip {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+    }
+    .c-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .c-kpi {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 9px 11px;
+    }
+    .c-kpi small {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--slate-500);
+      display: block;
+    }
+    .c-kpi strong {
+      font-size: 14px;
+      color: var(--slate-900);
+      display: block;
+      margin-top: 3px;
+    }
+    .c-main-grid {
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 10px;
+    }
+    .c-card {
+      min-width: 0;
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .c-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5px;
+      font-weight: 750;
+      color: var(--slate-800);
+      margin-bottom: 10px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--slate-100);
+    }
+    /* Parliamentary Seats Grid */
+    .seats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .seat-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 6px;
+      border-radius: 5px;
+      font-size: 9px;
+      font-weight: 650;
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+    }
+    .seat-pill.sim {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #065f46;
+    }
+    .seat-pill.nao {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+    .seat-avatar {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--bg-navy);
+      color: #fff;
+      font-size: 7.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .seat-pill.sim .seat-avatar { background: #059669; }
+    .seat-pill.nao .seat-avatar { background: #dc2626; }
+
+    /* Tribune Speaker Active Box */
+    .tribune-box {
+      background: linear-gradient(90deg, #061c3b 0%, #0d3262 100%);
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .timer-display {
+      font-family: 'Geist Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--gold-300);
+      background: rgba(0,0,0,0.28);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Vote Tally Visual */
+    .tally-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .t-row {
+      font-size: 10px;
+    }
+    .t-row-head {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .t-track {
+      height: 8px;
+      background: var(--slate-100);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .t-fill-sim { width: 75%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); }
+    .t-fill-nao { width: 17%; height: 100%; background: linear-gradient(90deg, #f87171, #dc2626); }
+    .t-fill-abs { width: 8%; height: 100%; background: #94a3b8; }
+
+    /* Floating iPhone PWA Mockup */
+    .iphone-pwa {
+      position: absolute;
+      right: -12px;
+      bottom: -14px;
+      width: 228px;
+      background: #061224;
+      border: 3px solid #283b56;
+      border-radius: 26px;
+      padding: 12px;
+      color: #fff;
+      box-shadow: 0 26px 55px rgba(2, 8, 20, 0.65);
+    }
+    .iphone-notch {
+      width: 68px;
+      height: 12px;
+      background: #000;
+      border-radius: 99px;
+      margin: 0 auto 10px;
+    }
+    .pwa-chip {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5px;
+      color: var(--emerald-400);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .pwa-vote-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .pwa-receipt-pill {
+      margin-top: 8px;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 7px;
+      padding: 6px 8px;
+      font-size: 9px;
+      color: #a7f3d0;
+    }
+
+    /* Trust Strip Bottom of Hero */
+    .trust-ribbon {
+      position: relative;
+      z-index: 2;
+      margin-top: 40px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 18px 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      backdrop-filter: blur(12px);
+    }
+    .tr-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .tr-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(212, 155, 53, 0.16);
+      border: 1px solid rgba(212, 155, 53, 0.35);
+      color: var(--gold-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .tr-item strong {
+      display: block;
+      font-size: 12.5px;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+    .tr-item p {
+      font-size: 11.5px;
+      color: #9ab0ca;
+      line-height: 1.45;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 2: BENTO GRID COM WIDGETS VISUAIS REAIS DOS 6 MÓDULOS
+       ═══════════════════════════════════════════════════════════════════════ */
+    .section-block {
+      padding: 76px 0;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 32px;
+      margin-bottom: 38px;
+    }
+    .sec-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--gold-600);
+      margin-bottom: 10px;
+    }
+    .sec-head h2 {
+      font-family: Georgia, serif;
+      font-size: 38px;
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+      color: var(--bg-navy-deep);
+      font-weight: 400;
+      max-width: 640px;
+    }
+    .sec-head p {
+      font-size: 14.5px;
+      line-height: 1.62;
+      color: var(--slate-600);
+      max-width: 440px;
+    }
+
+    /* 5-Step Journey Ribbon */
+    .journey-ribbon {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+    .j-step {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+    .j-step.active-step {
+      background: linear-gradient(180deg, #051936 0%, #092954 100%);
+      color: #fff;
+      border-color: var(--gold-500);
+      box-shadow: 0 14px 30px rgba(5, 25, 54, 0.18);
+    }
+    .j-num {
+      font-family: 'Geist Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--gold-600);
+      margin-bottom: 6px;
+    }
+    .j-step.active-step .j-num { color: var(--gold-300); }
+    .j-step h4 {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .j-step p {
+      font-size: 11.5px;
+      line-height: 1.48;
+      color: var(--slate-600);
+    }
+    .j-step.active-step p { color: #c4d6eb; }
+
+    /* Rich Bento Grid */
+    .bento-showcase {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .b-card {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .b-visual {
+      background: linear-gradient(180deg, #f8fafc 0%, #eff4fa 100%);
+      border: 1px solid var(--slate-200);
+      border-radius: 11px;
+      padding: 14px;
+      margin-bottom: 16px;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .b-visual.dark-vis {
+      background: linear-gradient(135deg, #04152d 0%, #0a2952 100%);
+      border-color: rgba(212,155,53,0.3);
+      color: #fff;
+    }
+    .b-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bg-navy);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .b-card h3 {
+      font-size: 17px;
+      color: var(--bg-navy-deep);
+      margin-bottom: 7px;
+    }
+    .b-card p {
+      font-size: 13px;
+      line-height: 1.56;
+      color: var(--slate-600);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 3: ARQUITETURA HÍBRIDA LAN (ADR-027/030) & MATRIZ DE PRONTIDÃO
+       ═══════════════════════════════════════════════════════════════════════ */
+    .screen-arch {
+      background: #f1f5f9;
+    }
+    .blueprint-box {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(212,155,53,0.18), transparent 55%),
+        linear-gradient(180deg, #031226 0%, #072042 100%);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 30px;
+      color: #fff;
+      margin-bottom: 30px;
+      box-shadow: 0 24px 55px rgba(3, 18, 38, 0.22);
+    }
+    .bp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .bp-grid {
+      display: grid;
+      grid-template-columns: 1fr 120px 1.15fr 120px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+    .bp-node {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .bp-node.bp-center {
+      background: linear-gradient(180deg, rgba(212,155,53,0.16) 0%, rgba(212,155,53,0.05) 100%);
+      border: 1.5px solid var(--gold-400);
+      box-shadow: 0 0 35px rgba(212,155,53,0.15);
+    }
+    .bp-pipe {
+      text-align: center;
+      font-size: 10px;
+      color: var(--gold-300);
+      font-family: 'Geist Mono', monospace;
+    }
+    .bp-pipe-line {
+      height: 2px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.2), var(--gold-400), rgba(255,255,255,0.2));
+      margin: 6px 0;
+      position: relative;
+    }
+
+    .readiness-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .r-card {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+    .r-meter {
+      height: 6px;
+      border-radius: 99px;
+      background: var(--slate-100);
+      margin: 12px 0 16px;
+      overflow: hidden;
+    }
+    .r-item {
+      display: flex;
+      gap: 9px;
+      font-size: 12.5px;
+      color: var(--slate-700);
+      padding: 7px 0;
+      border-top: 1px solid var(--slate-100);
+      line-height: 1.45;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 4: PORTAL DA TRANSPARÊNCIA & VERIFICADOR PÚBLICO SHA-256
+       ═══════════════════════════════════════════════════════════════════════ */
+    .screen-portal {
+      background:
+        radial-gradient(circle at 85% 20%, rgba(212,155,53,0.14), transparent 45%),
+        linear-gradient(180deg, #031329 0%, #062146 100%);
+      color: #fff;
+    }
+    .screen-portal .sec-head h2 { color: #fff; }
+    .screen-portal .sec-head p { color: #b8cbe2; }
+    .screen-portal .sec-kicker { color: var(--gold-300); }
+
+    .portal-split {
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .citizen-portal-win {
+      background: #fff;
+      color: var(--slate-900);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 28px 65px rgba(0, 8, 20, 0.5);
+    }
+    .cp-banner {
+      background: linear-gradient(90deg, #062f63 0%, #0d448a 100%);
+      color: #fff;
+      padding: 18px 22px;
+      border-bottom: 4px solid var(--gold-400);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cp-nav {
+      display: flex;
+      gap: 6px;
+      padding: 10px 18px;
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--slate-200);
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .cp-nav span {
+      padding: 5px 10px;
+      border-radius: 6px;
+      color: var(--slate-600);
+    }
+    .cp-nav span.active {
+      background: #fff;
+      color: var(--bg-navy);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .cp-content {
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 16px;
+    }
+    .live-video-mock {
+      background: linear-gradient(135deg, #041226 0%, #0f315c 100%);
+      border-radius: 10px;
+      padding: 14px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 195px;
+    }
+
+    .crypto-verifier {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cv-terminal {
+      background: #020a16;
+      border: 1px solid rgba(212,155,53,0.4);
+      border-radius: 10px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 5: TRUST CENTER LGPD, PRIVACIDADE & ACESSIBILIDADE
+       ═══════════════════════════════════════════════════════════════════════ */
+    .screen-lgpd {
+      background: #ffffff;
+    }
+    .trust-center-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 0.95fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .tc-card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .tc-card.cookie-preview {
+      background: linear-gradient(180deg, #04152d 0%, #082347 100%);
+      color: #fff;
+      border-color: rgba(212,155,53,0.4);
+    }
+    .lgpd-matrix {
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #fff;
+    }
+    .lgpd-matrix table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .lgpd-matrix th {
+      background: #04152d;
+      color: #fff;
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .lgpd-matrix td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--slate-200);
+      color: var(--slate-700);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 6: SELF-ONBOARDING (/api/v1/public/onboarding) & FAQ EXECUTIVO
+       ═══════════════════════════════════════════════════════════════════════ */
+    .screen-onboarding {
+      background: linear-gradient(180deg, #f1f5f9 0%, #e6eef8 100%);
+    }
+    .onb-split {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 34px;
+      align-items: start;
+    }
+    .onb-form-card {
+      background: #fff;
+      border: 1px solid var(--slate-300);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 20px 45px rgba(4, 21, 45, 0.08);
+    }
+    .f-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .f-group { margin-bottom: 12px; }
+    .f-group label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--bg-navy-deep);
+      margin-bottom: 5px;
+    }
+    .f-input {
+      height: 40px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-300);
+      border-radius: 8px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: var(--slate-800);
+    }
+    .faq-card {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 15px 18px;
+      margin-bottom: 10px;
+    }
+    .faq-card h4 {
+      font-size: 13.5px;
+      color: var(--bg-navy-deep);
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .faq-card p {
+      font-size: 12px;
+      color: var(--slate-600);
+      line-height: 1.5;
+    }
+
+    .exec-footer {
+      background: #020b18;
+      color: #94a3b8;
+      padding: 36px 0 28px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 1: HERO ARQUITETURAL & COCKPIT MULTI-CAMADA
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="screen-hero" id="pagina-1-hero">
+    <div class="grid-overlay"></div>
+
+    <!-- Barra de Telemetria e Conformidade -->
+    <div class="telemetry-bar">
+      <div class="container telemetry-inner">
+        <div class="telemetry-left">
+          <span class="pill-gold">GOVERNANÇA LEGISLATIVA DIGITAL</span>
+          <span><i class="status-dot"></i> Arquitetura Multi-Câmara Isolada · Cadeia Criptográfica SHA-256 · Adequação Nativa à LGPD</span>
+        </div>
+        <div class="telemetry-right">
+          <span>WCAG 2.2 AA / eMAG 3.1</span>
+          <span>·</span>
+          <span>Zero Cookies Publicitários</span>
+          <span>·</span>
+          <span class="mono">API /api/v1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="container navbar-inner">
+        <div class="brand-lockup">
+          <img src="../../../../public/brand/edocbr-logo-white.svg" alt="e-docBR">
+          <span class="brand-sep"></span>
+          <span class="brand-sub">PLENÁRIO</span>
+        </div>
+        <nav class="nav-links">
+          <a href="#pagina-2-funcionalidades">Jornada &amp; Módulos</a>
+          <a href="#pagina-3-arquitetura">Núcleo LAN &amp; Arquitetura</a>
+          <a href="#pagina-4-transparencia">Portal &amp; Verificador</a>
+          <a href="#pagina-5-lgpd">Trust Center LGPD</a>
+          <a href="#pagina-6-demonstracao-login">Demonstração</a>
+        </nav>
+        <div class="nav-actions">
+          <a class="btn btn-glass" href="login.html">Entrar no Plenário →</a>
+          <a class="btn btn-gold" href="#pagina-6-demonstracao-login">Solicitar Demonstração</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Corpo do Hero -->
+    <div class="container hero-body">
+      <div>
+        <div class="hero-badge">
+          <span>●</span>
+          <span>SaaS Multi-Câmara + Servidor Local Designado (ADR-027)</span>
+        </div>
+        <h1 class="hero-title">
+          Precisão regimental do protocolo à ata, com <span>prova criptográfica</span> em cada deliberação.
+        </h1>
+        <p class="hero-desc">
+          Unifique preparação de pauta, controle dinâmico de quórum, votação nominal e simbólica com dupla confirmação, PWA parlamentar resiliente, telões 4K e Portal da Transparência em uma arquitetura isolada por Câmara.
+        </p>
+        <div class="hero-buttons">
+          <a class="btn btn-lg btn-gold" href="#pagina-6-demonstracao-login">Solicitar Ambiente Demonstrativo (14 dias) →</a>
+          <a class="btn btn-lg btn-glass" href="login.html">Acessar Área Institucional</a>
+        </div>
+        <div class="hero-metrics">
+          <div class="h-metric">
+            <b class="mono">SHA-256 + Ed25519</b>
+            <span>Cadeia de auditoria topológica (<code class="mono">prevHash</code>) e pacotes assinados.</span>
+          </div>
+          <div class="h-metric">
+            <b class="mono">PWA Idempotente</b>
+            <span>Retentativa segura após perda de ACK, 429 ou 503 sem duplicar voto.</span>
+          </div>
+          <div class="h-metric">
+            <b class="mono">LGPD &amp; LAI by Design</b>
+            <span>Papéis Controlador/Operador definidos e dupla confirmação cidadã.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cockpit Visual Realista -->
+      <div class="cockpit-stage">
+        <div class="cockpit-window">
+          <div class="cockpit-topbar">
+            <div class="traffic-lights"><i class="tl-r"></i><i class="tl-y"></i><i class="tl-g"></i></div>
+            <div class="cmd-bar mono">⌘K Buscar matéria, protocolo, sessão ou parecer...</div>
+            <div style="display:flex;align-items:center;gap:6px;color:#34d399;font-weight:700;font-size:10px">
+              <i class="status-dot"></i> Outbox Realtime · 2 Telões 4K
+            </div>
+          </div>
+
+          <div class="cockpit-body">
+            <div class="c-sidebar">
+              <div class="c-sidebar-tenant">
+                <strong>Câmara de Vila Nova</strong>
+                <small>Ambiente Demonstrativo · MG</small>
+              </div>
+              <div class="c-nav-item active"><span>Mesa do Plenário</span><span class="c-nav-badge">Ao Vivo</span></div>
+              <div class="c-nav-item"><span>Pauta &amp; Revisões</span><span class="c-nav-badge">Rev #02</span></div>
+              <div class="c-nav-item"><span>Matérias &amp; Grafo</span><span class="c-nav-badge">48</span></div>
+              <div class="c-nav-item"><span>Protocolo &amp; Prazos</span><span></span></div>
+              <div class="c-nav-item"><span>Telões &amp; Mídia RTMPS</span><span class="c-nav-badge">2</span></div>
+              <div class="c-nav-item"><span>Relatórios &amp; Ata PDF</span><span></span></div>
+              <div class="c-nav-item"><span>Cadeia de Auditoria</span><span style="color:#34d399">✓</span></div>
+            </div>
+
+            <div class="c-workspace">
+              <div class="c-ws-head">
+                <div>
+                  <h4>14ª Sessão Ordinária · 2º Período Legislativo de 2026</h4>
+                  <p>Revisão de Pauta #02 congelada (<code class="mono">sha256:9f4a…81c2</code>) · Presidência: Ver. Roberto Almeida</p>
+                </div>
+                <span class="epoch-chip mono">Autoridade: Época #04</span>
+              </div>
+
+              <div class="c-kpis">
+                <div class="c-kpi">
+                  <small>Quórum de Sessão</small>
+                  <strong style="color:#047857">11 / 13 Presentes</strong>
+                </div>
+                <div class="c-kpi">
+                  <small>Regra da Matéria</small>
+                  <strong>Maioria Absoluta (≥7)</strong>
+                </div>
+                <div class="c-kpi">
+                  <small>Contagem Simbólica</small>
+                  <strong style="color:#0369a1">Dupla Identidade</strong>
+                </div>
+                <div class="c-kpi">
+                  <small>Cadeia AuditEvent</small>
+                  <strong class="mono" style="font-size:11.5px;color:#047857">HEAD #894a2c ✓</strong>
+                </div>
+              </div>
+
+              <div class="c-main-grid">
+                <!-- Mapa de Bancada e Tribuna -->
+                <div class="c-card">
+                  <div class="c-card-head">
+                    <span>Mapa Nominal de Deliberação · PL 018/2026</span>
+                    <span style="color:#047857;font-size:9.5px">● Votação Aberta</span>
+                  </div>
+                  <div class="seats-grid">
+                    <div class="seat-pill sim"><span class="seat-avatar">CA</span><span>Carla · SIM</span></div>
+                    <div class="seat-pill sim"><span class="seat-avatar">MV</span><span>Marcos · SIM</span></div>
+                    <div class="seat-pill sim"><span class="seat-avatar">PA</span><span>Paula · SIM</span></div>
+                    <div class="seat-pill nao"><span class="seat-avatar">JR</span><span>João · NÃO</span></div>
+                    <div class="seat-pill sim"><span class="seat-avatar">LS</span><span>Lúcia · SIM</span></div>
+                    <div class="seat-pill sim"><span class="seat-avatar">FC</span><span>Fábio · SIM</span></div>
+                    <div class="seat-pill sim"><span class="seat-avatar">RM</span><span>Rita · SIM</span></div>
+                    <div class="seat-pill nao"><span class="seat-avatar">GA</span><span>Gil · NÃO</span></div>
+                    <div class="seat-pill"><span class="seat-avatar">IM</span><span>Impedido (1)</span></div>
+                  </div>
+                  <div class="tribune-box">
+                    <div>
+                      <div style="font-size:9px;color:var(--gold-300);font-weight:700">TRIBUNA ATIVA · DISCUSSÃO</div>
+                      <div style="font-size:11px;font-weight:700">Ver. Carla Mendes (MDB) · +2min prorrogado</div>
+                    </div>
+                    <div class="timer-display">04:12</div>
+                  </div>
+                </div>
+
+                <!-- Painel de Apuração em Tempo Real -->
+                <div class="c-card">
+                  <div class="c-card-head">
+                    <span>Apuração Parcial · PL nº 018/2026</span>
+                    <span class="mono" style="font-size:9px;color:#64748b">ID #vot-92c1</span>
+                  </div>
+                  <div class="tally-bars">
+                    <div class="t-row">
+                      <div class="t-row-head"><span style="color:#047857">Favorável (Sim)</span><span>09 votos (81%)</span></div>
+                      <div class="t-track"><div class="t-fill-sim"></div></div>
+                    </div>
+                    <div class="t-row">
+                      <div class="t-row-head"><span style="color:#dc2626">Contrário (Não)</span><span>02 votos (19%)</span></div>
+                      <div class="t-track"><div class="t-fill-nao"></div></div>
+                    </div>
+                    <div class="t-row">
+                      <div class="t-row-head"><span style="color:#64748b">Abstenção / Impedidos</span><span>00 abst · 01 imp</span></div>
+                      <div class="t-track"><div class="t-fill-abs"></div></div>
+                    </div>
+                  </div>
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:8px;font-size:9.5px;color:#475569;line-height:1.4">
+                    <strong style="color:#0f172a;display:block;margin-bottom:2px">Base Deliberativa Congelada (Etapa 020)</strong>
+                    Quórum atingido. Recibos individuais emitidos com chave idempotente <code class="mono">commandId</code>.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- iPhone PWA Flutuante -->
+        <div class="iphone-pwa">
+          <div class="iphone-notch"></div>
+          <div class="pwa-chip">
+            <span>PWA PARLAMENTAR</span>
+            <span>● ACK 200 OK</span>
+          </div>
+          <div class="pwa-vote-card">
+            <div style="font-size:9.5px;color:#94a3b8;margin-bottom:2px">PL Nº 018/2026 · ORDEM DO DIA</div>
+            <div style="font-size:11.5px;font-weight:700;margin-bottom:8px">Voto Nominal Registrado: SIM</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:9.5px;text-align:center">
+              <div style="background:#059669;padding:5px;border-radius:5px;font-weight:700">✓ Favorável</div>
+              <div style="background:rgba(255,255,255,0.08);padding:5px;border-radius:5px;color:#94a3b8">Pedir Palavra</div>
+            </div>
+            <div class="pwa-receipt-pill mono">
+              RECIBO: 8F3A-92C1-E40B<br>
+              sha256:7d19...f04b (Íntegro)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faixa de 4 Pilares de Engenharia -->
+    <div class="container">
+      <div class="trust-ribbon">
+        <div class="tr-item">
+          <div class="tr-icon">01</div>
+          <div>
+            <strong>Isolamento Multi-Tenant Absoluto</strong>
+            <p>Banco, anexos PDF privados, emblemas partidários, filas outbox e backups estritamente segregados por Câmara.</p>
+          </div>
+        </div>
+        <div class="tr-item">
+          <div class="tr-icon">02</div>
+          <div>
+            <strong>Protocolo de Dupla Identidade</strong>
+            <p>Contagem simbólica oficial, link de transmissão e publicação de ata exigem proposição e confirmação por dois papéis.</p>
+          </div>
+        </div>
+        <div class="tr-item">
+          <div class="tr-icon">03</div>
+          <div>
+            <strong>Atas e Relatórios Paginados em PDF</strong>
+            <p>Espelho da sessão e minuta de ata gerados em PDF multi-página com preservação integral de expediente e votações.</p>
+          </div>
+        </div>
+        <div class="tr-item">
+          <div class="tr-icon">04</div>
+          <div>
+            <strong>Compromisso com a Verdade Técnica</strong>
+            <p>Sem métricas fictícias: distinção transparente entre o núcleo web ensaiado e os gates que exigem homologação local.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 2: JORNADA EM 5 ATOS & BENTO GRID DE MÓDULOS COM WIDGETS VISUAIS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="section-block" id="pagina-2-funcionalidades">
+    <div class="container">
+      <div class="sec-head">
+        <div>
+          <div class="sec-kicker">● Arquitetura Funcional Integrada</div>
+          <h2>Cinco atos encadeados, seis frentes operacionais projetadas para o rito legislativo.</h2>
+        </div>
+        <p>
+          Cada tela reflete contratos de domínio testados localmente (etapas 001 a 122), eliminando planilhas paralelas e garantindo rastreabilidade desde o protocolo até o Portal da Transparência.
+        </p>
+      </div>
+
+      <!-- 5 Atos -->
+      <div class="journey-ribbon">
+        <div class="j-step">
+          <div class="j-num">ATO 01 · PREPARAÇÃO</div>
+          <h4>Protocolo &amp; Pauta</h4>
+          <p>Numeração contínua, grafo de 6 vínculos, PDF privado com hash, revisão imutável e convocação formal.</p>
+        </div>
+        <div class="j-step">
+          <div class="j-num">ATO 02 · PRÉ-VOO</div>
+          <h4>Pacote &amp; Prontidão</h4>
+          <p>Conferência automática de composição, regras regimentais, anexos e manifesto assinado Ed25519.</p>
+        </div>
+        <div class="j-step active-step">
+          <div class="j-num">ATO 03 · PLENÁRIO</div>
+          <h4>Condução &amp; Voto</h4>
+          <p>Presença, quórum por matéria, fila de fala com cronômetro, voto nominal/simbólico, PWA e telões 4K.</p>
+        </div>
+        <div class="j-step">
+          <div class="j-num">ATO 04 · FECHAMENTO</div>
+          <h4>Espelho &amp; Ata PDF</h4>
+          <p>Minuta gerada por modelo versionado, paginação PDF verificada e painel de assinaturas eletrônicas.</p>
+        </div>
+        <div class="j-step">
+          <div class="j-num">ATO 05 · PÚBLICO</div>
+          <h4>Portal &amp; Verificador</h4>
+          <p>Publicação autorizada por segundo papel, diário eletrônico, replay MP4, dados abertos e verificador SHA-256.</p>
+        </div>
+      </div>
+
+      <!-- Bento Grid com 6 Widgets Gráficos -->
+      <div class="bento-showcase">
+        <!-- Card 1: Grafo de Matérias -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual">
+              <svg viewBox="0 0 320 96" width="100%" height="96" aria-hidden="true">
+                <path d="M95 48 C135 48, 140 22, 180 22" stroke="#072348" stroke-width="2" fill="none" stroke-dasharray="3 2"/>
+                <path d="M95 48 C135 48, 140 74, 180 74" stroke="#d49b35" stroke-width="2" fill="none"/>
+                <rect x="8" y="28" width="88" height="40" rx="7" fill="#04152d"/>
+                <text x="52" y="45" fill="#fff" font-size="9.5" font-weight="700" text-anchor="middle">PL 018/2026</text>
+                <text x="52" y="58" fill="#f3d486" font-size="8" text-anchor="middle">Texto Base v3</text>
+                <rect x="180" y="6" width="130" height="32" rx="6" fill="#fff" stroke="#cbd5e1"/>
+                <text x="245" y="20" fill="#0f172a" font-size="8.5" font-weight="700" text-anchor="middle">Substitutivo Nº 01</text>
+                <text x="245" y="31" fill="#059669" font-size="7.5" text-anchor="middle">✓ Sem ciclo · Recíproco</text>
+                <rect x="180" y="56" width="130" height="32" rx="6" fill="#fff" stroke="#d49b35"/>
+                <text x="245" y="70" fill="#0f172a" font-size="8.5" font-weight="700" text-anchor="middle">Emenda Modif. Nº 03</text>
+                <text x="245" y="81" fill="#64748b" font-size="7.5" text-anchor="middle">Anexo PDF: sha256:8a1f…</text>
+              </svg>
+            </div>
+            <span class="b-tag">01 · Processo Legislativo &amp; Acervo</span>
+            <h3>Grafo de Matérias, Protocolo e PDF Privado</h3>
+            <p>Seis tipos de vínculo legislativo validados contra ciclos e duplicidade, versionamento <em>append-only</em> de texto e anexos PDF privados com hash conferido no pacote da sessão.</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Pauta e Convocação -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:8px 10px;margin-bottom:7px;font-size:10px">
+                <div><strong style="color:#04152d">Revisão de Pauta #02</strong><div style="font-size:8.5px;color:#64748b">Emitida com antecedência regimental</div></div>
+                <span class="mono" style="background:#ecfdf5;color:#047857;padding:3px 7px;border-radius:5px;font-weight:700;font-size:9px">13/13 Cientes</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:9px">
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:6px"><strong>Mandatos</strong><div style="color:#059669">Ativos ✓</div></div>
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:6px"><strong>Suplência</strong><div style="color:#0369a1">1 Assumiu</div></div>
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:6px"><strong>Urgência</strong><div style="color:#b45309">Justificada</div></div>
+              </div>
+            </div>
+            <span class="b-tag">02 · Rito Preparatório</span>
+            <h3>Pauta Versionada, Prazos e Ciência Individual</h3>
+            <p>Controle de emendas à pauta publicada, calendário de prazos com alertas persistidos, snapshot da base deliberativa por revisão e registro auditável de ciência.</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Votação e Contagem Simbólica -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual dark-vis">
+              <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--gold-300);font-weight:700;margin-bottom:8px">
+                <span>CONTAGEM SIMBÓLICA OFICIAL</span>
+                <span>2 IDENTIDADES</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 22px 1fr;align-items:center;gap:6px;font-size:9.5px;margin-bottom:8px">
+                <div style="background:rgba(255,255,255,0.08);padding:7px;border-radius:6px">
+                  <strong style="display:block;color:#fff">1. Secretaria Propõe</strong>
+                  <span style="color:#94a3b8;font-size:8.5px">A favor: 08 · Contra: 02</span>
+                </div>
+                <div style="text-align:center;color:var(--gold-400)">→</div>
+                <div style="background:rgba(16,185,129,0.16);border:1px solid rgba(16,185,129,0.4);padding:7px;border-radius:6px">
+                  <strong style="display:block;color:#a7f3d0">2. Presidência Confirma</strong>
+                  <span style="color:#d1fae5;font-size:8.5px">Encerrada · Aprovada</span>
+                </div>
+              </div>
+              <div style="font-size:8.5px;color:#cbd5e1">Opções customizadas (até 5) · Empate 2/2/1 auditado · Voto secreto bloqueado</div>
+            </div>
+            <span class="b-tag">03 · Deliberação Auditável</span>
+            <h3>Voto Nominal, Simbólico Oficial e Opções Regimentais</h3>
+            <p>Suporte a opções customizadas, resolução regimental de empates, proteção contra concorrência multi-instância (HTTP 200/409) e retentativa PWA contra falhas 429/503.</p>
+          </div>
+        </div>
+
+        <!-- Card 4: Telões 4K e Transmissão RTMPS -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual dark-vis">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:9px">
+                <div style="background:#020b18;border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:8px">
+                  <div style="color:#34d399;font-weight:700;margin-bottom:3px">● TELÃO 01 · PLENÁRIO 4K</div>
+                  <div style="color:#e2e8f0">Quórum: 11/13 · Em Votação</div>
+                  <div class="mono" style="color:#94a3b8;font-size:8px;margin-top:4px">Perfil: Votação Nominal</div>
+                </div>
+                <div style="background:#020b18;border:1px solid rgba(212,155,53,0.4);border-radius:7px;padding:8px">
+                  <div style="color:var(--gold-300);font-weight:700;margin-bottom:3px">❄ TELÃO 02 · GALERIA</div>
+                  <div style="color:#e2e8f0">Quadro Congelado (Freeze)</div>
+                  <div class="mono" style="color:#94a3b8;font-size:8px;margin-top:4px">sha256:3c91…e204</div>
+                </div>
+              </div>
+              <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:8.5px;color:#94a3b8">
+                <span>MediaMTX · 2 Destinos RTMPS</span>
+                <span style="color:#34d399">Replay MP4 + Manifesto ✓</span>
+              </div>
+            </div>
+            <span class="b-tag">04 · Painéis Públicos &amp; Audiovisual</span>
+            <h3>Multi-Telão Sincronizado e Transmissão Assistida</h3>
+            <p>Fan-out em tempo real para múltiplas TVs com comando de congelamento verificável, monitoramento de destinos RTMPS independentes e catálogo de segmentos H.264/AAC.</p>
+          </div>
+        </div>
+
+        <!-- Card 5: Atas PDF Paginadas -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual">
+              <div style="background:#fff;border:1px solid #94a3b8;border-radius:7px;padding:9px 11px;box-shadow:0 6px 14px rgba(0,0,0,0.06);font-size:9px">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin-bottom:5px">
+                  <strong style="color:#04152d">MINUTA DE ATA OFICIAL · SESSÃO 14/2026</strong>
+                  <span class="mono" style="color:#047857;font-weight:700">Pág. 4 de 4 ✓</span>
+                </div>
+                <div style="color:#475569;margin-bottom:6px">1. Abertura · 2. Expediente (36 itens) · 3. Ordem do Dia · 4. Votações Nominais</div>
+                <div style="display:flex;justify-content:space-between;background:#f8fafc;padding:4px 7px;border-radius:4px;border:1px solid #e2e8f0">
+                  <span>Assinaturas: Presidência ✓ · 1ª Secretaria ✓</span>
+                  <span class="mono" style="color:#0369a1">PDF Renderizado</span>
+                </div>
+              </div>
+            </div>
+            <span class="b-tag">05 · Documentação &amp; Fé Pública</span>
+            <h3>Espelho da Sessão e Minuta de Ata em PDF</h3>
+            <p>Renderização de PDFs paginados com quebra limpa de página, ocultação automática de controles de tela, recuperação contra falhas 503 e publicação autorizada por segundo papel.</p>
+          </div>
+        </div>
+
+        <!-- Card 6: Busca Global & Analytics -->
+        <div class="b-card">
+          <div>
+            <div class="b-visual">
+              <div style="background:#04152d;color:#fff;padding:6px 10px;border-radius:6px;font-size:9.5px;display:flex;justify-content:space-between;margin-bottom:8px">
+                <span class="mono">⌘K  "Projeto de Lei 018"</span>
+                <span style="color:var(--gold-300)">4 seções · 18ms</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:8.5px;text-align:center">
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:5px"><strong style="font-size:12px;color:#04152d;display:block">94,2%</strong>Presença Média</div>
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:5px"><strong style="font-size:12px;color:#047857;display:block">100%</strong>Cadeia Íntegra</div>
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:6px;border-radius:5px"><strong style="font-size:12px;color:#0369a1;display:block">CSV BOM</strong>Ranking &amp; KPIs</div>
+              </div>
+            </div>
+            <span class="b-tag">06 · Inteligência &amp; Segurança</span>
+            <h3>Busca Unificada (<code class="mono">⌘K</code>), Analytics e Auditoria</h3>
+            <p>Pesquisa instantânea por matérias, protocolos, sessões e parlamentares; painel de indicadores com exportação CSV; API Keys com escopo e autenticação MFA TOTP.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 3: ARQUITETURA HÍBRIDA LAN (ADR-027/030) & MATRIZ DE PRONTIDÃO
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="section-block screen-arch" id="pagina-3-arquitetura">
+    <div class="container">
+      <div class="sec-head">
+        <div>
+          <div class="sec-kicker">● Arquitetura de Confiabilidade (ADR-027 a ADR-030)</div>
+          <h2>Autoridade única por época de sessão e transparência sobre o estágio de cada módulo.</h2>
+        </div>
+        <p>
+          O modelo arquitetural combina a preparação em nuvem (SaaS) com um servidor desktop local designado por Câmara, eliminando o risco de dupla autoridade deliberativa.
+        </p>
+      </div>
+
+      <!-- Blueprint Arquitetural -->
+      <div class="blueprint-box">
+        <div class="bp-header">
+          <div>
+            <h3 style="font-family:Georgia,serif;font-size:22px;font-weight:400">Topologia de Autoridade Exclusiva: SaaS Central ↔ Servidor Desktop na LAN</h3>
+            <p style="font-size:12px;color:#9eb5ce;margin-top:3px">Concessão assinada via Ed25519 vincula Câmara, sessão, dispositivo, revisão, manifesto e época monotônica crescente.</p>
+          </div>
+          <span class="pill-gold mono">SINGLE-WRITER LEASE · ÉPOCA EXCLUSIVA</span>
+        </div>
+
+        <div class="bp-grid">
+          <div class="bp-node">
+            <div style="font-size:9.5px;color:var(--gold-300);font-weight:800;margin-bottom:5px">1. NUVEM CENTRAL (SAAS MULTI-CÂMARA)</div>
+            <h4 style="font-size:15px;margin-bottom:8px">Preparação, Reserva &amp; Portal</h4>
+            <div style="font-size:11.5px;color:#cbd5e1;line-height:1.55">
+              • Publica revisão de pauta e anexos PDF<br>
+              • Assina manifesto com chave Ed25519<br>
+              • Emite concessão exclusiva de época (<code class="mono">epoch</code>)<br>
+              • Publica ata e replay após reconciliação
+            </div>
+          </div>
+
+          <div class="bp-pipe">
+            <div>Pacote + Hash</div>
+            <div class="bp-pipe-line"></div>
+            <div>ACK Assinado</div>
+          </div>
+
+          <div class="bp-node bp-center">
+            <div style="font-size:9.5px;color:var(--gold-300);font-weight:800;margin-bottom:5px">2. SERVIDOR DESKTOP DESIGNADO (LAN)</div>
+            <h4 style="font-size:15px;margin-bottom:8px">Núcleo Local da Câmara (Em Ensaio)</h4>
+            <div style="font-size:11.5px;color:#f1f5f9;line-height:1.55">
+              • Confere assinatura e 100% dos bytes antes do pré-voo<br>
+              • Grava diário de eventos assinado (<code class="mono">SQLite WAL</code>)<br>
+              • Deduplica comandos por <code class="mono">commandId</code><br>
+              • Impede mutação concorrente na web durante a sessão
+            </div>
+          </div>
+
+          <div class="bp-pipe">
+            <div>Snapshots LAN</div>
+            <div class="bp-pipe-line"></div>
+            <div>Recibos 200 OK</div>
+          </div>
+
+          <div class="bp-node">
+            <div style="font-size:9.5px;color:#34d399;font-weight:800;margin-bottom:5px">3. RECINTO DO PLENÁRIO</div>
+            <h4 style="font-size:15px;margin-bottom:8px">Mesa, PWA &amp; Telões 4K</h4>
+            <div style="font-size:11.5px;color:#cbd5e1;line-height:1.55">
+              • Painel de condução da Mesa Diretora<br>
+              • Dispositivos móveis dos Vereadores (PWA)<br>
+              • Múltiplas TVs 1080p/4K com recomposição<br>
+              • Gravação local contínua e encoder OBS
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Colunas de Maturidade -->
+      <div class="readiness-cols">
+        <div class="r-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="mono" style="font-size:10px;font-weight:800;color:#047857;background:#ecfdf5;padding:3px 8px;border-radius:5px">ESTÁGIO 01 · VERIFICADO</span>
+            <strong style="font-size:12px;color:#047857">Etapas 001–122</strong>
+          </div>
+          <h3 style="font-size:17px;margin-top:10px;color:var(--bg-navy-deep)">Implementado e Ensaiado na Web</h3>
+          <div class="r-meter"><div style="width:100%;height:100%;background:#059669"></div></div>
+          <div class="r-item"><span style="color:#059669;font-weight:800">✓</span><span>Estrutura legislativa, mandatos, licenças, suplência e configuração oficial versionada por Câmara.</span></div>
+          <div class="r-item"><span style="color:#059669;font-weight:800">✓</span><span>Matérias, protocolos, prazos, grafo de 6 vínculos, versões <em>append-only</em> e anexos PDF privados.</span></div>
+          <div class="r-item"><span style="color:#059669;font-weight:800">✓</span><span>Presença, fila de fala, votação nominal/simbólica oficial, opções customizadas, recibos PWA e atas PDF.</span></div>
+        </div>
+
+        <div class="r-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="mono" style="font-size:10px;font-weight:800;color:#b45309;background:#fef3c7;padding:3px 8px;border-radius:5px">ESTÁGIO 02 · LABORATÓRIO</span>
+            <strong style="font-size:12px;color:#b45309">Etapas 058–075</strong>
+          </div>
+          <h3 style="font-size:17px;margin-top:10px;color:var(--bg-navy-deep)">Núcleo Local em Ensaio Técnico</h3>
+          <div class="r-meter"><div style="width:68%;height:100%;background:#d97706"></div></div>
+          <div class="r-item"><span style="color:#d97706;font-weight:800">◐</span><span>Identidade Ed25519 do desktop, descoberta paginada, retomada por artefato e confirmação ACK.</span></div>
+          <div class="r-item"><span style="color:#d97706;font-weight:800">◐</span><span>Diário local de eventos assinado (<code class="mono">local-event-journal</code>) e reserva de época em 3 processos PostgreSQL.</span></div>
+          <div class="r-item"><span style="color:#d97706;font-weight:800">◐</span><span>Binário CLI Linux exercitado, dois destinos RTMPS sintéticos e vault cifrado off-host verificados.</span></div>
+        </div>
+
+        <div class="r-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="mono" style="font-size:10px;font-weight:800;color:#1e40af;background:#dbeafe;padding:3px 8px;border-radius:5px">ESTÁGIO 03 · HOMOLOGAÇÃO</span>
+            <strong style="font-size:12px;color:#1e40af">Gates P5–P12</strong>
+          </div>
+          <h3 style="font-size:17px;margin-top:10px;color:var(--bg-navy-deep)">Requisitos antes de Sessão Oficial</h3>
+          <div class="r-meter"><div style="width:35%;height:100%;background:#2563eb"></div></div>
+          <div class="r-item"><span style="color:#2563eb;font-weight:800">○</span><span>API LAN/TLS local, cercamento dos escritores web, instalador supervisionado Windows/Linux e reconciliação.</span></div>
+          <div class="r-item"><span style="color:#2563eb;font-weight:800">○</span><span>Aceite formal da Câmara piloto sobre composição, regimento, contas nominais e equipamentos reais.</span></div>
+          <div class="r-item"><span style="color:#2563eb;font-weight:800">○</span><span>Conectores Nextcloud/Alfresco (P12) e desenho criptográfico específico para voto secreto oficial.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 4: PORTAL DA TRANSPARÊNCIA & VERIFICADOR PÚBLICO SHA-256
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="section-block screen-portal" id="pagina-4-transparencia">
+    <div class="container">
+      <div class="sec-head">
+        <div>
+          <div class="sec-kicker">● Transparência Ativa &amp; Controle Cidadão</div>
+          <h2>Portal público white-label com dados abertos e conferência criptográfica de autenticidade.</h2>
+        </div>
+        <p>
+          Separado da área de operação interna, o portal expõe apenas os atos e documentos revisados e aprovados pela Câmara, com verificação pública de hash e assinaturas.
+        </p>
+      </div>
+
+      <div class="portal-split">
+        <!-- Janela do Portal da Transparência -->
+        <div class="citizen-portal-win">
+          <div class="cp-banner">
+            <div>
+              <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold-300);font-weight:700">Portal Institucional White-Label</div>
+              <h4 style="font-size:17px;margin-top:2px">Câmara Municipal Demonstrativa · Transparência Legislativa</h4>
+            </div>
+            <span style="background:rgba(255,255,255,0.16);padding:5px 10px;border-radius:99px;font-size:10.5px;font-weight:600">● Sessão Ao Vivo</span>
+          </div>
+          <div class="cp-nav">
+            <span class="active">● Ao Vivo &amp; Replay</span>
+            <span>Pesquisa de Matérias</span>
+            <span>Sessões &amp; Atas</span>
+            <span>Diário Eletrônico</span>
+            <span>Audiências Públicas</span>
+            <span>Acompanhar (E-mail)</span>
+            <span>Dados Abertos</span>
+          </div>
+          <div class="cp-content">
+            <div class="live-video-mock">
+              <div style="display:flex;justify-content:space-between;font-size:9.5px">
+                <span style="background:#dc2626;padding:2px 7px;border-radius:4px;font-weight:700">● REPLAY VERIFICÁVEL</span>
+                <span class="mono" style="color:#94a3b8">H.264 / AAC</span>
+              </div>
+              <div style="text-align:center;padding:18px 0">
+                <div style="width:42px;height:42px;border-radius:50%;background:rgba(212,155,53,0.25);border:1.5px solid var(--gold-400);display:inline-flex;align-items:center;justify-content:center;font-size:16px">▶</div>
+                <div style="font-size:12px;font-weight:700;margin-top:8px">14ª Sessão Ordinária · Íntegra</div>
+                <div class="mono" style="font-size:9px;color:#94a3b8;margin-top:3px">Manifesto sha256:4e81…c09a</div>
+              </div>
+              <div style="font-size:9.5px;color:#cbd5e1;display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.12);padding-top:8px">
+                <span>11 Vereadores Presentes</span>
+                <span style="color:var(--gold-300)">Ata Publicada ✓</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;justify-content:space-between;gap:8px;font-size:11.5px">
+              <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                  <strong style="color:#04152d">PL nº 018/2026 — Atendimento ao Cidadão</strong>
+                  <span style="color:#047857;font-weight:700;font-size:10px">Aprovado (9×2)</span>
+                </div>
+                <div style="font-size:10px;color:#64748b">Texto integral v3, Emenda #03 e espelho nominal de votos disponíveis.</div>
+              </div>
+              <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                  <strong style="color:#04152d">Ata Oficial da 14ª Sessão Ordinária</strong>
+                  <span class="mono" style="color:#0369a1;font-weight:700;font-size:10px">PDF · 4 págs.</span>
+                </div>
+                <div style="font-size:10px;color:#64748b">Assinada por Presidência e 1ª Secretaria · Código <code class="mono">EDOC-2026-9F4A</code></div>
+              </div>
+              <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;background:#f8fafc">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                  <strong style="color:#04152d">Catálogo de Dados Abertos (JSON / CSV)</strong>
+                  <span class="mono" style="color:#475569;font-size:10px">/api/v1/public/open-data</span>
+                </div>
+                <div style="font-size:10px;color:#64748b">Download direto de séries históricas de presença, matérias e votações.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verificador Criptográfico Público -->
+        <div class="crypto-verifier">
+          <div>
+            <span class="pill-gold mono">ENDPOINT PÚBLICO · /API/V1/PUBLIC/VERIFY</span>
+            <h3 style="font-family:Georgia,serif;font-size:24px;font-weight:400;margin:12px 0 8px">Verificador de Autenticidade e Assinaturas</h3>
+            <p style="font-size:12.5px;color:#bfd0e6;line-height:1.55">
+              Permite ao cidadão, vereador ou tribunal de contas validar qualquer código de verificação impresso em atas, publicações do diário ou recibos de voto.
+            </p>
+            <div class="cv-terminal">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);padding:8px 12px;border-radius:6px;margin-bottom:10px">
+                <span class="mono" style="color:var(--gold-300);font-size:11.5px">EDOC-2026-ATA-9F4A-81C2</span>
+                <span style="background:#059669;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">AUTÊNTICO ✓</span>
+              </div>
+              <div class="mono" style="font-size:10px;color:#a7f3d0;line-height:1.6">
+                ├─ Tipo: Publicação de Ata Oficial (Revisão #01)<br>
+                ├─ Hash SHA-256: 9f4a8c12...e40b771a (Coincide)<br>
+                ├─ Assinaturas: 2/2 elegíveis verificadas<br>
+                └─ Status: Vigente · Sem retificações posteriores
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:#cbd5e1;border-top:1px solid rgba(255,255,255,0.12);padding-top:12px">
+            <strong>Notificações Cidadãs com Double Opt-In:</strong> O acompanhamento por e-mail exige confirmação por link único antes do envio de boletins legislativos.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 5: TRUST CENTER LGPD, PRIVACIDADE POR DESIGN & ACESSIBILIDADE
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="section-block screen-lgpd" id="pagina-5-lgpd">
+    <div class="container">
+      <div class="sec-head">
+        <div>
+          <div class="sec-kicker">● Trust Center · Conformidade Legal &amp; Privacidade</div>
+          <h2>Governança de dados pessoais adequada à LGPD no Poder Público e à LAI.</h2>
+        </div>
+        <p>
+          Desenhado em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), a Lei de Acesso à Informação (Lei nº 12.527/2011) e o Guia Orientativo da ANPD para órgãos públicos.
+        </p>
+      </div>
+
+      <div class="trust-center-top">
+        <div class="tc-card">
+          <span class="mono" style="font-size:10px;font-weight:800;color:#92400e;background:#fef3c7;padding:3px 8px;border-radius:4px">CONTROLADOR (ART. 5º, VI E CAP. IV LGPD)</span>
+          <h3 style="font-size:17px;color:var(--bg-navy-deep);margin:10px 0 6px">A Câmara Municipal</h3>
+          <p style="font-size:12.5px;color:var(--slate-600);line-height:1.55">
+            Exerce a autoridade institucional sobre as finalidades e bases legais do tratamento legislativo: aprova o regimento, nomeia servidores e vereadores, autoriza o que vai ao Portal Público, define prazos de guarda e designa o Encarregado (DPO).
+          </p>
+        </div>
+
+        <div class="tc-card">
+          <span class="mono" style="font-size:10px;font-weight:800;color:#072348;background:#e0e7ff;padding:3px 8px;border-radius:4px">OPERADOR (ART. 5º, VII E ART. 39 LGPD)</span>
+          <h3 style="font-size:17px;color:var(--bg-navy-deep);margin:10px 0 6px">Plataforma edocBR Plenário</h3>
+          <p style="font-size:12.5px;color:var(--slate-600);line-height:1.55">
+            Executa o processamento técnico estritamente sob as instruções auditadas da Câmara controladora, garantindo isolamento por <code class="mono">tenantId</code>, criptografia de segredos MFA, logs sem dados pessoais desnecessários e proibição de uso comercial.
+          </p>
+        </div>
+
+        <div class="tc-card cookie-preview">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span class="pill-gold">TRANSPARÊNCIA DE COOKIES &amp; SESSÃO</span>
+            <span style="font-size:10px;color:#34d399;font-weight:700">✓ Ativo</span>
+          </div>
+          <h4 style="font-size:15px;margin-bottom:6px">Zero Rastreadores Publicitários</h4>
+          <p style="font-size:12px;color:#cbd5e1;line-height:1.5;margin-bottom:10px">
+            Não utilizamos pixels de anúncios nem venda de perfil comportamental. Apenas cookie técnico <code class="mono">HttpOnly / SameSite</code> na área autenticada.
+          </p>
+          <div style="display:flex;gap:8px;font-size:10.5px">
+            <span style="background:rgba(255,255,255,0.1);padding:4px 9px;border-radius:5px">Política de Privacidade</span>
+            <span style="background:rgba(212,155,53,0.22);color:var(--gold-300);padding:4px 9px;border-radius:5px;font-weight:700">Canal do Titular (Art. 18)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Matriz LGPD -->
+      <div class="lgpd-matrix">
+        <table>
+          <thead>
+            <tr>
+              <th>Operação / Fluxo no Sistema</th>
+              <th>Dados Pessoais Tratados (Minimização)</th>
+              <th>Hipótese Legal (LGPD / LAI)</th>
+              <th>Salvaguardas Técnicas e Direitos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Deliberação, Presença, Votos Nominais e Atas</strong></td>
+              <td>Nome parlamentar, partido, mandato, presença, voto público e assinatura oficial.</td>
+              <td>Obrigação legal/regimental e transparência ativa (Art. 7º, II e III c/c Art. 23 da LGPD e LAI).</td>
+              <td>Integridade por hash SHA-256; publicação restrita aos atos oficialmente aprovados pela Mesa.</td>
+            </tr>
+            <tr>
+              <td><strong>Contas de Operadores, Segurança e Auditoria</strong></td>
+              <td>Nome, e-mail funcional, cargo, hash de senha, segredo TOTP cifrado, IP e trilha <code class="mono">AuditEvent</code>.</td>
+              <td>Execução de políticas públicas e prevenção à fraude/segurança (Art. 7º, III e Art. 46 da LGPD).</td>
+              <td>RBAC estrito por papel, revogação imediata de sessão/API key e cadeia de auditoria verificável.</td>
+            </tr>
+            <tr>
+              <td><strong>Inscrição Cidadã (Alertas e Audiências)</strong></td>
+              <td>E-mail para acompanhamento legislativo; nome e pergunta enviada em audiência pública.</td>
+              <td>Consentimento específico do titular (Art. 7º, I) e exercício regular de participação social.</td>
+              <td><strong>Double Opt-In obrigatório</strong> por e-mail; endereço nunca é exposto no portal; cancelamento imediato.</td>
+            </tr>
+            <tr>
+              <td><strong>Solicitação de Demonstração (Onboarding)</strong></td>
+              <td>Nome da Câmara, município/UF, identificador (<code class="mono">slug</code>) e e-mail institucional do responsável.</td>
+              <td>Procedimentos preliminares a pedido do titular e consentimento informado (Art. 7º, I e V).</td>
+              <td>Proteção anti-abuso (<code class="mono">3/hora/IP</code>), uso exclusivo para provisionar o trial e exclusão sob pedido.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PÁGINA 6: SOLICITAÇÃO DE DEMONSTRAÇÃO (/api/v1/public/onboarding) & FAQ
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="section-block screen-onboarding" id="pagina-6-demonstracao-login">
+    <div class="container">
+      <div class="sec-head">
+        <div>
+          <div class="sec-kicker">● Demonstração Contextualizada &amp; Self-Onboarding</div>
+          <h2>Solicite um ambiente demonstrativo isolado para a sua Câmara Municipal.</h2>
+        </div>
+        <p>
+          Integrado diretamente ao endpoint público <code class="mono">POST /api/v1/public/onboarding</code>, com validação de identificador único, aviso de privacidade LGPD e ativação assistida para 14 dias de avaliação.
+        </p>
+      </div>
+
+      <div class="onb-split">
+        <!-- Coluna Esquerda: Como funciona + FAQ -->
+        <div>
+          <div style="background:#04152d;color:#fff;border-radius:14px;padding:22px;margin-bottom:16px">
+            <span class="pill-gold">ROTEIRO DE AVALIAÇÃO TÉCNICA</span>
+            <h3 style="font-family:Georgia,serif;font-size:21px;font-weight:400;margin:10px 0 8px">O que está incluído na demonstração de 14 dias?</h3>
+            <div style="font-size:12.5px;color:#cbd5e1;line-height:1.65">
+              1. <strong>Tenant Isolado com Dados Fictícios:</strong> Ambiente pré-configurado para testar secretaria, Mesa Diretora, PWA parlamentar, telão e portal público sem risco.<br>
+              2. <strong>Simulação Regimental:</strong> Teste de quóruns, opções customizadas, contagem simbólica com duas identidades e geração de ata em PDF.<br>
+              3. <strong>Diagnóstico de Pré-Voo:</strong> Levantamento técnico dos requisitos para futura homologação oficial da Câmara.
+            </div>
+          </div>
+
+          <div class="faq-card">
+            <h4><span>O ambiente demonstrativo já permite realizar uma sessão oficial?</span><span style="color:var(--gold-600)">−</span></h4>
+            <p>Não. A demonstração utiliza dados fictícios para avaliação técnica. O uso oficial exige validação regimental formal da Câmara, cadastro nominal aprovado, configuração de infraestrutura e termo de aceite institucional.</p>
+          </div>
+          <div class="faq-card">
+            <h4><span>Como funciona a operação local se a internet oscilar?</span><span style="color:var(--gold-600)">+</span></h4>
+            <p>O núcleo de transferência criptográfica e o diário local já estão em ensaio técnico (ADR-027 a ADR-030). A condução offline oficial na rede LAN depende da conclusão dos gates de instalação local e reconciliação (P5/P6/P10).</p>
+          </div>
+          <div class="faq-card">
+            <h4><span>Como acessar se minha Câmara já possui credenciais?</span><span style="color:var(--gold-600)">+</span></h4>
+            <p>Utilize o botão <strong>"Entrar no Plenário"</strong> no topo da página para abrir a tela dedicada de autenticação institucional com suporte a senha e MFA (TOTP).</p>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Formulário de Self-Onboarding -->
+        <div class="onb-form-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span class="mono" style="font-size:10px;font-weight:800;color:#072348;background:#e0e7ff;padding:4px 9px;border-radius:5px">POST /API/V1/PUBLIC/ONBOARDING</span>
+            <span class="mono" style="font-size:10px;color:#047857;font-weight:700">● Rate-Limit: 3/h/IP</span>
+          </div>
+          <h3 style="font-family:Georgia,serif;font-size:23px;font-weight:400;color:var(--bg-navy-deep);margin-bottom:4px">Cadastrar Pedido de Demonstração</h3>
+          <p style="font-size:12.5px;color:var(--slate-600);margin-bottom:16px">Preencha os dados institucionais para reservar o identificador da sua Câmara na fila de ativação.</p>
+
+          <div class="f-group">
+            <label>Nome Oficial da Câmara Municipal *</label>
+            <div class="f-input"><span>Câmara Municipal de Serra Azul</span><span style="color:#059669;font-size:11px">✓ Válido</span></div>
+          </div>
+
+          <div class="f-row">
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--bg-navy-deep);margin-bottom:5px">Município *</label>
+              <div class="f-input"><span>Serra Azul</span></div>
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--bg-navy-deep);margin-bottom:5px">UF (Sigla 2 letras) *</label>
+              <div class="f-input"><span class="mono">MG</span></div>
+            </div>
+          </div>
+
+          <div class="f-row">
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--bg-navy-deep);margin-bottom:5px">E-mail Institucional do Responsável *</label>
+              <div class="f-input"><span>secretaria@camaraserraazul.mg.leg.br</span></div>
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:var(--bg-navy-deep);margin-bottom:5px">Identificador Único (Slug) *</label>
+              <div class="f-input mono" style="font-size:11.5px;color:#0369a1"><span>camara-serra-azul-mg</span><span style="color:#059669">Livre ✓</span></div>
+            </div>
+          </div>
+
+          <!-- Termo LGPD -->
+          <div style="background:#f8fafc;border:1px solid #cbd5e1;border-left:3.5px solid #072348;border-radius:8px;padding:11px 13px;font-size:11px;color:#334155;line-height:1.5;margin:14px 0">
+            <div style="display:flex;gap:8px;align-items:center;font-weight:700;color:#04152d;margin-bottom:4px">
+              <span style="width:15px;height:15px;border-radius:4px;background:#072348;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px">✓</span>
+              <span>Concordo com o tratamento dos dados informados para fins de demonstração (LGPD).</span>
+            </div>
+            <strong>Aviso de Privacidade (Art. 7º, I e V da LGPD):</strong> Os dados acima destinam-se exclusivamente à análise da solicitação e criação do ambiente demonstrativo de 14 dias. Não são compartilhados com terceiros e podem ser removidos mediante solicitação ao Encarregado.
+          </div>
+
+          <div class="btn btn-lg btn-navy" style="width:100%;justify-content:center">
+            Solicitar Ativação do Ambiente Demonstrativo →
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rodapé Executivo -->
+  <footer class="exec-footer">
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="../../../../public/brand/edocbr-logo-white.svg" alt="e-docBR" style="height:26px">
+        <span style="color:#475569">|</span>
+        <span style="color:#e2e8f0;font-weight:700;letter-spacing:0.1em;font-size:10.5px">PLENÁRIO</span>
+        <span style="color:#64748b">· Plataforma de Governança Legislativa Multi-Câmara</span>
+      </div>
+      <div>
+        <span>Adequado à LGPD (Lei nº 13.709/2018) · WCAG 2.2 AA / eMAG 3.1 · Dados ilustrativos</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

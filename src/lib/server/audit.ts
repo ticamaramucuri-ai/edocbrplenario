@@ -114,17 +114,47 @@ export async function writeAudit(tx: Tx, input: AuditInput): Promise<AuditEvent>
   })
 }
 
-/** Recalcula a cadeia inteira do tenant (ordem createdAt asc) e devolve o head. */
+/** Verifica a cadeia pelos elos prevHash, sem depender da ordenação dos timestamps. */
 export function verifyChain(
-  eventsAsc: AuditEvent[]
+  events: AuditEvent[]
 ): { valid: boolean; head: string | null; brokenAt: string | null } {
-  let prev: string | null = null
-  for (const ev of eventsAsc) {
-    const expected = computeChainHash(prev, canonicalAuditBody(ev))
-    if (ev.prevHash !== prev || ev.chainHash !== expected) {
-      return { valid: false, head: prev, brokenAt: ev.id }
-    }
-    prev = ev.chainHash
+  if (events.length === 0) return { valid: true, head: null, brokenAt: null }
+
+  const childrenByPrevHash = new Map<string | null, AuditEvent[]>()
+  for (const event of events) {
+    const siblings = childrenByPrevHash.get(event.prevHash) ?? []
+    siblings.push(event)
+    childrenByPrevHash.set(event.prevHash, siblings)
   }
-  return { valid: true, head: prev, brokenAt: null }
+
+  const roots = childrenByPrevHash.get(null) ?? []
+  if (roots.length !== 1) {
+    return { valid: false, head: null, brokenAt: roots[1]?.id ?? events[0].id }
+  }
+
+  let current: AuditEvent | undefined = roots[0]
+  let previousHash: string | null = null
+  let head: string | null = null
+  const visited = new Set<string>()
+
+  while (current) {
+    if (visited.has(current.id)) return { valid: false, head, brokenAt: current.id }
+    const expected = computeChainHash(previousHash, canonicalAuditBody(current))
+    if (current.prevHash !== previousHash || current.chainHash !== expected) {
+      return { valid: false, head, brokenAt: current.id }
+    }
+    visited.add(current.id)
+    previousHash = current.chainHash
+    head = current.chainHash
+
+    const children = childrenByPrevHash.get(current.chainHash) ?? []
+    if (children.length > 1) return { valid: false, head, brokenAt: children[1].id }
+    current = children[0]
+  }
+
+  if (visited.size !== events.length) {
+    const orphan = events.find((event) => !visited.has(event.id))
+    return { valid: false, head, brokenAt: orphan?.id ?? null }
+  }
+  return { valid: true, head, brokenAt: null }
 }

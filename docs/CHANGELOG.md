@@ -6,6 +6,8 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Implementação da Landing Page Institucional e do Login Split Vault (Etapa 123): apresentação em 5 atos com cockpit operacional em tempo real, 6 módulos em bento grid, arquitetura LAN de alta disponibilidade (ADR-027/030), verificador criptográfico em tempo real (`/api/v1/public/verify`), Trust Center LGPD/LAI (sem cookies de rastreamento), auto-onboarding institucional com validação Zod e consentimento expresso (`/api/v1/public/onboarding`), e página de login dedicada com arquitetura Split Vault (`/login` e `/apresentacao`), preservando total compatibilidade com testes sintéticos e acessibilidade WCAG 2.1 AA.
+
 - Pré-voo do piloto passa a conferir, por Câmara, fotos, emblemas e anexos locais referenciados; ausências e tamanho divergente aparecem como bloqueios, enquanto URLs remotas são identificadas como não verificadas localmente.
 - Prova descartável de recuperação passou a servir imagem referenciada por HTTP após restaurar banco+arquivos; a CI recusa imagem ausente, adulterada ou consulta cruzada de tenant.
 - Ensaio descartável de navegador passou a percorrer encerramento da sessão, criação/revisão da ata por conta legislativa, publicação por outra conta e verificação da integridade e visibilidade no portal.

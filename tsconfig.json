@@ -11,7 +11,9 @@
     "strict": true,
     "noEmit": true,
     "noImplicitAny": false,
-    "types": ["bun-types"],
+    "types": [
+      "bun-types"
+    ],
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -35,7 +37,17 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.GCjEc7/symbolic-http-dist/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.GCjEc7/symbolic-http-dist/dev/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.2qvLLV/symbolic-http-dist/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.2qvLLV/symbolic-http-dist/dev/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.4NHyb1/symbolic-http-dist/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.4NHyb1/symbolic-http-dist/dev/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.ka9TDs/symbolic-http-dist/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.ka9TDs/symbolic-http-dist/dev/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.OFjQa4/symbolic-http-dist/types/**/*.ts",
+    "node_modules/.edocbr-postgres-foundation.OFjQa4/symbolic-http-dist/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

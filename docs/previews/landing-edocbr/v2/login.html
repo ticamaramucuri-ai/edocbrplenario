@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar no Plenário | edocBR Plenário — Autenticação Institucional</title>
+  <style>
+    @font-face {
+      font-family: 'Geist';
+      src: url('../../../../src/assets/fonts/Geist-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geist Mono';
+      src: url('../../../../src/assets/fonts/GeistMono-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    :root {
+      --obsidian: #020b18;
+      --navy-900: #04152d;
+      --navy-800: #072348;
+      --navy-700: #0d3568;
+      --gold-300: #f3d486;
+      --gold-400: #e5b95c;
+      --gold-500: #d49b35;
+      --emerald-400: #34d399;
+      --emerald-600: #059669;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f1f5f9;
+      color: var(--slate-900);
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, p { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    code, .mono { font-family: 'Geist Mono', monospace; }
+
+    .login-shell {
+      display: grid;
+      grid-template-columns: 1.06fr 0.94fr;
+      min-height: 920px;
+    }
+
+    /* ─── LADO ESQUERDO: COFRE INSTITUCIONAL ESCURO ─── */
+    .vault-pane {
+      background:
+        radial-gradient(circle at 18% 22%, rgba(212, 155, 53, 0.16), transparent 48%),
+        radial-gradient(circle at 88% 82%, rgba(16, 185, 129, 0.1), transparent 45%),
+        linear-gradient(160deg, #020a16 0%, #051833 55%, #08264e 100%);
+      color: #ffffff;
+      padding: 44px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .vault-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+    .hemicycle-svg {
+      position: absolute;
+      right: -120px;
+      top: 90px;
+      width: 520px;
+      height: 520px;
+      opacity: 0.16;
+      pointer-events: none;
+    }
+
+    .vault-top {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-row img { height: 34px; }
+    .brand-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.25); }
+    .brand-tag {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: var(--gold-300);
+    }
+    .tls-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #a7f3d0;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      box-shadow: 0 0 8px var(--emerald-400);
+    }
+
+    .vault-center {
+      position: relative;
+      z-index: 2;
+      max-width: 560px;
+      margin: 28px 0;
+    }
+    .v-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(212, 155, 53, 0.14);
+      border: 1px solid rgba(212, 155, 53, 0.4);
+      color: var(--gold-300);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 18px;
+    }
+    .vault-center h1 {
+      font-family: Georgia, serif;
+      font-size: 40px;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      font-weight: 400;
+      margin-bottom: 16px;
+    }
+    .vault-center h1 span {
+      color: var(--gold-300);
+    }
+    .vault-center p {
+      font-size: 14.5px;
+      line-height: 1.62;
+      color: #bfd0e6;
+      margin-bottom: 26px;
+    }
+
+    .security-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+    .sec-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 13px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      backdrop-filter: blur(10px);
+    }
+    .sec-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(212, 155, 53, 0.18);
+      border: 1px solid rgba(212, 155, 53, 0.4);
+      color: var(--gold-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .sec-card strong {
+      display: block;
+      font-size: 13px;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .sec-card span {
+      font-size: 11.5px;
+      color: #9eb4ce;
+      line-height: 1.45;
+      display: block;
+    }
+
+    .vault-bottom {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 12px;
+      color: #94abc7;
+    }
+
+    /* ─── LADO DIREITO: CONSOLE DE AUTENTICAÇÃO ─── */
+    .auth-pane {
+      background:
+        radial-gradient(circle at 90% 10%, rgba(7, 35, 72, 0.05), transparent 40%),
+        linear-gradient(180deg, #f8fafc 0%, #eef3f9 100%);
+      padding: 40px 52px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 500px;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-top: 4px solid var(--navy-800);
+      border-radius: 16px;
+      padding: 30px 32px;
+      box-shadow: 0 24px 55px rgba(4, 21, 45, 0.09);
+    }
+
+    /* Seletor de Câmara */
+    .tenant-selector {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 10px 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .ts-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ts-crest {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--navy-900);
+      color: var(--gold-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .ts-left strong {
+      display: block;
+      font-size: 12.5px;
+      color: var(--navy-900);
+    }
+    .ts-left small {
+      font-size: 10.5px;
+      color: var(--slate-500);
+    }
+    .ts-change {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--navy-700);
+      background: #fff;
+      border: 1px solid var(--slate-300);
+      padding: 4px 9px;
+      border-radius: 6px;
+    }
+
+    .auth-head h2 {
+      font-family: Georgia, serif;
+      font-size: 25px;
+      font-weight: 400;
+      color: var(--navy-900);
+      margin-bottom: 5px;
+    }
+    .auth-head p {
+      font-size: 12.5px;
+      color: var(--slate-600);
+      margin-bottom: 18px;
+    }
+
+    .form-field {
+      margin-bottom: 13px;
+    }
+    .field-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .field-label-row label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+    }
+    .input-box {
+      height: 42px;
+      border: 1.5px solid var(--slate-300);
+      border-radius: 8px;
+      padding: 0 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--slate-900);
+      background: #fff;
+    }
+    .input-box.focused {
+      border-color: var(--navy-700);
+      box-shadow: 0 0 0 3px rgba(13, 53, 104, 0.1);
+    }
+
+    /* TOTP MFA Row */
+    .mfa-box {
+      background: #f8fafc;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 11px 13px;
+      margin-bottom: 16px;
+    }
+    .mfa-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--navy-900);
+      margin-bottom: 8px;
+    }
+    .totp-digits {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 7px;
+    }
+    .totp-slot {
+      height: 36px;
+      background: #fff;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Geist Mono', monospace;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--navy-900);
+    }
+
+    .btn-submit {
+      height: 46px;
+      width: 100%;
+      background: linear-gradient(135deg, #072348 0%, #03152e 100%);
+      color: #ffffff;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(4, 21, 45, 0.2);
+      margin-bottom: 18px;
+    }
+
+    /* Divisor Perfis de Demonstração */
+    .demo-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .demo-divider i {
+      flex: 1;
+      height: 1px;
+      background: var(--slate-200);
+    }
+    .demo-divider span {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--slate-500);
+    }
+
+    .demo-profiles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .dp-card {
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .dp-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--navy-800);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .dp-card strong {
+      display: block;
+      font-size: 11.5px;
+      color: var(--navy-900);
+    }
+    .dp-card small {
+      font-size: 9.5px;
+      color: var(--slate-500);
+      display: block;
+    }
+
+    .lgpd-auth-note {
+      background: #f8fafc;
+      border-top: 1px solid var(--slate-200);
+      padding-top: 11px;
+      font-size: 10.5px;
+      color: var(--slate-500);
+      line-height: 1.45;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-shell" id="pagina-login">
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         COLUNA ESQUERDA: COFRE INSTITUCIONAL & TELEMETRIA DE SEGURANÇA
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <aside class="vault-pane">
+      <div class="vault-grid-bg"></div>
+      <svg class="hemicycle-svg" viewBox="0 0 400 400" fill="none">
+        <circle cx="200" cy="200" r="180" stroke="#d49b35" stroke-width="1.5" stroke-dasharray="6 6"/>
+        <circle cx="200" cy="200" r="135" stroke="#ffffff" stroke-width="1"/>
+        <circle cx="200" cy="200" r="90" stroke="#d49b35" stroke-width="1.5"/>
+        <circle cx="200" cy="200" r="45" stroke="#ffffff" stroke-width="1"/>
+      </svg>
+
+      <div class="vault-top">
+        <div class="brand-row">
+          <img src="../../../../public/brand/edocbr-logo-white.svg" alt="e-docBR">
+          <span class="brand-sep"></span>
+          <span class="brand-tag">PLENÁRIO</span>
+        </div>
+        <div class="tls-badge mono">
+          <span class="pulse-dot"></span>
+          <span>SESSÃO ISOLADA POR TENANT</span>
+        </div>
+      </div>
+
+      <div class="vault-center">
+        <div class="v-kicker">
+          <span>●</span>
+          <span>Autenticação Institucional &amp; Controle de Autoridade</span>
+        </div>
+        <h1>
+          Segurança regimental e <span>rastro criptográfico</span> em cada acesso ao plenário.
+        </h1>
+        <p>
+          O acesso à operação interna do edocBR Plenário é protegido por credenciais nominais, segundo fator TOTP para contas administrativas, escopo estrito por Câmara e registro em cadeia de auditoria SHA-256.
+        </p>
+
+        <div class="security-cards">
+          <div class="sec-card">
+            <div class="sec-icon mono">01</div>
+            <div>
+              <strong>Isolamento Multi-Câmara e Sessão Segura</strong>
+              <span>Cookie <code class="mono">HttpOnly</code> vinculado ao <code class="mono">tenantId</code> da instituição, com revogação remota imediata de sessões e chaves de API.</span>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-icon mono">02</div>
+            <div>
+              <strong>Dupla Identidade em Deliberações Oficiais</strong>
+              <span>Atos sensíveis como contagem simbólica oficial e publicação de ata exigem proposição e confirmação por dois papéis distintos.</span>
+            </div>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-icon mono">03</div>
+            <div>
+              <strong>Adequação à LGPD (Arts. 7º, III e 46)</strong>
+              <span>Monitoramento exclusivo de segurança e auditoria pública; zero cookies publicitários ou compartilhamento comercial de dados.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vault-bottom">
+        <span>← Voltar para a apresentação do produto</span>
+        <span class="mono" style="color:var(--gold-300)">Verificador Público: /api/v1/public/verify</span>
+      </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         COLUNA DIREITA: CONSOLE DE AUTENTICAÇÃO E PERFIS DEMO
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <main class="auth-pane">
+      <div class="auth-card">
+        <!-- Contexto da Câmara -->
+        <div class="tenant-selector">
+          <div class="ts-left">
+            <div class="ts-crest">VN</div>
+            <div>
+              <strong>Câmara Municipal de Vila Nova · MG</strong>
+              <small class="mono">slug: camara-vila-nova · Fuso America/Sao_Paulo</small>
+            </div>
+          </div>
+          <span class="ts-change">Alterar Câmara</span>
+        </div>
+
+        <div class="auth-head">
+          <h2>Entrar no Plenário</h2>
+          <p>Informe suas credenciais institucionais para acessar os módulos habilitados para o seu papel.</p>
+        </div>
+
+        <!-- Campo E-mail -->
+        <div class="form-field">
+          <div class="field-label-row">
+            <label>E-mail Funcional *</label>
+            <span class="mono" style="font-size:10px;color:#059669">Domínio verificado ✓</span>
+          </div>
+          <div class="input-box focused">
+            <span>ana.ribeiro@vilanova.mg.leg.br</span>
+            <span style="font-size:11px;color:#64748b">@</span>
+          </div>
+        </div>
+
+        <!-- Campo Senha -->
+        <div class="form-field">
+          <div class="field-label-row">
+            <label>Senha de Acesso *</label>
+            <span style="font-size:11px;color:var(--navy-700);font-weight:600">Recuperar acesso</span>
+          </div>
+          <div class="input-box">
+            <span style="letter-spacing:0.18em;font-weight:800">••••••••••••••</span>
+            <span style="font-size:10.5px;color:#64748b">Ocultar</span>
+          </div>
+        </div>
+
+        <!-- Bloco MFA TOTP -->
+        <div class="mfa-box">
+          <div class="mfa-top">
+            <span>Código de Segundo Fator (MFA / TOTP)</span>
+            <span class="mono" style="color:#059669;font-size:10px">● Autenticador Ativo</span>
+          </div>
+          <div class="totp-digits">
+            <div class="totp-slot">4</div>
+            <div class="totp-slot">8</div>
+            <div class="totp-slot">2</div>
+            <div class="totp-slot">9</div>
+            <div class="totp-slot">1</div>
+            <div class="totp-slot">0</div>
+          </div>
+        </div>
+
+        <!-- Botão Principal -->
+        <div class="btn-submit">
+          <span>Autenticar com Segurança no Plenário →</span>
+        </div>
+
+        <!-- Perfis Rápidos de Demonstração -->
+        <div class="demo-divider">
+          <i></i>
+          <span>Acesso Rápido de Demonstração (LEGIS_DEMO_MODE)</span>
+          <i></i>
+        </div>
+
+        <div class="demo-profiles-grid">
+          <div class="dp-card">
+            <div class="dp-avatar">RA</div>
+            <div>
+              <strong>Roberto Almeida</strong>
+              <small>Presidente · Mesa Diretora</small>
+            </div>
+          </div>
+          <div class="dp-card">
+            <div class="dp-avatar" style="background:#0d448a">MV</div>
+            <div>
+              <strong>Marcos Vieira</strong>
+              <small>Operador · Secretaria</small>
+            </div>
+          </div>
+          <div class="dp-card">
+            <div class="dp-avatar" style="background:#059669">CM</div>
+            <div>
+              <strong>Carla Mendes</strong>
+              <small>Vereadora · App PWA</small>
+            </div>
+          </div>
+          <div class="dp-card">
+            <div class="dp-avatar" style="background:#b45309">AR</div>
+            <div>
+              <strong>Ana Ribeiro</strong>
+              <small>Admin · Configuração</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="lgpd-auth-note">
+          <span>Protegido por LGPD · Cookie de sessão válido por 7 dias</span>
+          <span class="mono">POST /api/v1/auth/login</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>
+

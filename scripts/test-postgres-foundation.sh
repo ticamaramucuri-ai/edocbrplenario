@@ -201,6 +201,21 @@ DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DE
   bun test tests/session-journey.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/attendance-commands.test.ts tests/symbolic-tally-official.test.ts
+cp next-env.d.ts "$temporary/next-env.d.ts"
+cp tsconfig.json "$temporary/tsconfig.json"
+build_relative="node_modules/$(basename "$temporary")/symbolic-http-dist"
+if ! DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  EDOCBR_NEXT_DIST_DIR="$build_relative" NEXT_TELEMETRY_DISABLED=1 \
+  bunx next build > "$temporary/symbolic-http-build.log" 2>&1; then
+  tail -40 "$temporary/symbolic-http-build.log" >&2
+  exit 1
+fi
+mkdir -p "$temporary/symbolic-http-dist/standalone/.next"
+cp -r "$temporary/symbolic-http-dist/static" "$temporary/symbolic-http-dist/standalone/.next/"
+cp -r public "$temporary/symbolic-http-dist/standalone/"
+DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" \
+  EDOCBR_STANDALONE_SERVER="$temporary/symbolic-http-dist/standalone/server.js" \
+  bun scripts/local-postgres-symbolic-http-race.mjs
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \
   bun test tests/official-closure.test.ts
 DATABASE_URL="postgresql://postgres:test-only@127.0.0.1:$port/postgres" LEGIS_DEMO_MODE=true \

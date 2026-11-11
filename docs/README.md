@@ -1,6 +1,6 @@
 # Documentação do edocBR Plenário
 
-**Índice vigente em 07/11/2026.** Comece pelo [plano mestre](PLANO-MESTRE.md). Ele define escopo, estado, ordem de desenvolvimento e gates. O código e a prova datada prevalecem sobre afirmações antigas de conclusão; aceite institucional exige assinatura ou registro equivalente da Câmara.
+**Índice vigente em 10/11/2026.** Comece pelo [plano mestre revisto](PLANO-MESTRE.md) e pela [meta de produção](META-PRODUCAO.md). A revisão usa o [parecer comparativo do PainelDesk](../reports/parecer-comparativo-paineldesk-edocbr-2026-11-10.docx) para priorizar a jornada local. O código e a prova datada prevalecem sobre afirmações antigas de conclusão; aceite institucional exige assinatura ou registro equivalente da Câmara.
 
 ## Onde encontrar a informação
 
@@ -8,6 +8,8 @@
 |---|---|---|
 | O que construiremos, em que ordem e com qual saída? | [Plano mestre](PLANO-MESTRE.md) | **Vigente**; atualizar em mudança de escopo/gate |
 | Qual é a meta verificável de produção? | [Meta de produção](META-PRODUCAO.md) | **Vigente**; R3 é piloto delimitado e R4 é produto completo multi-Câmara |
+| Como chegar aos testes locais de todas as funções? | [Meta de testes locais](META-TESTES-LOCAIS.md) | **Vigente**; fases L0–L6, matriz de cobertura e registro obrigatório por incremento |
+| Quais módulos e rotas têm testes locais mapeados? | [Mapa de cobertura local](MAPA-COBERTURA-TESTES-LOCAIS.md) | Preliminar; associações candidatas ainda precisam de inspeção e execução |
 | Qual requisito tem código, teste, prova e gate? | [Matriz viva de entrega](MATRIZ-ENTREGA.md) | **Vigente**; atualizar em cada incremento |
 | O que uma entrega realmente provou? | [Registro de etapas](etapas/README.md) e arquivos numerados | Evidência datada; não sobrescrever resultados antigos |
 | Por que a arquitetura foi escolhida? | [ADRs](adr/) — sobretudo [núcleo local](adr/ADR-027-saas-nucleo-local-operacao-offline.md) | Decisão; criar novo ADR quando houver substituição |
@@ -38,10 +40,10 @@ O [CHANGELOG](CHANGELOG.md) é histórico de mudanças, não indicador de homolo
 
 ## Conjunto documental exigido para produto real
 
-| Artefato | Situação em 07/11 | Quando fechar / responsável funcional |
+| Artefato | Situação em 10/11 | Quando fechar / responsável funcional |
 |---|---|---|
 | Matriz viva requisito → código → teste → evidência → aceite | [Matriz de entrega](MATRIZ-ENTREGA.md) criada; contratos e provas do desktop entram conforme implementação | Atualizar em cada fase; engenharia e produto |
-| Contrato de pacote web → desktop e sincronização bidirecional | Pacote v1, identidade, download, ACK e contexto da revisão ensaiados; contrato bidirecional dos atos e autoridade ainda pendente | P4/P6; engenharia de domínio e desktop |
+| Contrato de pacote web → desktop e sincronização bidirecional | Pacote v1, identidade, download, ACK e contexto ensaiados; diário e reserva exclusiva interna em teste; eventos de retorno e atos locais pendentes | P4/P6; engenharia de domínio e desktop |
 | Modelo de ameaça SaaS/LAN/desktop/dispositivos | Fragmentos em ADR e testes; revisão unificada pendente | Antes da API LAN e do voto offline; segurança |
 | Matriz de autoridade e contingência sem internet | ADR-027 é direção; procedimento regimental/operacional precisa de aprovação | P4/P6/P10; Mesa, jurídico e operação |
 | Guia de instalação Windows/Linux, certificados, atualização e reserva | Não existe | P5/P10; operação local |

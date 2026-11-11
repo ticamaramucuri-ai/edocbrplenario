@@ -15,6 +15,7 @@ const request = (url: string, method: string, actorId: string | null, body?: unk
 })
 
 test('emenda publicada tem prévia, revisão pública e isolamento por Câmara', async () => {
+  const futureSessionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   const tenant = await db.tenant.create({ data: { slug: 'emenda-a', name: 'Câmara A', city: 'A', uf: 'BA', settings: JSON.stringify({ minimumAgendaMatters: 1 }) } })
   const other = await db.tenant.create({ data: { slug: 'emenda-b', name: 'Câmara B', city: 'B', uf: 'BA' } })
   const president = await db.parliamentarian.create({ data: { tenantId: tenant.id, name: 'Presidente', party: 'SEM', boardRole: 'presidente' } })
@@ -24,7 +25,7 @@ test('emenda publicada tem prévia, revisão pública e isolamento por Câmara',
   const addedMatter = await db.legislativeMatter.create({ data: { tenantId: tenant.id, type: 'requerimento', number: 2, year: 2026, ementa: 'Segunda matéria', authors: '[]' } })
   const foreignMatter = await db.legislativeMatter.create({ data: { tenantId: other.id, type: 'requerimento', number: 1, year: 2026, ementa: 'Matéria estrangeira', authors: '[]' } })
   const created = await createSession(request('http://localhost/api/v1/sessions', 'POST', actor.id, {
-    type: 'ordinaria', scheduledAt: '2026-11-10T19:00:00.000Z', presidentId: president.id, matterIds: [matter.id],
+    type: 'ordinaria', scheduledAt: futureSessionDate, presidentId: president.id, matterIds: [matter.id],
   }), { params: Promise.resolve({}) })
   expect(created.status).toBe(201)
   const draft = (await created.json()).session

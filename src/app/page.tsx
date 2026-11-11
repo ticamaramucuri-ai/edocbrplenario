@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { SidebarDesktop, SidebarNav } from '@/components/app/sidebar'
 import { Topbar } from '@/components/app/topbar'
 import LoginForm, { type LoggedInActor } from '@/components/app/login-form'
+import { LandingView } from '@/modules/landing'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
@@ -141,7 +142,9 @@ function ActorGate({ children }: { children: React.ReactNode }) {
   const bootstrap = useApp((s) => s.bootstrap)
   const setActor = useApp((s) => s.setActor)
   const queryClient = useQueryClient()
-  const open = !actor && !!bootstrap
+  const [dialogDismissed, setDialogDismissed] = useState(false)
+  const isGuest = !actor && !!bootstrap
+  const open = isGuest && !dialogDismissed
 
   const handleLoggedIn = (a: LoggedInActor) => {
     const view: ActorView = {
@@ -161,11 +164,11 @@ function ActorGate({ children }: { children: React.ReactNode }) {
     })
   }
 
-  if (!open) return <>{children}</>
+  if (!isGuest) return <>{children}</>
 
   return (
     <>
-      {children}
+      <LandingView onOpenLoginModal={() => setDialogDismissed(false)} />
       <Dialog open={open}>
         <DialogContent className="sm:max-w-md" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>
@@ -222,6 +225,16 @@ function ActorGate({ children }: { children: React.ReactNode }) {
               </li>
             ))}
           </ul>}
+
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={() => setDialogDismissed(true)}
+              className="text-xs font-semibold text-primary hover:underline transition-colors"
+            >
+              Explorar apresentação completa da plataforma →
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

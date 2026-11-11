@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiência Mobile &amp; PWA Parlamentar | edocBR Plenário</title>
+  <style>
+    @font-face {
+      font-family: 'Geist';
+      src: url('../../../../src/assets/fonts/Geist-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Geist Mono';
+      src: url('../../../../src/assets/fonts/GeistMono-Variable.woff2') format('woff2');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(212, 155, 53, 0.16), transparent 55%),
+        linear-gradient(180deg, #020b18 0%, #051936 100%);
+      color: #ffffff;
+      font-family: 'Geist', sans-serif;
+      padding: 44px 48px 52px;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, p { margin: 0; }
+    .mono { font-family: 'Geist Mono', monospace; }
+
+    .studio-wrap {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+    .studio-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .studio-kicker {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f3d486;
+      margin-bottom: 8px;
+    }
+    .studio-head h1 {
+      font-family: Georgia, serif;
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+    .studio-head p {
+      font-size: 13.5px;
+      color: #9eb4ce;
+      max-width: 430px;
+      line-height: 1.55;
+    }
+
+    .phones-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
+    .phone-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phone-caption {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f3d486;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .iphone-frame {
+      width: 356px;
+      height: 710px;
+      background: #0b1628;
+      border: 8px solid #1e2f48;
+      border-radius: 42px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.12);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .dynamic-island {
+      width: 96px;
+      height: 20px;
+      background: #000;
+      border-radius: 99px;
+      margin: 8px auto 6px;
+      flex-shrink: 0;
+    }
+    .screen-inner {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="studio-wrap" id="pagina-mobile-studio">
+    <div class="studio-head">
+      <div>
+        <div class="studio-kicker">● Responsividade Mobile &amp; PWA Parlamentar (390 × 844)</div>
+        <h1>Três jornadas móveis: Apresentação Pública, Login Institucional e App do Vereador.</h1>
+      </div>
+      <p>
+        Interfaces testadas em viewport móvel sem overflow horizontal, com alvos de toque acessíveis (WCAG 2.2 AA) e tolerância a falhas de rede.
+      </p>
+    </div>
+
+    <div class="phones-grid">
+      <!-- IPHONE 1: LANDING PAGE MOBILE -->
+      <div class="phone-col">
+        <div class="phone-caption">01 · Landing Page Mobile</div>
+        <div class="iphone-frame">
+          <div class="dynamic-island"></div>
+          <div class="screen-inner" style="background:linear-gradient(180deg,#031226 0%,#072348 100%);padding:14px 16px;color:#fff;justify-content:space-between">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:14px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <img src="../../../../public/brand/edocbr-logo-white.svg" alt="e-docBR" style="height:22px">
+                  <span style="font-size:9px;font-weight:800;letter-spacing:0.12em;color:#f3d486">PLENÁRIO</span>
+                </div>
+                <span style="background:rgba(255,255,255,0.1);padding:4px 9px;border-radius:6px;font-size:10px;font-weight:700">Menu ☰</span>
+              </div>
+
+              <div style="display:inline-block;background:rgba(212,155,53,0.18);border:1px solid rgba(212,155,53,0.4);color:#f3d486;font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:99px;margin-bottom:10px">
+                ● SaaS Multi-Câmara + Núcleo LAN
+              </div>
+              <h2 style="font-family:Georgia,serif;font-size:25px;line-height:1.12;font-weight:400;margin-bottom:10px">
+                Precisão regimental do protocolo à ata oficial.
+              </h2>
+              <p style="font-size:11.5px;color:#bfd0e6;line-height:1.5;margin-bottom:14px">
+                Prepare pautas versionadas, conduza votações auditáveis, opere telões 4K e publique atas com hash SHA-256.
+              </p>
+
+              <div style="background:linear-gradient(135deg,#ecc56a,#d49b35);color:#161004;font-weight:800;font-size:12px;padding:11px;border-radius:8px;text-align:center;margin-bottom:8px">
+                Solicitar Demonstração (14 dias) →
+              </div>
+              <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:#fff;font-weight:700;font-size:11.5px;padding:9px;border-radius:8px;text-align:center;margin-bottom:14px">
+                Entrar no Plenário
+              </div>
+
+              <div style="background:#fff;color:#0f172a;border-radius:10px;padding:11px;font-size:10px">
+                <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;color:#04152d">
+                  <span>14ª Sessão Ordinária</span>
+                  <span style="color:#059669">● 11/13 Presentes</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;text-align:center;margin-bottom:6px">
+                  <div style="background:#ecfdf5;padding:5px;border-radius:5px;color:#047857"><strong style="font-size:13px;display:block">09</strong>Sim</div>
+                  <div style="background:#fef2f2;padding:5px;border-radius:5px;color:#dc2626"><strong style="font-size:13px;display:block">02</strong>Não</div>
+                  <div style="background:#f1f5f9;padding:5px;border-radius:5px;color:#475569"><strong style="font-size:13px;display:block">00</strong>Abst</div>
+                </div>
+                <div class="mono" style="font-size:8.5px;color:#64748b">Cadeia SHA-256 íntegra · Adequado à LGPD</div>
+              </div>
+            </div>
+
+            <div style="font-size:9.5px;color:#94a3b8;text-align:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">
+              Zero Cookies Publicitários · WCAG 2.2 AA
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IPHONE 2: LOGIN INSTITUCIONAL MOBILE -->
+      <div class="phone-col">
+        <div class="phone-caption">02 · Login Institucional &amp; MFA</div>
+        <div class="iphone-frame">
+          <div class="dynamic-island"></div>
+          <div class="screen-inner" style="background:#f8fafc;color:#0f172a;padding:16px;justify-content:space-between">
+            <div>
+              <div style="background:#04152d;color:#fff;border-radius:10px;padding:11px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font-size:9px;color:#f3d486;font-weight:700">CÂMARA SELECIONADA</div>
+                  <strong style="font-size:11.5px">Câmara de Vila Nova · MG</strong>
+                </div>
+                <span style="font-size:9.5px;background:rgba(255,255,255,0.14);padding:3px 7px;border-radius:5px">Trocar</span>
+              </div>
+
+              <h3 style="font-family:Georgia,serif;font-size:21px;color:#04152d;font-weight:400;margin-bottom:4px">Entrar no Plenário</h3>
+              <p style="font-size:11px;color:#64748b;margin-bottom:12px">Credenciais nominais e segundo fator TOTP.</p>
+
+              <div style="margin-bottom:10px">
+                <label style="display:block;font-size:10.5px;font-weight:700;color:#04152d;margin-bottom:4px">E-mail Funcional *</label>
+                <div style="background:#fff;border:1.5px solid #072348;border-radius:7px;padding:8px 10px;font-size:11.5px">ana.ribeiro@vilanova.mg.leg.br</div>
+              </div>
+
+              <div style="margin-bottom:10px">
+                <label style="display:block;font-size:10.5px;font-weight:700;color:#04152d;margin-bottom:4px">Senha de Acesso *</label>
+                <div style="background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-size:11.5px;letter-spacing:0.15em">••••••••••••</div>
+              </div>
+
+              <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;margin-bottom:6px">
+                  <span>Código TOTP (6 dígitos)</span>
+                  <span style="color:#059669">● MFA Ativo</span>
+                </div>
+                <div class="mono" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;text-align:center;font-weight:800;font-size:12px">
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">4</span>
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">8</span>
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">2</span>
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">9</span>
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">1</span>
+                  <span style="background:#fff;border:1px solid #cbd5e1;padding:5px;border-radius:5px">0</span>
+                </div>
+              </div>
+
+              <div style="background:#04152d;color:#fff;font-weight:700;font-size:12px;padding:11px;border-radius:8px;text-align:center;margin-bottom:12px">
+                Autenticar no Plenário →
+              </div>
+
+              <div style="font-size:9.5px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:6px">Perfis de Demonstração</div>
+              <div style="display:grid;gap:5px;font-size:10.5px">
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:7px 9px;border-radius:6px;display:flex;justify-content:space-between">
+                  <strong>Roberto Almeida</strong><span style="color:#64748b">Presidente</span>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;padding:7px 9px;border-radius:6px;display:flex;justify-content:space-between">
+                  <strong>Carla Mendes</strong><span style="color:#059669">Vereadora PWA</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size:9.5px;color:#64748b;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
+              Sessão HttpOnly · Adequado à LGPD (Art. 46)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IPHONE 3: APP PWA PARLAMENTAR EM SESSÃO -->
+      <div class="phone-col">
+        <div class="phone-caption">03 · App PWA Parlamentar em Sessão</div>
+        <div class="iphone-frame">
+          <div class="dynamic-island"></div>
+          <div class="screen-inner" style="background:#041226;color:#fff;padding:15px;justify-content:space-between">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div>
+                  <div style="font-size:9.5px;color:#34d399;font-weight:700">● PRESENÇA CONFIRMADA</div>
+                  <strong style="font-size:13px">Ver. Carla Mendes (MDB)</strong>
+                </div>
+                <span class="mono" style="background:rgba(255,255,255,0.08);padding:4px 8px;border-radius:6px;font-size:9.5px">14ª Ord.</span>
+              </div>
+
+              <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(212,155,53,0.4);border-radius:11px;padding:12px;margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#f3d486;font-weight:700;margin-bottom:4px">
+                  <span>EM VOTAÇÃO NOMINAL</span>
+                  <span>MAIORIA ABSOLUTA</span>
+                </div>
+                <h4 style="font-size:13px;margin-bottom:4px">PL nº 018/2026 — Diretrizes de Atendimento ao Cidadão</h4>
+                <p style="font-size:10.5px;color:#cbd5e1;margin-bottom:10px">Parecer favorável da CCJ · Emenda Modificativa nº 03 incluída.</p>
+
+                <div style="display:grid;gap:6px;font-size:11.5px;font-weight:700;margin-bottom:10px">
+                  <div style="background:#059669;color:#fff;padding:9px 12px;border-radius:8px;display:flex;justify-content:space-between">
+                    <span>✓ Voto Confirmado: SIM</span>
+                    <span class="mono" style="font-size:10px">ACK 200</span>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;padding:8px 12px;border-radius:8px">
+                    Contrário (Não)
+                  </div>
+                  <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;padding:8px 12px;border-radius:8px">
+                    Abstenção Regimental
+                  </div>
+                </div>
+
+                <div class="mono" style="background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.35);border-radius:7px;padding:8px;font-size:9.5px;color:#a7f3d0;line-height:1.45">
+                  <strong>RECIBO CRIPTOGRÁFICO EMITIDO</strong><br>
+                  Código: REC-8F3A-92C1-E40B<br>
+                  commandId idempotente · 1 único voto
+                </div>
+              </div>
+
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px;font-size:11px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <strong style="color:#f3d486">Fila de Palavra / Tribuna</strong>
+                  <span class="mono" style="color:#34d399">04:12 restante</span>
+                </div>
+                <div style="font-size:10px;color:#cbd5e1">Posição: Em fala ativa na tribuna (+2 min prorrogado pela Mesa).</div>
+              </div>
+            </div>
+
+            <div style="font-size:9.5px;color:#94a3b8;text-align:center;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">
+              Tolerante a 429 / 503 / ACK perdido (Etapa 118)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+

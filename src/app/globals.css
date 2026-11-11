@@ -140,8 +140,20 @@
   color-scheme: dark;
 }
 
+@page {
+  size: A4;
+  margin: 15mm 14mm 18mm;
+
+  @bottom-right {
+    content: "Página " counter(page) " de " counter(pages);
+    color: #555;
+    font: 9pt sans-serif;
+  }
+}
+
 @media print {
-  .no-print {
+  .no-print,
+  [data-sonner-toaster] {
     display: none !important;
   }
   body {

@@ -427,7 +427,7 @@ export function customResultSummaryPhrase(
       }).`
     case 'empate':
       return withVotes.length > 0
-        ? `Empate entre as opções mais votadas (${votesPhrase(withVotes)}).`
+        ? `Empate entre as opções mais votadas (${votesPhrase(withVotes.filter((o) => o.n === top.n))}).`
         : 'Empate na votação sem votos registrados.'
     case 'sem_quorum':
       return `Votação encerrada sem quórum (${counts.presentes} presentes).`

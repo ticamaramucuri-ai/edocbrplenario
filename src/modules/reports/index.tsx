@@ -22,6 +22,7 @@ import {
   Loader2,
   PenLine,
   Printer,
+  RefreshCw,
   ScrollText,
   ShieldAlert,
   ShieldCheck,
@@ -88,7 +89,7 @@ import { downloadBlob, formatVerificationCode, shortHash } from '@/modules/_shar
 
 function DocHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-3 border-b border-foreground/25 pb-1 text-sm font-bold uppercase tracking-[0.15em]">
+    <h3 className="mb-3 border-b border-foreground/25 pb-1 text-sm font-bold uppercase tracking-[0.15em] print:break-after-avoid">
       {children}
     </h3>
   )
@@ -129,7 +130,7 @@ function VotingBlock({ voting, basis }: { voting: VotingView; basis?: VotingBasi
     voting.mode === 'nominal' && voting.votes ? voting.votes.filter((v) => v.value !== null) : []
 
   return (
-    <div className="mb-4 ml-4 border-l-2 border-foreground/20 pl-4 text-sm">
+    <div className="mb-4 ml-4 border-l-2 border-foreground/20 pl-4 text-sm print:break-inside-avoid">
       <p className="font-bold">{voting.question}</p>
       <p className="mt-0.5 text-xs">
         Votação {VOTING_MODE_LABEL[voting.mode]} · {VOTING_RULE_LABEL[voting.rule]}
@@ -231,7 +232,7 @@ function AtaDoc({ ata }: { ata: AtaReportView }) {
           ) : (
             <ol className="ml-4 list-decimal space-y-1">
               {ata.expediente.map((item) => (
-                <li key={item.order}>
+                <li key={item.order} className="print:break-inside-avoid">
                   {item.title}{' '}
                   <span className="text-foreground/60">({AGENDA_STATUS_LABEL[item.status as 'pendente'] ?? item.status})</span>
                 </li>
@@ -578,7 +579,7 @@ function AtaSignaturesPanel({ sessionId }: { sessionId: string }) {
 
   if (panelQ.isLoading) {
     return (
-      <section className="space-y-3" aria-label="Assinaturas eletrônicas da ata">
+      <section className="no-print space-y-3" aria-label="Assinaturas eletrônicas da ata">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-40 w-full rounded-xl" />
       </section>
@@ -590,7 +591,7 @@ function AtaSignaturesPanel({ sessionId }: { sessionId: string }) {
   const pending = panel.eligible.filter((e) => !e.signed)
 
   return (
-    <section className="space-y-3" aria-label="Assinaturas eletrônicas da ata">
+    <section className="no-print space-y-3" aria-label="Assinaturas eletrônicas da ata">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <PenLine className="size-4 text-primary" aria-hidden /> Assinaturas eletrônicas
@@ -688,9 +689,15 @@ function AtaSignaturesPanel({ sessionId }: { sessionId: string }) {
   )
 }
 
-function AtaTab({ sessions }: { sessions: SessionSummary[] }) {
+function AtaTab({ sessions, sessionsError, sessionsLoading, refetchSessions }: {
+  sessions: SessionSummary[]
+  sessionsError: boolean
+  sessionsLoading: boolean
+  refetchSessions: () => void
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [viewId, setViewId] = useState<string | null>(null)
+  const [retryVersion, setRetryVersion] = useState(0)
 
   const effectiveId =
     selectedId && sessions.some((s) => s.id === selectedId)
@@ -698,13 +705,26 @@ function AtaTab({ sessions }: { sessions: SessionSummary[] }) {
       : sessions.find((s) => s.status === 'closed')?.id ?? sessions[0]?.id ?? null
 
   const ataQ = useQuery({
-    queryKey: ['ata', viewId],
+    queryKey: ['ata', viewId, retryVersion],
     queryFn: () => api.sessionAta(viewId as string),
     enabled: !!viewId,
   })
 
   const selectLabel = (s: SessionSummary) =>
     `${SESSION_TYPE_LABEL[s.type]} nº ${s.number}/${s.year} — ${fmtDateShort(s.scheduledAt)} [${SESSION_STATUS_LABEL[s.status]}]`
+
+  if (sessionsError) return <EmptyState
+    icon={<RefreshCw />}
+    title="Não foi possível carregar as sessões"
+    description="Verifique a conexão e tente novamente."
+    action={<Button variant="outline" onClick={refetchSessions}><RefreshCw className="size-4" /> Tentar novamente</Button>}
+  />
+  if (sessionsLoading) return <div className="mx-auto max-w-4xl space-y-4"><Skeleton className="h-10 w-72" /><Skeleton className="h-64 w-full" /></div>
+  if (sessions.length === 0) return <EmptyState
+    icon={<FileText />}
+    title="Nenhuma sessão disponível"
+    description="Cadastre uma sessão para gerar a minuta correspondente."
+  />
 
   return (
     <div className="space-y-5">
@@ -758,7 +778,14 @@ function AtaTab({ sessions }: { sessions: SessionSummary[] }) {
       {/* Fase 7 — rascunho assistido por IA (seção adicional; minuta estruturada intacta) */}
       {effectiveId && <AiAtaDraftSection sessionId={effectiveId} />}
 
-      {ataQ.isLoading ? (
+      {ataQ.isError ? (
+        <EmptyState
+          icon={<RefreshCw />}
+          title="Não foi possível gerar a minuta"
+          description="Ocorreu uma falha ao consultar os dados da sessão. Tente novamente."
+          action={<Button variant="outline" onClick={() => setRetryVersion((current) => current + 1)}><RefreshCw className="size-4" /> Tentar novamente</Button>}
+        />
+      ) : ataQ.isLoading ? (
         <div className="mx-auto max-w-4xl space-y-4">
           <Skeleton className="mx-auto h-10 w-72" />
           <Skeleton className="h-64 w-full rounded-lg" />
@@ -780,6 +807,7 @@ function AtaTab({ sessions }: { sessions: SessionSummary[] }) {
 export default function ReportsModule() {
   const [tab, setTab] = useState('mirror')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [reportRetryVersion, setReportRetryVersion] = useState(0)
 
   const sessionsQ = useQuery({ queryKey: ['sessions'], queryFn: () => api.listSessions() })
   const sessions = sessionsQ.data?.sessions ?? []
@@ -791,7 +819,7 @@ export default function ReportsModule() {
   }, [selectedId, sessions])
 
   const reportQ = useQuery({
-    queryKey: ['report', effectiveId],
+    queryKey: ['report', effectiveId, reportRetryVersion],
     queryFn: () => api.sessionReport(effectiveId as string),
     enabled: !!effectiveId,
   })
@@ -827,6 +855,11 @@ export default function ReportsModule() {
   const presentNames = (detail?.attendance ?? []).filter((a) => a.present).map((a) => a.name)
 
   const unlinkedVotings = (detail?.votings ?? []).filter((v) => !v.agendaItemId)
+  const agendaSections = [
+    { key: 'expediente', title: '2. Expediente', empty: 'Sem itens de expediente registrados.' },
+    { key: 'ordem_do_dia', title: '3. Ordem do Dia', empty: 'Sessão sem pauta publicada.' },
+    { key: 'comunicacoes', title: '4. Comunicações', empty: 'Sem comunicações registradas.' },
+  ] as const
 
   return (
     <div className="space-y-6">
@@ -884,7 +917,25 @@ export default function ReportsModule() {
           </div>
 
           {/* Documento */}
-          {reportQ.isLoading || !report || !session || !detail ? (
+          {sessionsQ.isError ? (
+            <EmptyState
+              icon={<RefreshCw />}
+              title="Não foi possível carregar as sessões"
+              description="Verifique a conexão e tente novamente."
+              action={<Button variant="outline" onClick={() => void sessionsQ.refetch()}><RefreshCw className="size-4" /> Tentar novamente</Button>}
+            />
+          ) : sessionsQ.isLoading ? (
+            <div className="mx-auto max-w-4xl space-y-4"><Skeleton className="h-10 w-72" /><Skeleton className="h-64 w-full" /></div>
+          ) : sessions.length === 0 ? (
+            <EmptyState icon={<ScrollText />} title="Nenhuma sessão disponível" description="Cadastre uma sessão para gerar o espelho correspondente." />
+          ) : reportQ.isError ? (
+            <EmptyState
+              icon={<RefreshCw />}
+              title="Não foi possível carregar o espelho"
+              description="Ocorreu uma falha ao consultar os dados da sessão. Tente novamente."
+              action={<Button variant="outline" onClick={() => setReportRetryVersion((current) => current + 1)}><RefreshCw className="size-4" /> Tentar novamente</Button>}
+            />
+          ) : reportQ.isLoading || !report || !session || !detail ? (
         <div className="mx-auto max-w-4xl space-y-4">
           <Skeleton className="mx-auto h-10 w-72" />
           <Skeleton className="h-6 w-full max-w-md" />
@@ -965,39 +1016,39 @@ export default function ReportsModule() {
             </p>
           </section>
 
-          {/* 2. Ordem do dia */}
-          <section className="mt-8" aria-labelledby="report-agenda">
-            <DocHeading>
-              <span id="report-agenda">2. Ordem do Dia</span>
-            </DocHeading>
-            {detail.agenda.length === 0 ? (
-              <p className="text-sm italic">Sessão sem pauta publicada.</p>
-            ) : (
-              <ol className="space-y-3">
-                {detail.agenda.map((item) => {
-                  const linked = detail.votings.filter((v) => v.agendaItemId === item.id)
-                  return (
-                    <li key={item.id} className="text-sm">
-                      <p>
-                        <strong className="tabular-nums">{item.order + 1}.</strong> {item.title}{' '}
-                        <span className="text-foreground/70">— {AGENDA_STATUS_LABEL[item.status]}</span>
-                      </p>
-                      {item.resultSummary && <p className="ml-4 text-xs">{item.resultSummary}</p>}
-                      {linked.map((v) => (
-                        <VotingBlock key={v.id} voting={v} basis={report.votingBases[v.id]} />
-                      ))}
-                    </li>
-                  )
-                })}
-              </ol>
-            )}
-          </section>
+          {agendaSections.map((section) => {
+            const items = detail.agenda.filter((item) => item.section === section.key)
+            return <section key={section.key} className="mt-8" aria-label={section.title}>
+              <DocHeading>{section.title}</DocHeading>
+              {items.length === 0 ? (
+                <p className="text-sm italic">{section.empty}</p>
+              ) : (
+                <ol className="space-y-3">
+                  {items.map((item, index) => {
+                    const linked = detail.votings.filter((v) => v.agendaItemId === item.id)
+                    return (
+                      <li key={item.id} className="text-sm print:break-inside-avoid">
+                        <p>
+                          <strong className="tabular-nums">{index + 1}.</strong> {item.title}{' '}
+                          <span className="text-foreground/70">— {AGENDA_STATUS_LABEL[item.status]}</span>
+                        </p>
+                        {item.resultSummary && <p className="ml-4 text-xs">{item.resultSummary}</p>}
+                        {linked.map((v) => (
+                          <VotingBlock key={v.id} voting={v} basis={report.votingBases[v.id]} />
+                        ))}
+                      </li>
+                    )
+                  })}
+                </ol>
+              )}
+            </section>
+          })}
 
           {/* 3. Votações avulsas */}
           {unlinkedVotings.length > 0 && (
             <section className="mt-8" aria-labelledby="report-votings">
               <DocHeading>
-                <span id="report-votings">3. Votações realizadas na sessão</span>
+              <span id="report-votings">5. Votações realizadas na sessão</span>
               </DocHeading>
               {unlinkedVotings.map((v) => (
                 <VotingBlock key={v.id} voting={v} basis={report.votingBases[v.id]} />
@@ -1009,7 +1060,7 @@ export default function ReportsModule() {
           <section className="mt-8" aria-labelledby="report-speeches">
             <DocHeading>
               <span id="report-speeches">
-                {unlinkedVotings.length > 0 ? '4. Discursos' : '3. Discursos'}
+                  {unlinkedVotings.length > 0 ? '6. Discursos' : '5. Discursos'}
               </span>
             </DocHeading>
             {detail.speeches.length === 0 ? (
@@ -1076,7 +1127,8 @@ export default function ReportsModule() {
         </TabsContent>
 
         <TabsContent value="ata" className="mt-0">
-          <AtaTab sessions={sessions} />
+          <AtaTab sessions={sessions} sessionsError={sessionsQ.isError} sessionsLoading={sessionsQ.isLoading}
+            refetchSessions={() => void sessionsQ.refetch()} />
         </TabsContent>
       </Tabs>
     </div>

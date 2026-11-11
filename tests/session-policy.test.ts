@@ -15,6 +15,7 @@ const request = (url: string, method: string, actorId: string, body?: unknown) =
 })
 
 test('política de publicação é isolada por Câmara e fica congelada na revisão da pauta', async () => {
+  const futureSessionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   async function house(slug: string) {
     const tenant = await db.tenant.create({ data: { slug, name: `Câmara ${slug}`, city: 'Cidade', uf: 'BA' } })
     const president = await db.parliamentarian.create({ data: {
@@ -37,7 +38,7 @@ test('política de publicação é isolada por Câmara e fica congelada na revis
 
   const create = async (house: typeof strict, type: 'ordinaria' | 'especial', secretaryName?: string, matterIds?: string[]) =>
     createSession(request('http://localhost/api/v1/sessions', 'POST', house.actor.id, {
-      type, scheduledAt: '2026-11-10T19:00:00.000Z', presidentId: house.president.id,
+      type, scheduledAt: futureSessionDate, presidentId: house.president.id,
       secretaryName, matterIds,
     }), { params: Promise.resolve({}) })
   expect((await create(strict, 'especial')).status).toBe(422)

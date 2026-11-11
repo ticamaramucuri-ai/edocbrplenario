@@ -25,4 +25,5 @@ upload/parliamentarian-images/
 *.pfx
 *.crt
 deploy/staging/mail-lab/
+reports/
 .DS_Store
