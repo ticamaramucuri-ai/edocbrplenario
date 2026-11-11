@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { cn } from '@/lib/utils'
 
 export type LoggedInActor = {
   id: string
@@ -31,7 +32,13 @@ export type LoggedInActor = {
 
 type LoginProblem = { code?: string; title?: string; detail?: string }
 
-export default function LoginForm({ onLoggedIn }: { onLoggedIn: (actor: LoggedInActor) => void }) {
+export default function LoginForm({
+  onLoggedIn,
+  variant = 'default',
+}: {
+  onLoggedIn: (actor: LoggedInActor) => void
+  variant?: 'default' | 'dialog-dark'
+}) {
   const [step, setStep] = useState<'credentials' | 'totp'>('credentials')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -181,7 +188,9 @@ export default function LoginForm({ onLoggedIn }: { onLoggedIn: (actor: LoggedIn
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="login-email">E-mail</Label>
+        <Label htmlFor="login-email" className={cn(variant === 'dialog-dark' ? "text-xs font-bold text-slate-200" : "text-xs font-bold text-slate-800")}>
+          E-mail
+        </Label>
         <Input
           id="login-email"
           type="email"
@@ -191,11 +200,14 @@ export default function LoginForm({ onLoggedIn }: { onLoggedIn: (actor: LoggedIn
           autoComplete="email"
           autoFocus
           disabled={loading}
+          className={cn(variant === 'dialog-dark' && "bg-slate-950/80 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-amber-400 focus-visible:border-amber-400")}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="login-password">Senha</Label>
+        <Label htmlFor="login-password" className={cn(variant === 'dialog-dark' ? "text-xs font-bold text-slate-200" : "text-xs font-bold text-slate-800")}>
+          Senha
+        </Label>
         <div className="relative">
           <Input
             id="login-password"
@@ -203,7 +215,7 @@ export default function LoginForm({ onLoggedIn }: { onLoggedIn: (actor: LoggedIn
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="pr-10"
+            className={cn("pr-10", variant === 'dialog-dark' && "bg-slate-950/80 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-amber-400 focus-visible:border-amber-400")}
             autoComplete="current-password"
             minLength={8}
             disabled={loading}
@@ -222,13 +234,22 @@ export default function LoginForm({ onLoggedIn }: { onLoggedIn: (actor: LoggedIn
         </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading || !canSubmit}>
+      <Button
+        type="submit"
+        className={cn(
+          "w-full",
+          variant === 'dialog-dark'
+            ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold uppercase tracking-wider text-xs shadow-md shadow-amber-500/20 py-2.5"
+            : "bg-[#072348] hover:bg-[#0a2f5e] text-white font-semibold py-2.5 shadow-sm"
+        )}
+        disabled={loading || !canSubmit}
+      >
         {loading ? <Loader2 className="animate-spin" /> : <LogIn />}
         Entrar
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Acesso institucional com e-mail e senha
+      <p className={cn("text-center text-xs", variant === 'dialog-dark' ? "text-slate-400" : "text-slate-600")}>
+        Acesso restrito a vereadores, mesa diretora e corpo técnico autorizado.
       </p>
     </form>
   )

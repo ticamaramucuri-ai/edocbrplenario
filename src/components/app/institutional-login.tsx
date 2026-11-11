@@ -166,7 +166,7 @@ export function InstitutionalLogin({
 
             {/* Formulário Real (LoginForm com 2 passos de TOTP) */}
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <LoginForm onLoggedIn={onLoggedIn} />
+              <LoginForm variant="default" onLoggedIn={onLoggedIn} />
             </div>
 
             {/* Perfis Rápidos de Demonstração (Quando demoMode ativo) */}

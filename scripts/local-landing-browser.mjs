@@ -48,42 +48,35 @@ async function main() {
   const page = await context.newPage()
 
   try {
-    console.log(`[1/4] Testando rota raiz / com gate e exploração da Landing Page...`)
+    console.log(`[1/4] Testando rota raiz / com exploração limpa da Landing Page...`)
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' })
 
-    // O Dialog inicial de boas-vindas DEVE estar presente (preservando testes de homologação)
-    const dialog = page.getByRole('dialog')
-    await dialog.waitFor({ state: 'visible', timeout: 10000 })
-    check(await dialog.isVisible(), 'O modal de boas-vindas deve abrir inicialmente no /')
-    console.log('  ✓ Modal de boas-vindas exibido')
-
-    // Auditoria de acessibilidade no modal
-    await auditA11y(page, 'Modal de login inicial em /')
-    console.log('  ✓ Acessibilidade do modal aprovada (Axe WCAG 2.1 AA)')
-
-    // Clicar em "Explorar apresentação completa da plataforma"
-    const exploreBtn = page.getByRole('button', { name: /Explorar apresentação completa/i })
-    await exploreBtn.click()
-    await dialog.waitFor({ state: 'hidden', timeout: 5000 })
-    console.log('  ✓ Modal dispensado, landing page visível no /')
-
-    // Verificar se seções chave existem na Landing Page
+    // A Landing Page deve estar visível DIRETAMENTE sem nenhum modal bloqueando
     const heroSection = page.locator('#hero')
     await heroSection.waitFor({ state: 'visible', timeout: 5000 })
     check(await heroSection.isVisible(), 'Seção #hero deve estar visível')
 
     const modulosSection = page.locator('#modulos')
     check(await modulosSection.isVisible(), 'Seção #modulos deve estar visível')
+    console.log('  ✓ Landing Page carregada diretamente e sem pop-up bloqueante')
 
-    // Clicar em "Área Restrita" no header da Landing Page para reabrir o modal
+    // Clicar em "Área Restrita" no header da Landing Page para abrir o modal institucional
     const loginHeaderBtn = page.getByRole('button', { name: /Área Restrita/i }).first()
     await loginHeaderBtn.click()
-    await dialog.waitFor({ state: 'visible', timeout: 5000 })
-    console.log('  ✓ Reabertura do modal de login via botão da Landing Page confirmada')
 
-    // Fechar novamente para prosseguir
-    await exploreBtn.click()
+    const dialog = page.getByRole('dialog')
+    await dialog.waitFor({ state: 'visible', timeout: 5000 })
+    check(await dialog.isVisible(), 'O modal institucional de login deve abrir após clique em Área Restrita')
+    console.log('  ✓ Modal institucional de login exibido após acionamento')
+
+    // Auditoria de acessibilidade no modal institucional
+    await auditA11y(page, 'Modal institucional de login em /')
+    console.log('  ✓ Acessibilidade do modal institucional aprovada (Axe WCAG 2.1 AA)')
+
+    // Fechar modal institucional para prosseguir
+    await page.keyboard.press('Escape')
     await dialog.waitFor({ state: 'hidden', timeout: 5000 })
+    console.log('  ✓ Modal institucional fechado via Escape')
 
     console.log(`[2/4] Testando rota dedicada /apresentacao...`)
     await page.goto(`${base}/apresentacao`, { waitUntil: 'domcontentloaded' })

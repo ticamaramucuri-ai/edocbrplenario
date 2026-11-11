@@ -20,10 +20,11 @@ Implementar a Landing Page de alta fidelidade institucional e a página de Login
 - `src/modules/landing/onboarding-form.tsx`: Formulário interativo de experimentação institucional com validação Zod, auto-slug, consentimento expresso LGPD e tratamento de rate limit (3 criações/hora por IP).
 - `src/modules/landing/public-verifier.tsx`: Consulta em tempo real de integridade documental e autenticidade de atas.
 - `src/modules/landing/index.tsx`: Exportador do módulo de landing page.
+- `src/components/app/institutional-login-dialog.tsx`: Modal institucional moderno de login com identidade Obsidian/Gold, e-docBR Plenário, MFA TOTP, perfis de demonstração e link para tela cheia (`/login`).
 - `src/components/app/institutional-login.tsx`: Interface Split Vault com suporte a MFA de duas etapas, seletor de Câmara e perfis rápidos de demonstração.
 - `src/app/apresentacao/page.tsx`: Rota dedicada da Landing Page sob Next.js App Router.
 - `src/app/login/page.tsx`: Rota dedicada de login institucional com redirecionamento pós-autenticação.
-- `src/app/page.tsx`: Atualização de `ActorGate` para exibir a Landing Page com modal de login e botão de exploração interativa, preservando a asserção `getByRole('dialog')` e as auditorias Axe nos testes sintéticos.
+- `src/app/page.tsx`: Landing Page exibida limpa e diretamente em `/` sem pop-up bloqueante; acionamento do login institucional sob demanda pelo botão *"Área Restrita"*.
 
 ## Pré-visualizações e Imagens Renderizadas
 

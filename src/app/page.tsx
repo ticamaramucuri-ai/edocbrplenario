@@ -18,12 +18,11 @@ import { ROLE_LABEL } from '@/lib/contracts'
 import type { ActorView, Role } from '@/lib/contracts'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SidebarDesktop, SidebarNav } from '@/components/app/sidebar'
 import { Topbar } from '@/components/app/topbar'
-import LoginForm, { type LoggedInActor } from '@/components/app/login-form'
+import { InstitutionalLoginDialog } from '@/components/app/institutional-login-dialog'
 import { LandingView } from '@/modules/landing'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -142,11 +141,10 @@ function ActorGate({ children }: { children: React.ReactNode }) {
   const bootstrap = useApp((s) => s.bootstrap)
   const setActor = useApp((s) => s.setActor)
   const queryClient = useQueryClient()
-  const [dialogDismissed, setDialogDismissed] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const isGuest = !actor && !!bootstrap
-  const open = isGuest && !dialogDismissed
 
-  const handleLoggedIn = (a: LoggedInActor) => {
+  const handleLoggedIn = (a: { id: string; name: string; role: string; jobTitle?: string | null; parliamentarianId?: string | null }) => {
     const view: ActorView = {
       id: a.id,
       name: a.name,
@@ -168,75 +166,12 @@ function ActorGate({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <LandingView onOpenLoginModal={() => setDialogDismissed(false)} />
-      <Dialog open={open}>
-        <DialogContent className="sm:max-w-md" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Landmark className="size-5 text-primary" /> Bem-vindo(a) ao edocBR Plenário
-            </DialogTitle>
-            <DialogDescription>
-              {bootstrap?.demoMode
-                ? 'Entre com seu e-mail e senha ou escolha um perfil de demonstração.'
-                : 'Entre com seu e-mail e senha para acessar o sistema.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <LoginForm onLoggedIn={handleLoggedIn} />
-
-          {bootstrap?.demoMode && <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              ou perfis de demonstração
-            </span>
-            <Separator className="flex-1" />
-          </div>}
-
-          {bootstrap?.demoMode && bootstrap.actorsEmptyReason === 'tenant_sem_usuarios' && (
-            <Alert>
-              <Landmark className="size-4" aria-hidden />
-              <AlertTitle>Esta Câmara ainda não tem usuários cadastrados</AlertTitle>
-              <AlertDescription>
-                Entre com e-mail e senha de outra Câmara ou cadastre o primeiro usuário.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {bootstrap?.demoMode && <ul className="max-h-72 space-y-1.5 overflow-y-auto custom-scroll pr-1">
-            {(bootstrap?.actors ?? []).map((a) => (
-              <li key={a.id}>
-                <button
-                  onClick={() => {
-                    setActor(a.id, a)
-                    toast.success(`Perfil ativo: ${a.name}`, { description: ROLE_LABEL[a.role] })
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition hover:border-primary/50 hover:bg-accent"
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                    {a.name.split(' ').map((p) => p[0]).slice(0, 2).join('')}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{a.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {ROLE_LABEL[a.role]}{a.jobTitle ? ` · ${a.jobTitle}` : ''}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>}
-
-          <div className="pt-2 text-center">
-            <button
-              type="button"
-              onClick={() => setDialogDismissed(true)}
-              className="text-xs font-semibold text-primary hover:underline transition-colors"
-            >
-              Explorar apresentação completa da plataforma →
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LandingView onOpenLoginModal={() => setModalOpen(true)} />
+      <InstitutionalLoginDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onLoggedIn={handleLoggedIn}
+      />
     </>
   )
 }
