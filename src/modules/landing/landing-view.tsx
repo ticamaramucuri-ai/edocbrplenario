@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   Activity,
   ArrowRight,
@@ -18,6 +17,7 @@ import {
   HelpCircle,
   Landmark,
   Lock,
+  Menu,
   Search,
   Server,
   ShieldAlert,
@@ -28,6 +28,7 @@ import {
   Vote,
   Wifi,
   WifiOff,
+  X,
 } from 'lucide-react'
 
 import { BrandLogo } from '@/components/brand/brand-logo'
@@ -44,6 +45,7 @@ interface LandingViewProps {
 
 export function LandingView({ onOpenLoginModal }: LandingViewProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -51,121 +53,62 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-amber-400 selection:text-slate-950 font-sans">
-      {/* ═══════════════════════════════════════════════════════════════════════
-          TOPO: BARRA DE TELEMETRIA INSTITUCIONAL
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[#020b18] border-b border-white/10 text-xs text-slate-300 py-1.5 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="flex items-center gap-1.5 font-medium text-emerald-400">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-              Ambiente demonstrativo
-            </span>
-            <span className="hidden md:inline text-white/30">•</span>
-            <span className="hidden md:inline text-slate-400">
-              Protocolo de Sessão v0.14 · ADR-027 / ADR-030
-            </span>
-            <span className="hidden lg:inline text-white/30">•</span>
-            <span className="hidden lg:inline text-slate-400">
-              Funcionalidades em evolução · SHA-256
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span className="flex items-center gap-1 text-slate-300">
-              <ShieldCheck className="size-3.5 text-amber-400" />
-              Privacidade e transparência
-            </span>
-            <span className="text-white/30">•</span>
-            <a
-              href="#verificador"
-              className="text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline transition-colors font-medium"
-            >
-              Consultar Validade
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
-          NAVBAR PRINCIPAL INSTITUCIONAL
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 bg-[#04152d]/95 backdrop-blur-md border-b border-white/10 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between gap-4">
-          {/* Logo & Marca */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <Image
-              src="/brand/edocbr-logo-white.svg"
-              alt="e-docBR"
-              width={124}
-              height={32}
-              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
-              priority
-            />
-            <span className="h-5 w-[1px] bg-white/20" />
-            <div className="flex flex-col">
-              <span className="text-xs font-extrabold tracking-[0.16em] text-amber-400">
-                PLENÁRIO
-              </span>
-              <span className="text-[9px] uppercase tracking-wider text-slate-400">
-                Câmaras Municipais
-              </span>
-            </div>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#04152d] text-white">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-5 px-4 sm:px-8">
+          <Link href="/" className="shrink-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400">
+            <BrandLogo inverse />
           </Link>
 
-          {/* Links de Navegação */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs uppercase tracking-wider font-semibold text-slate-300">
-            <a href="#hero" className="hover:text-amber-400 transition-colors">
-              Início
-            </a>
-            <a href="#modulos" className="hover:text-amber-400 transition-colors">
-              Módulos
-            </a>
-            <a href="#arquitetura" className="hover:text-amber-400 transition-colors">
-              Resiliência LAN
-            </a>
-            <a href="#transparencia" className="hover:text-amber-400 transition-colors">
-              Transparência
-            </a>
-            <a href="#lgpd" className="hover:text-amber-400 transition-colors">
-              LGPD & Segurança
-            </a>
-            <a href="#onboarding" className="hover:text-amber-400 transition-colors">
-              Demonstração
-            </a>
-            <a href="#faq" className="hover:text-amber-400 transition-colors">
-              FAQ
-            </a>
+          <nav aria-label="Navegação principal" className="hidden items-center gap-7 text-sm font-medium text-slate-200 lg:flex">
+            <a href="#modulos" className="hover:text-white focus-visible:text-white">Funcionalidades</a>
+            <a href="#arquitetura" className="hover:text-white focus-visible:text-white">Operação local</a>
+            <a href="#transparencia" className="hover:text-white focus-visible:text-white">Transparência</a>
+            <a href="#faq" className="hover:text-white focus-visible:text-white">Perguntas</a>
           </nav>
 
-          {/* Ações Direitas */}
-          <div className="flex items-center gap-3">
-            <a
-              href="#verificador"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors"
-            >
-              <Search className="size-3.5 text-amber-400" />
-              Verificar Publicação
-            </a>
-
+          <div className="flex items-center gap-2">
             {onOpenLoginModal ? (
               <Button
                 onClick={onOpenLoginModal}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs sm:text-sm"
               >
-                <Lock className="size-3.5 mr-1" />
                 Área Restrita
               </Button>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+                className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 sm:text-sm"
               >
-                <Lock className="size-3.5" />
                 Área Restrita
               </Link>
             )}
+            <button
+              type="button"
+              aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={menuOpen}
+              aria-controls="landing-menu-mobile"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="inline-flex size-10 items-center justify-center rounded-md border border-white/25 text-white lg:hidden"
+            >
+              {menuOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <nav id="landing-menu-mobile" aria-label="Navegação móvel" className="border-t border-white/10 bg-[#04152d] px-4 pb-4 pt-2 lg:hidden sm:px-8">
+            {[
+              ['Funcionalidades', '#modulos'],
+              ['Operação local', '#arquitetura'],
+              ['Transparência', '#transparencia'],
+              ['Perguntas', '#faq'],
+              ['Solicitar demonstração', '#onboarding'],
+            ].map(([label, href]) => (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block border-b border-white/10 py-3 text-sm text-slate-100 last:border-0">
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -177,7 +120,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
       >
         {/* Glows e Grid Architectural */}
         <div
-          className="absolute inset-0 opacity-15 pointer-events-none"
+          className="absolute inset-0 opacity-5 pointer-events-none"
           style={{
             backgroundImage:
               'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
@@ -189,75 +132,31 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="absolute bottom-10 left-10 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10 space-y-12">
-          {/* Headline and Narrative */}
-          <div className="text-center max-w-4xl mx-auto space-y-6">
-            {/* 5-Act Journey Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-slate-200 backdrop-blur-sm">
-              <Sparkles className="size-3.5 text-amber-400" />
-              <span className="font-semibold text-white">Jornada em 5 Atos:</span>
-              <span className="text-slate-300">
-                1. Pauta → 2. Quorum → 3. Deliberação → 4. Apuração → 5. Publicação
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15]">
-              A Nova Era da Governança e Deliberação{' '}
-              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-                Legislativa Municipal
-              </span>
+          <div className="max-w-4xl space-y-6">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-[4.25rem]">
+              Sua sessão plenária, do preparo à publicação.
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
-              Plataforma para preparar e conduzir sessões, registrar presença e votação,
-              apoiar a transmissão e publicar resultados autorizados. A operação local em rede LAN está em desenvolvimento e depende de ensaios e aceite institucional.
+            <p className="max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg">
+              Prepare a pauta, acompanhe presença e votação, conduza os trabalhos e organize o que será publicado em um só lugar.
             </p>
 
-            {/* CTAs Principais */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <a
                 href="#onboarding"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold text-sm shadow-xl shadow-amber-500/20 transition-all hover:scale-105"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-400"
               >
-                <Landmark className="size-4" />
-                Solicitar demonstração da plataforma
-                <ArrowRight className="size-4" />
+                Solicitar demonstração
               </a>
 
               <a
                 href="#modulos"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm backdrop-blur-sm transition-all"
+                className="inline-flex items-center justify-center rounded-md border border-white/35 px-5 py-3 text-sm font-medium text-white hover:bg-white/10"
               >
-                Conhecer os 6 Módulos
-              </a>
-
-              <a
-                href="#verificador"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 font-semibold text-sm transition-all"
-              >
-                <ShieldCheck className="size-4 text-emerald-400" />
-                Verificador Criptográfico
+                Conhecer funcionalidades
               </a>
             </div>
-
-            {/* Selos de Conformidade e Normas */}
-            <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Lei 13.709/2018 (LGPD)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Lei 12.527/2011 (LAI)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Integridade por SHA-256</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Arquitetura local em desenvolvimento</span>
-              </div>
-            </div>
+            <p className="text-xs text-slate-400">Dados fictícios nesta apresentação.</p>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
@@ -1050,19 +949,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/brand/edocbr-logo-white.svg"
-                  alt="e-docBR"
-                  width={130}
-                  height={34}
-                  className="h-8 w-auto object-contain"
-                />
-                <span className="h-5 w-[1px] bg-white/20" />
-                <span className="text-xs font-extrabold tracking-[0.16em] text-amber-400">
-                  PLENÁRIO
-                </span>
-              </div>
+              <BrandLogo inverse />
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
                 Plataforma de apoio à preparação de sessões, deliberação eletrônica, painel de plenário e transparência nas Câmaras Municipais.
               </p>

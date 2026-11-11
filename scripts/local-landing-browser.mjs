@@ -30,7 +30,7 @@ async function auditA11y(page, label) {
           id: v.id,
           impact: v.impact,
           description: v.description,
-          nodes: v.nodes.map((n) => ({ target: n.target, failureSummary: n.failureSummary })),
+          nodes: v.nodes.map((n) => ({ target: n.target, html: n.html, failureSummary: n.failureSummary })),
         })),
         null,
         2
@@ -55,10 +55,18 @@ async function main() {
     const heroSection = page.locator('#hero')
     await heroSection.waitFor({ state: 'visible', timeout: 5000 })
     check(await heroSection.isVisible(), 'Seção #hero deve estar visível')
+    check(await page.getByRole('link', { name: 'edocBR Plenário', exact: true }).first().isVisible(), 'A apresentação deve ter uma assinatura única edocBR Plenário')
 
     const modulosSection = page.locator('#modulos')
     check(await modulosSection.isVisible(), 'Seção #modulos deve estar visível')
     console.log('  ✓ Landing Page carregada diretamente e sem pop-up bloqueante')
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    const mobileMenu = page.getByRole('button', { name: 'Abrir menu' })
+    await mobileMenu.click()
+    await page.getByRole('link', { name: 'Funcionalidades', exact: true }).click()
+    check(new URL(page.url()).hash === '#modulos', 'Menu móvel deve levar à seção de funcionalidades')
+    await page.setViewportSize({ width: 1280, height: 800 })
 
     // Clicar em "Área Restrita" no header da Landing Page para abrir o modal institucional
     const loginHeaderBtn = page.getByRole('button', { name: /Área Restrita/i }).first()
@@ -83,7 +91,7 @@ async function main() {
 
     // Verificar barra de telemetria e seções
     const titleText = await page.textContent('h1')
-    check(titleText?.includes('Governança e Deliberação'), 'Título principal deve conter mensagem institucional')
+    check(titleText?.includes('Sua sessão plenária'), 'Título principal deve explicar a jornada da sessão')
     console.log('  ✓ Título institucional carregado')
 
     // Testar FAQ interativo

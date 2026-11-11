@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { CheckCircle2, Copy, ExternalLink, Loader2, RefreshCw, Send, ShieldAlert, Sparkles } from 'lucide-react'
 import { z } from 'zod'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -132,7 +131,6 @@ export function OnboardingForm() {
       }
 
       setSuccessData(data)
-      toast.success('Solicitação de demonstração registrada com sucesso!')
     } catch {
       setError('Falha de rede ao conectar ao servidor. Verifique a conexão e tente novamente.')
     } finally {

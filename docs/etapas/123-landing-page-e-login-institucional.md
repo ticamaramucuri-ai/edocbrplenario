@@ -58,3 +58,9 @@ Estas imagens são históricas e podem conter textos anteriores à revisão de 1
 
 O cockpit é estático e demonstrativo. A operação local, a continuidade de votação sem internet, certificações, metas de disponibilidade e conformidade institucional exigem provas próprias descritas no plano mestre. O formulário registra pedido para revisão humana; não cria conta, tenant nem credenciais. A consulta pública desta página cobre publicações do Diário Eletrônico, não códigos de atas.
 
+## Revisão de identidade e navegação — 11/11/2026
+
+As versões clara e escura do SVG agora representam a mesma assinatura **edocBR Plenário**, sem o subtítulo de outro produto e sem uma segunda marca de texto ao lado. Landing, login, modal e componente compartilhado usam essa assinatura. O topo da apresentação deixou de mostrar a faixa técnica, reduziu a navegação a quatro destinos e ganhou menu móvel; o hero passou a explicar o fluxo da sessão com duas ações principais. O teste de navegador cobre a assinatura acessível e a navegação móvel. As capturas em `docs/previews/landing-edocbr/v2/` continuam históricas.
+
+Capturas atuais do primeiro quadro: [`desktop`](../previews/landing-edocbr/v3/desktop.png) e [`mobile`](../previews/landing-edocbr/v3/mobile.png), obtidas do build standalone em 11/11/2026.
+

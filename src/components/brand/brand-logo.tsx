@@ -10,18 +10,15 @@ type BrandLogoProps = {
 /** Identidade do produto. A Câmara usa seu brasão em componente separado. */
 export function BrandLogo({ inverse = false, compact = false, className }: BrandLogoProps) {
   return (
-    <div className={cn('flex min-w-0 items-center gap-2', className)} aria-label="edocBR Plenário">
+    <div className={cn('flex min-w-0 items-center', className)}>
       <Image
         src={inverse ? '/brand/edocbr-logo-white.svg' : '/brand/edocbr-logo-dark.svg'}
-        alt="e-docBR"
+        alt="edocBR Plenário"
         width={268}
         height={68}
-        className={cn('h-auto shrink-0 object-contain', compact ? 'w-[106px]' : 'w-[134px]')}
+        className={cn('h-auto shrink-0 object-contain', compact ? 'w-[150px]' : 'w-[180px]')}
         priority
       />
-      <span className={cn('border-l pl-2 text-[10px] font-extrabold tracking-[0.12em]', inverse ? 'border-white/35 text-white' : 'border-[#062f63]/25 text-[#031f43]')}>
-        PLENÁRIO
-      </span>
     </div>
   )
 }

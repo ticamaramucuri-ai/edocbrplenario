@@ -4,6 +4,8 @@
 
 Revisão da landing em 11/11/2026: conteúdo público foi alinhado aos limites do plano mestre. Antes de divulgar institucionalmente, faltam validação da Câmara sobre textos e identidade, comprovação de capacidades anunciadas, política de privacidade e responsável/canal de atendimento definidos, além da liberação dos gates da operação local. A etapa [123](etapas/123-landing-page-e-login-institucional.md) registra a revisão técnica; ela não substitui aceite institucional.
 
+Revisão visual em 11/11/2026: as duas variantes de cor do logo foram unificadas na assinatura edocBR Plenário; cabeçalho e menu móvel foram simplificados. A aprovação da identidade pela instituição continua pendente.
+
 > Lista histórica com últimas revisões de outubro. O estado e a fila corrente estão no [plano atualizado de 05/11/2026](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md); não interpretar os itens abaixo como inventário atual de Mucuri.
 
 Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). “Responsável” indica o papel que deve fechar a prova; nomes e aceites institucionais só serão preenchidos com a Câmara.
