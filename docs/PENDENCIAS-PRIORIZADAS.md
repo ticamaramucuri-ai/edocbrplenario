@@ -6,6 +6,8 @@ Revisão da landing em 11/11/2026: conteúdo público foi alinhado aos limites d
 
 Revisão visual em 11/11/2026: as duas variantes de cor do logo foram unificadas na assinatura edocBR Plenário; cabeçalho e menu móvel foram simplificados. A aprovação da identidade pela instituição continua pendente.
 
+Correção de entrada em 11/11/2026: o refresh da rota `/` não expõe mais o esqueleto claro anterior ao bootstrap. O primeiro quadro é coberto pelo teste de navegador sem JavaScript; a validação visual em dispositivos institucionais permanece parte do aceite.
+
 > Lista histórica com últimas revisões de outubro. O estado e a fila corrente estão no [plano atualizado de 05/11/2026](PLANO-DESENVOLVIMENTO-ATUAL-2026-11-05.md); não interpretar os itens abaixo como inventário atual de Mucuri.
 
 Este registro acompanha o [diagnóstico](DIAGNOSTICO-E-PLANO-DE-CONCLUSAO.md). “Responsável” indica o papel que deve fechar a prova; nomes e aceites institucionais só serão preenchidos com a Câmara.

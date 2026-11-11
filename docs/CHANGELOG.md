@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Rota `/` deixa de mostrar por instantes o esqueleto claro do painel no refresh; o HTML inicial exibe espera escura com a marca do Plenário. Teste de navegador confere o primeiro quadro sem JavaScript.
 - Cabeçalho da landing simplificado: as variantes clara/escura da marca agora trazem uma única assinatura edocBR Plenário; removidas a faixa técnica, a marca duplicada e opções repetidas do hero. Navegação reduzida e menu móvel verificado no navegador; login e sidebar usam a mesma assinatura.
 - Landing institucional revisada conforme o plano mestre: removido resultado válido fictício do verificador; consulta limitada a publicações do Diário Eletrônico; pedido de demonstração começa vazio e retorna como pendente de análise; cenário do cockpit identificado como fictício; promessas sobre offline, SLA, ICP-Brasil, certificações e conformidade institucional substituídas por estado verificável. Suíte de navegador exige respostas reais das APIs e entra na CI.
 - Implementação inicial da Landing Page Institucional e do Login Split Vault (Etapa 123): apresentação dos módulos, cenário ilustrativo do plenário, arquitetura local planejada, consulta pública de publicações, pedido de demonstração e página de login dedicada (`/login` e `/apresentacao`).

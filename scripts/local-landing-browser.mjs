@@ -41,6 +41,8 @@ async function auditA11y(page, label) {
 
 async function main() {
   const browser = await chromium.launch({ headless: true })
+  const initialContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, javaScriptEnabled: false })
+  const initialPage = await initialContext.newPage()
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     locale: 'pt-BR',
@@ -48,6 +50,13 @@ async function main() {
   const page = await context.newPage()
 
   try {
+    await initialPage.goto(`${base}/`, { waitUntil: 'domcontentloaded' })
+    const initialLoading = initialPage.getByRole('status', { name: 'Carregando edocBR Plenário' })
+    await initialLoading.waitFor({ state: 'visible', timeout: 3000 })
+    check(await initialLoading.locator('img[alt="edocBR Plenário"]').isVisible(), 'Primeiro quadro deve mostrar a marca do produto')
+    check(await initialLoading.evaluate((element) => getComputedStyle(element).backgroundColor) === 'rgb(2, 11, 24)', 'Primeiro quadro deve manter fundo escuro')
+    await initialContext.close()
+
     console.log(`[1/4] Testando rota raiz / com exploração limpa da Landing Page...`)
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' })
 

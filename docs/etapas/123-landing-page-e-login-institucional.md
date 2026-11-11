@@ -64,3 +64,7 @@ As versões clara e escura do SVG agora representam a mesma assinatura **edocBR 
 
 Capturas atuais do primeiro quadro: [`desktop`](../previews/landing-edocbr/v3/desktop.png) e [`mobile`](../previews/landing-edocbr/v3/mobile.png), obtidas do build standalone em 11/11/2026.
 
+## Correção do primeiro quadro no refresh — 11/11/2026
+
+Na rota `/`, o componente `Boot` aguardava `/api/v1/bootstrap` mostrando o esqueleto claro do painel interno. Esse HTML era entregue antes da hidratação e aparecia brevemente ao atualizar a página. A espera agora usa fundo azul escuro, cabeçalho com a assinatura edocBR Plenário e mensagem de carga, independentemente do estado de autenticação. O teste de navegador lê o HTML inicial com JavaScript desativado e confere a marca e a cor de fundo antes da jornada interativa. A rota `/apresentacao` já servia a landing diretamente e não usava esse esqueleto.
+
