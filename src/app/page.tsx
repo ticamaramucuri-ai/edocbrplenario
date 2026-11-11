@@ -19,7 +19,7 @@ import type { ActorView, Role } from '@/lib/contracts'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { SidebarDesktop, SidebarNav } from '@/components/app/sidebar'
 import { Topbar } from '@/components/app/topbar'
 import { InstitutionalLoginDialog } from '@/components/app/institutional-login-dialog'
@@ -112,22 +112,14 @@ function Boot({ children }: { children: React.ReactNode }) {
 
   if (isLoading || !data) {
     return (
-      <div className="min-h-screen">
-        <div className="flex items-center gap-3 border-b p-4">
-          <Skeleton className="size-9 rounded-lg" />
-          <div className="space-y-1.5">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-3 w-40" />
+      <div role="status" aria-label="Carregando edocBR Plenário" className="min-h-screen bg-[#020b18] text-white">
+        <header className="flex h-20 items-center border-b border-white/10 bg-[#04152d] px-4 sm:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <BrandLogo inverse />
           </div>
-        </div>
-        <div className="space-y-4 p-6">
-          <Skeleton className="h-8 w-72" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-xl" />
-            ))}
-          </div>
-          <Skeleton className="h-64 rounded-xl" />
+        </header>
+        <div className="mx-auto max-w-7xl px-4 py-12 text-sm text-slate-300 sm:px-8">
+          Carregando o Plenário…
         </div>
       </div>
     )

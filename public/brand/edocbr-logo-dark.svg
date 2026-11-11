@@ -1,49 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 68" width="268" height="68">
-
-  <!-- ── Escudo (versão clara para fundos escuros) ── -->
-  <g transform="translate(1, 3)">
-    <!-- Forma principal -->
-    <path d="M27 1 L51 8.5 L51 33 Q51 52 27 62 Q3 52 3 33 L3 8.5 Z"
-          fill="rgba(22,59,73,0.09)" stroke="rgba(22,59,73,0.42)" stroke-width="1.5"/>
-    <!-- Banda superior -->
-    <path d="M27 1 L51 8.5 L51 16 L3 16 L3 8.5 Z"
-          fill="rgba(22,59,73,0.15)"/>
-    <!-- Página do documento -->
-    <rect x="12" y="18" width="19" height="24" rx="2.5"
-          fill="#ffffff"/>
-    <!-- Dobra do canto -->
-    <path d="M27.5 18 L31 22 L27.5 22 Z"
-          fill="rgba(0,0,0,0.15)"/>
-    <!-- Linhas do documento -->
-    <line x1="15" y1="25" x2="28" y2="25"
-          stroke="#1D3C6E" stroke-width="1.3" opacity="0.45"/>
-    <line x1="15" y1="30" x2="28" y2="30"
-          stroke="#1D3C6E" stroke-width="1.3" opacity="0.45"/>
-    <line x1="15" y1="35" x2="23" y2="35"
-          stroke="#1D3C6E" stroke-width="1.3" opacity="0.45"/>
-    <!-- Pill vermelho -->
-    <rect x="15" y="37" width="19" height="5" rx="2.5"
-          fill="#FF6B75" opacity="0.9"/>
-  </g>
-
-  <!-- ── Divisor ── -->
-  <line x1="64" y1="13" x2="64" y2="56"
-        stroke="rgba(22,59,73,0.25)" stroke-width="1"/>
-
-  <!-- ── e-doc (branco) ── -->
-  <text x="74" y="40"
-        font-family="'Segoe UI','Inter',system-ui,Arial,sans-serif"
-        font-size="27" font-weight="700" fill="#173b49"
-        letter-spacing="-0.5">e-doc</text>
-
-  <!-- ── BR (vermelho claro) ── -->
-  <text x="149" y="40"
-        font-family="'Segoe UI','Inter',system-ui,Arial,sans-serif"
-        font-size="27" font-weight="700" fill="#bd3d4b"
-        letter-spacing="-0.5">BR</text>
-
-  <!-- ── Subtítulo ── -->
-  <text x="74" y="56"
-        font-family="'Segoe UI','Inter',system-ui,Arial,sans-serif"
-        font-size="8.5" fill="#647780" letter-spacing="2.2">GESTÃO DE DOCUMENTOS</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 68" role="img" aria-label="edocBR Plenário">
+  <path d="M30 3 54 10v23c0 15-10 25-24 32C16 58 6 48 6 33V10L30 3Z" fill="#173b63" stroke="#315d81" stroke-width="1.5"/>
+  <path d="M21 18h17l7 7v24H21a3 3 0 0 1-3-3V21a3 3 0 0 1 3-3Z" fill="#ffffff"/>
+  <path d="M38 18v7h7" fill="#c8d8e7"/>
+  <path d="M24 31h15M24 37h15M24 43h10" stroke="#315d81" stroke-width="1.8" stroke-linecap="round"/>
+  <text x="68" y="34" fill="#173b49" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700" letter-spacing="-.7">edoc<tspan fill="#a55039">BR</tspan></text>
+  <text x="69" y="57" fill="#31546d" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="600" letter-spacing=".3">Plenário</text>
 </svg>

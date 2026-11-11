@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   Activity,
   ArrowRight,
@@ -18,6 +17,7 @@ import {
   HelpCircle,
   Landmark,
   Lock,
+  Menu,
   Search,
   Server,
   ShieldAlert,
@@ -28,6 +28,7 @@ import {
   Vote,
   Wifi,
   WifiOff,
+  X,
 } from 'lucide-react'
 
 import { BrandLogo } from '@/components/brand/brand-logo'
@@ -44,6 +45,7 @@ interface LandingViewProps {
 
 export function LandingView({ onOpenLoginModal }: LandingViewProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -51,121 +53,62 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-amber-400 selection:text-slate-950 font-sans">
-      {/* ═══════════════════════════════════════════════════════════════════════
-          TOPO: BARRA DE TELEMETRIA INSTITUCIONAL
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-[#020b18] border-b border-white/10 text-xs text-slate-300 py-1.5 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span className="flex items-center gap-1.5 font-medium text-emerald-400">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-              Rede Deliberativa Operacional
-            </span>
-            <span className="hidden md:inline text-white/30">•</span>
-            <span className="hidden md:inline text-slate-400">
-              Protocolo de Sessão v0.14 · ADR-027 / ADR-030
-            </span>
-            <span className="hidden lg:inline text-white/30">•</span>
-            <span className="hidden lg:inline text-slate-400">
-              SLA 99.98% · Criptografia SHA-256
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span className="flex items-center gap-1 text-slate-300">
-              <ShieldCheck className="size-3.5 text-amber-400" />
-              Conforme LGPD & LAI
-            </span>
-            <span className="text-white/30">•</span>
-            <a
-              href="#verificador"
-              className="text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline transition-colors font-medium"
-            >
-              Consultar Validade
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
-          NAVBAR PRINCIPAL INSTITUCIONAL
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 bg-[#04152d]/95 backdrop-blur-md border-b border-white/10 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between gap-4">
-          {/* Logo & Marca */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <Image
-              src="/brand/edocbr-logo-white.svg"
-              alt="e-docBR"
-              width={124}
-              height={32}
-              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
-              priority
-            />
-            <span className="h-5 w-[1px] bg-white/20" />
-            <div className="flex flex-col">
-              <span className="text-xs font-extrabold tracking-[0.16em] text-amber-400">
-                PLENÁRIO
-              </span>
-              <span className="text-[9px] uppercase tracking-wider text-slate-400">
-                Câmaras Municipais
-              </span>
-            </div>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#04152d] text-white">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-5 px-4 sm:px-8">
+          <Link href="/" className="shrink-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400">
+            <BrandLogo inverse />
           </Link>
 
-          {/* Links de Navegação */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs uppercase tracking-wider font-semibold text-slate-300">
-            <a href="#hero" className="hover:text-amber-400 transition-colors">
-              Início
-            </a>
-            <a href="#modulos" className="hover:text-amber-400 transition-colors">
-              Módulos
-            </a>
-            <a href="#arquitetura" className="hover:text-amber-400 transition-colors">
-              Resiliência LAN
-            </a>
-            <a href="#transparencia" className="hover:text-amber-400 transition-colors">
-              Transparência
-            </a>
-            <a href="#lgpd" className="hover:text-amber-400 transition-colors">
-              LGPD & Segurança
-            </a>
-            <a href="#onboarding" className="hover:text-amber-400 transition-colors">
-              Auto-Onboarding
-            </a>
-            <a href="#faq" className="hover:text-amber-400 transition-colors">
-              FAQ
-            </a>
+          <nav aria-label="Navegação principal" className="hidden items-center gap-7 text-sm font-medium text-slate-200 lg:flex">
+            <a href="#modulos" className="hover:text-white focus-visible:text-white">Funcionalidades</a>
+            <a href="#arquitetura" className="hover:text-white focus-visible:text-white">Operação local</a>
+            <a href="#transparencia" className="hover:text-white focus-visible:text-white">Transparência</a>
+            <a href="#faq" className="hover:text-white focus-visible:text-white">Perguntas</a>
           </nav>
 
-          {/* Ações Direitas */}
-          <div className="flex items-center gap-3">
-            <a
-              href="#verificador"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors"
-            >
-              <Search className="size-3.5 text-amber-400" />
-              Verificar Ata
-            </a>
-
+          <div className="flex items-center gap-2">
             {onOpenLoginModal ? (
               <Button
                 onClick={onOpenLoginModal}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs sm:text-sm"
               >
-                <Lock className="size-3.5 mr-1" />
                 Área Restrita
               </Button>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+                className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 sm:text-sm"
               >
-                <Lock className="size-3.5" />
                 Área Restrita
               </Link>
             )}
+            <button
+              type="button"
+              aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={menuOpen}
+              aria-controls="landing-menu-mobile"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="inline-flex size-10 items-center justify-center rounded-md border border-white/25 text-white lg:hidden"
+            >
+              {menuOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <nav id="landing-menu-mobile" aria-label="Navegação móvel" className="border-t border-white/10 bg-[#04152d] px-4 pb-4 pt-2 lg:hidden sm:px-8">
+            {[
+              ['Funcionalidades', '#modulos'],
+              ['Operação local', '#arquitetura'],
+              ['Transparência', '#transparencia'],
+              ['Perguntas', '#faq'],
+              ['Solicitar demonstração', '#onboarding'],
+            ].map(([label, href]) => (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block border-b border-white/10 py-3 text-sm text-slate-100 last:border-0">
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
       </header>
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -177,7 +120,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
       >
         {/* Glows e Grid Architectural */}
         <div
-          className="absolute inset-0 opacity-15 pointer-events-none"
+          className="absolute inset-0 opacity-5 pointer-events-none"
           style={{
             backgroundImage:
               'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
@@ -189,75 +132,31 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="absolute bottom-10 left-10 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10 space-y-12">
-          {/* Headline and Narrative */}
-          <div className="text-center max-w-4xl mx-auto space-y-6">
-            {/* 5-Act Journey Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-slate-200 backdrop-blur-sm">
-              <Sparkles className="size-3.5 text-amber-400" />
-              <span className="font-semibold text-white">Jornada em 5 Atos:</span>
-              <span className="text-slate-300">
-                1. Pauta → 2. Quorum → 3. Deliberação → 4. Apuração → 5. Publicação
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15]">
-              A Nova Era da Governança e Deliberação{' '}
-              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-                Legislativa Municipal
-              </span>
+          <div className="max-w-4xl space-y-6">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-[4.25rem]">
+              Sua sessão plenária, do preparo à publicação.
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
-              Plenário eletrônico com votação nominal biométrica/MFA, painel de transmissão em alta definição,
-              transparência ativa imediata e trilha de auditoria imutável. Arquitetura LAN resiliente com zero dependência de nuvem para sessões sem interrupção.
+            <p className="max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg">
+              Prepare a pauta, acompanhe presença e votação, conduza os trabalhos e organize o que será publicado em um só lugar.
             </p>
 
-            {/* CTAs Principais */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <a
                 href="#onboarding"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold text-sm shadow-xl shadow-amber-500/20 transition-all hover:scale-105"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-400"
               >
-                <Landmark className="size-4" />
-                Criar Espaço da Câmara (Auto-Onboarding)
-                <ArrowRight className="size-4" />
+                Solicitar demonstração
               </a>
 
               <a
                 href="#modulos"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm backdrop-blur-sm transition-all"
+                className="inline-flex items-center justify-center rounded-md border border-white/35 px-5 py-3 text-sm font-medium text-white hover:bg-white/10"
               >
-                Conhecer os 6 Módulos
-              </a>
-
-              <a
-                href="#verificador"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 font-semibold text-sm transition-all"
-              >
-                <ShieldCheck className="size-4 text-emerald-400" />
-                Verificador Criptográfico
+                Conhecer funcionalidades
               </a>
             </div>
-
-            {/* Selos de Conformidade e Normas */}
-            <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Lei 13.709/2018 (LGPD)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>Lei 12.527/2011 (LAI)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>ICP-Brasil & SHA-256</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-4 text-emerald-400" />
-                <span>ADR-027 / ADR-030 Resiliente</span>
-              </div>
-            </div>
+            <p className="text-xs text-slate-400">Dados fictícios nesta apresentação.</p>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
@@ -273,17 +172,17 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 </span>
                 <span className="text-white/30">|</span>
                 <span className="text-slate-300 font-medium">
-                  Câmara Municipal de Exemplo (Demonstração Interativa)
+                  Câmara Municipal de Exemplo (cenário fictício)
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 text-[11px] flex items-center gap-1">
                   <Activity className="size-3" />
-                  EM DELIBERAÇÃO
+                  CENÁRIO ILUSTRATIVO
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold border border-red-500/30 text-[11px] flex items-center gap-1">
                   <span className="size-1.5 rounded-full bg-red-400 animate-pulse" />
-                  TRANSMISSÃO AO VIVO
+                  TRANSMISSÃO SIMULADA
                 </span>
               </div>
             </div>
@@ -331,7 +230,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                     Sessão em Rede LAN Isolada
                   </div>
                   <p className="text-slate-400">
-                    Sincronização em alta velocidade (latência &lt; 4ms) com tolerância total a corte de WAN.
+                    Cenário ilustrativo da operação local planejada; votação offline oficial ainda não está liberada.
                   </p>
                 </div>
               </div>
@@ -457,7 +356,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
           </h2>
           <p className="text-slate-600 text-base leading-relaxed">
             Seis pilares desenhados sob medida para o rito regimental das Câmaras Municipais brasileiras,
-            unindo velocidade operacional, segurança jurídica e transparência para os cidadãos.
+            reunindo ferramentas de operação, registros auditáveis e transparência para os cidadãos.
           </p>
         </div>
 
@@ -472,7 +371,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 1. Plenário Digital & Mesa Diretora
               </CardTitle>
               <CardDescription className="text-slate-600 leading-relaxed">
-                Controle integral da sessão legislativa: abertura, pauta dinâmica, chamada nominal com verificação biométrica e quorum automático por maioria simples, qualificada ou absoluta.
+                Apoio à condução da sessão legislativa: abertura, pauta, chamada nominal e apuração conforme as regras configuradas para cada Câmara.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -504,7 +403,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 2. PWA Parlamentar de Votação
               </CardTitle>
               <CardDescription className="text-slate-600 leading-relaxed">
-                Terminal deliberativo responsivo instalado em tablets, notebooks ou smartphones de vereadores. Votação segura com confirmação em duas etapas e integridade garantida.
+                Interface responsiva para parlamentares em tablets, notebooks ou smartphones, com autenticação e registro de votos confirmados pelo servidor.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -512,7 +411,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <ul className="text-xs text-slate-600 space-y-2">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                  Autenticação MFA com TOTP ou credencial biométrica
+                  Autenticação com senha e suporte a TOTP
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
@@ -632,7 +531,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 6. Auditoria Criptográfica & Trilha
               </CardTitle>
               <CardDescription className="text-slate-600 leading-relaxed">
-                Cadeia de custódia imutável (ADR-027). Cada voto, chamada e despacho gera um hash criptográfico sequencial impossível de adulterar ou retroagir, assegurando fé pública.
+                Registro auditável dos atos e verificações de integridade. O alcance jurídico dos registros e documentos depende das regras e do aceite de cada Câmara.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -640,7 +539,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <ul className="text-xs text-slate-600 space-y-2">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                  Encadeamento SHA-256 com carimbo de tempo inviolável
+                  Registros de auditoria com verificação de integridade
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
@@ -648,7 +547,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                  Exportação de dossiê probatório para o Ministério Público
+                  Consulta a eventos e relatórios para conferência
                 </li>
               </ul>
             </CardContent>
@@ -666,14 +565,13 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/40 font-bold px-3 py-1">
-              Prontidão & Resiliência LAN
+              Projeto de Resiliência LAN
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Zero Interrupção em Sessões: Funciona com ou sem Internet
+              Operação local: arquitetura em validação
             </h2>
             <p className="text-slate-300 text-base leading-relaxed">
-              Muitos sistemas legislativos travam quando a conexão de internet da Câmara oscila.
-              O edocBR Plenário foi desenhado sob as especificações <strong>ADR-027 e ADR-030</strong>: um modelo híbrido com operação local na rede LAN e sincronização automática em nuvem.
+              Os contratos <strong>ADR-027 e ADR-030</strong> orientam um futuro servidor local para sessões preparadas na web. A continuidade durante queda de internet ainda depende de implementação, testes de segurança, ensaio em equipamentos reais e aceite da Câmara.
             </p>
           </div>
 
@@ -683,12 +581,12 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <div className="size-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
                 <Server className="size-5" />
               </div>
-              <h3 className="text-lg font-bold text-white">1. Edge Appliance na Mesa</h3>
+              <h3 className="text-lg font-bold text-white">1. Servidor local designado</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Mini-servidor local dedicado na Mesa Diretora rodando SQLite WAL com sincronização transacional local ultraveloz.
+                Servidor designado por Câmara para receber a sessão preparada e, após validação, atender a rede local do plenário.
               </p>
               <div className="text-[11px] font-mono text-amber-400/90 pt-2 border-t border-white/10">
-                Latência local &lt; 3ms
+                Em desenvolvimento
               </div>
             </div>
 
@@ -698,10 +596,10 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               </div>
               <h3 className="text-lg font-bold text-white">2. Gateway WebSocket LAN</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Comunicação em tempo real por rede cabeada ou Wi-Fi privativo isolado da Câmara, blindado contra invasões externas.
+                Comunicação planejada entre Mesa, parlamentares e telões, com identidade dos dispositivos e confirmação dos comandos.
               </p>
               <div className="text-[11px] font-mono text-emerald-400/90 pt-2 border-t border-white/10">
-                Broadcast instantâneo
+                API LAN pendente
               </div>
             </div>
 
@@ -711,10 +609,10 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               </div>
               <h3 className="text-lg font-bold text-white">3. Nuvem Segura PostgreSQL</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Replicação assíncrona automática assim que a conectividade WAN estiver disponível, com backup geo-redundante.
+                O SaaS prepara documentos. O retorno de eventos após operação local requer reconciliação; transporte, retenção e recuperação ainda exigem validação operacional.
               </p>
               <div className="text-[11px] font-mono text-blue-400/90 pt-2 border-t border-white/10">
-                Disponibilidade 99.98%
+                Reconciliação pendente
               </div>
             </div>
 
@@ -722,12 +620,12 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <div className="size-10 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
                 <WifiOff className="size-5" />
               </div>
-              <h3 className="text-lg font-bold text-white">4. P2P Fallback Offline</h3>
+              <h3 className="text-lg font-bold text-white">4. Continuidade na LAN</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Mesmo em caso de corte total do cabo de fibra da cidade, os vereadores continuam votando e a sessão é concluída com validade jurídica.
+                Meta para uma sessão já preparada. Votação offline oficial permanece bloqueada até os gates técnicos e institucionais.
               </p>
               <div className="text-[11px] font-mono text-purple-400/90 pt-2 border-t border-white/10">
-                Zero perda de dados
+                Uso oficial bloqueado
               </div>
             </div>
           </div>
@@ -735,32 +633,31 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
           {/* Comparativo de Resiliência */}
           <div className="p-6 sm:p-8 rounded-2xl bg-slate-900/80 border border-white/15 max-w-4xl mx-auto space-y-6">
             <h3 className="text-xl font-bold text-center text-white">
-              Sistemas Convencionais em Nuvem vs. edocBR Plenário
+              Estado atual e arquitetura pretendida
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
               <div className="space-y-3 p-4 rounded-xl bg-red-950/20 border border-red-500/20">
                 <div className="font-bold text-red-400 flex items-center gap-2">
                   <ShieldAlert className="size-4" />
-                  Sistemas Tradicionais 100% Web
+                  Operação web atual
                 </div>
                 <ul className="text-xs text-slate-300 space-y-2">
-                  <li>❌ Internet caiu → A votação é interrompida no meio.</li>
-                  <li>❌ Telão do plenário congela se a banda oscilar.</li>
-                  <li>❌ Risco de perda de votos e nulidade regimental.</li>
-                  <li>❌ Dependência de servidores externos sem controle local.</li>
+                  <li>• Preparação, votação e publicação conectadas ao SaaS.</li>
+                  <li>• Falha de conexão exige contingência definida pela Câmara.</li>
+                  <li>• Dispositivo sem confirmação do servidor não produz voto oficial.</li>
                 </ul>
               </div>
 
               <div className="space-y-3 p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
                 <div className="font-bold text-emerald-400 flex items-center gap-2">
                   <ShieldCheck className="size-4" />
-                  edocBR Plenário (ADR-027 / ADR-030)
+                  Modelo local pretendido (ADR-027 / ADR-030)
                 </div>
                 <ul className="text-xs text-slate-300 space-y-2">
-                  <li>✅ Votação continua intacta na LAN mesmo sem sinal de internet.</li>
-                  <li>✅ Telão atualiza em menos de 5ms por rede local gigabit.</li>
-                  <li>✅ Cada voto assinado criptograficamente na origem.</li>
-                  <li>✅ Sincronização em nuvem automática na volta do link.</li>
+                  <li>• Servidor designado recebe sessão e documentos preparados.</li>
+                  <li>• Mesa, parlamentares e telões usam a mesma autoridade local.</li>
+                  <li>• Eventos e arquivos retornam ao SaaS com conferência e ACK.</li>
+                  <li>• Continuidade oficial depende de ensaio e aceite.</li>
                 </ul>
               </div>
             </div>
@@ -774,14 +671,13 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
       <section id="transparencia" className="py-24 px-4 sm:px-8 max-w-7xl mx-auto space-y-16">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <Badge className="bg-emerald-100 text-emerald-900 border-emerald-300 font-bold px-3 py-1">
-            Transparência Universal & Fé Pública
+            Transparência e consulta pública
           </Badge>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
             Acesso Aberto ao Cidadão e Verificação em Tempo Real
           </h2>
           <p className="text-slate-600 text-base leading-relaxed">
-            Todas as sessões, matérias e atas geradas no sistema contam com verificação criptográfica pública.
-            Cidadãos, jornalistas, advogados e órgãos de controle podem aferir a autenticidade instantaneamente.
+            Consulte o código de verificação de uma publicação do Diário Eletrônico. A resposta informa se ela foi publicada, revogada ou se a integridade do conteúdo não pôde ser confirmada. Atas seguem outro fluxo de conferência.
           </p>
         </div>
 
@@ -796,9 +692,9 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
             <div className="size-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <FileCheck2 className="size-5" />
             </div>
-            <h3 className="font-bold text-slate-900">Atas Eletrônicas Autênticas</h3>
+            <h3 className="font-bold text-slate-900">Publicações verificáveis</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              PDFs gerados com sumário deliberativo, assinatura digital ICP-Brasil e QR Code direto para o verificador online.
+              Publicações do Diário Eletrônico recebem código para consulta pública de status e integridade do conteúdo.
             </p>
           </div>
 
@@ -831,13 +727,13 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <Badge className="bg-slate-200 text-slate-800 border-slate-300 font-bold px-3 py-1">
-              Trust Center & Compliance
+              Governança de dados
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-              Conformidade Rigorosa com a LGPD e Princípios da Administração Pública
+              Privacidade e transparência na operação
             </h2>
             <p className="text-slate-600 text-base leading-relaxed">
-              O edocBR Plenário foi concebido com <em>Privacy by Design</em> e <em>Security by Default</em>, respeitando a Lei Geral de Proteção de Dados Pessoais (Lei 13.709/2018) e a Lei de Acesso à Informação (Lei 12.527/2011).
+              A plataforma prevê controles de acesso, segregação por Câmara e publicação autorizada. A adequação à LGPD e à LAI requer configuração, processos e validação institucional em cada implantação.
             </p>
           </div>
 
@@ -848,7 +744,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               </div>
               <h3 className="font-bold text-slate-900">Bases Legais Claras</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Tratamento fundamentado no cumprimento de obrigação legal e execução de políticas públicas pelo Poder Legislativo (Art. 7º, II e III da LGPD).
+                A Câmara define as finalidades e bases legais aplicáveis a cada tratamento; o formulário de demonstração informa a finalidade do contato.
               </p>
             </div>
 
@@ -866,9 +762,9 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <div className="size-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
                 <Users className="size-5" />
               </div>
-              <h3 className="font-bold text-slate-900">Canal Direto com o DPO</h3>
+              <h3 className="font-bold text-slate-900">Governança de dados</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Encarregado de Proteção de Dados formalmente designado, com canal direto para atendimento aos direitos dos titulares (Art. 18 da LGPD).
+                Responsáveis, canais de atendimento e políticas de retenção precisam ser definidos na implantação institucional.
               </p>
             </div>
 
@@ -876,9 +772,9 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
               <div className="size-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
                 <Database className="size-5" />
               </div>
-              <h3 className="font-bold text-slate-900">Hospedagem em Solo Nacional</h3>
+              <h3 className="font-bold text-slate-900">Isolamento por Câmara</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Infraestrutura em data centers certificados ISO 27001 e SOC 2 com armazenamento seguro e isolamento lógico por tenant (Câmara).
+                O SaaS separa dados por tenant. Localização, certificações e compromissos de disponibilidade dependem do ambiente contratado e de comprovação específica.
               </p>
             </div>
           </div>
@@ -897,8 +793,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
             Habilite o Espaço da sua Câmara ou Acesse sua Conta
           </h2>
           <p className="text-slate-600 text-base leading-relaxed">
-            Inicie um ambiente de demonstração completo para a sua Câmara Municipal em menos de 1 minuto,
-            ou entre na área restrita se o seu município já está integrado ao edocBR Plenário.
+            Envie um pedido de demonstração para análise da equipe. O formulário não cria conta nem ativa ambiente automaticamente. Se sua Câmara já tem acesso, entre na área restrita.
           </p>
         </div>
 
@@ -960,7 +855,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 Dúvidas Técnicas ou Jurídicas?
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Nossa equipe de consultoria legislativa auxilia na adequação do Regimento Interno da sua Câmara para o uso pleno do plenário eletrônico.
+                Para dúvidas sobre a plataforma e a implantação, entre em contato. Regras regimentais e validade dos atos devem ser conferidas pela própria Câmara e sua assessoria jurídica.
               </p>
               <div className="pt-2">
                 <a
@@ -994,27 +889,27 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
             {[
               {
                 q: 'É necessária alteração no Regimento Interno da Câmara para usar o Plenário Eletrônico?',
-                a: 'A maioria dos Regimentos Internos já prevê a votação nominal e a proclamação pelo Presidente. Nossa equipe jurídica fornece minuta padrão de Resolução da Mesa Diretora para regulamentar o painel eletrônico e a votação por dispositivo digital, assegurando total validade jurídica e conformidade com a Lei Orgânica.',
+                a: 'A Câmara precisa conferir seu Regimento Interno, Lei Orgânica e regras de votação com sua assessoria jurídica antes de autorizar o uso em atos oficiais. A plataforma não substitui essa validação.',
               },
               {
                 q: 'O que acontece se a internet da Câmara cair durante uma votação importante?',
-                a: 'Graças à arquitetura híbrida LAN (ADR-027 e ADR-030), a sessão não é interrompida. A rede local isolada do plenário continua processando votos, cronômetros e transmissão interna com latência inferior a 5ms. Assim que o link de internet for restabelecido, os dados são sincronizados automaticamente com a nuvem.',
+                a: 'A continuidade local está em desenvolvimento. Hoje, uma falha de conexão exige a contingência definida pela Câmara; votação offline oficial não está liberada. O modelo LAN só poderá ser usado após implementação, ensaios e aceite institucional.',
               },
               {
                 q: 'Quais equipamentos de informática são necessários na Câmara?',
-                a: 'O sistema é extremamente leve e roda em qualquer navegador moderno. Para a Mesa e Vereadores, qualquer tablet, notebook ou smartphone comum pode ser usado. Para a transmissão, uma TV comum com entrada HDMI ou receptor web é suficiente.',
+                a: 'A interface web é responsiva. Dispositivos, rede, telão, áudio e vídeo precisam de ensaio no ambiente da Câmara antes de uma sessão oficial.',
               },
               {
                 q: 'Como é garantida a segurança contra fraudes na votação?',
-                a: 'Cada voto é assinado criptograficamente no momento do envio utilizando algoritmo SHA-256 com carimbo de tempo sequencial (hash chaining imutável). Ninguém, nem mesmo os administradores de banco de dados, consegue adulterar um voto registrado sem invalidar toda a cadeia de custódia pública.',
+                a: 'O servidor autentica e autoriza comandos, persiste votos confirmados e mantém registros de auditoria. A segurança do fluxo completo depende de configuração, operação e revisão independente para o contexto da Câmara.',
               },
               {
                 q: 'O sistema atende às exigências dos Tribunais de Contas e Ministérios Públicos?',
-                a: 'Sim. Todas as deliberações geram atas estruturadas, relatórios nominais de presença e arquivos de transparência ativa que cumprem integralmente as diretrizes dos Tribunais de Contas Estaduais (TCEs) e a Lei de Acesso à Informação (Lei 12.527/2011).',
+                a: 'A plataforma oferece relatórios, atas e publicação. A Câmara deve conferir os formatos, prazos e regras exigidos pelos órgãos competentes antes do uso oficial.',
               },
               {
                 q: 'Como funciona o período de experimentação (Auto-Onboarding)?',
-                a: 'Ao preencher o formulário de auto-onboarding, um ambiente completo com dados simulados é provisionado para a sua Câmara. Você pode convidar servidores e vereadores para testar a condução de sessões, painel de TV e votação nominal antes de qualquer contratação formal.',
+                a: 'O formulário registra um pedido com status pendente. A equipe analisa os dados e entra em contato para combinar uma demonstração; o envio não provisiona um ambiente automaticamente.',
               },
             ].map((item, index) => {
               const isOpen = openFaq === index
@@ -1054,25 +949,13 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/brand/edocbr-logo-white.svg"
-                  alt="e-docBR"
-                  width={130}
-                  height={34}
-                  className="h-8 w-auto object-contain"
-                />
-                <span className="h-5 w-[1px] bg-white/20" />
-                <span className="text-xs font-extrabold tracking-[0.16em] text-amber-400">
-                  PLENÁRIO
-                </span>
-              </div>
+              <BrandLogo inverse />
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-                Plataforma de alta disponibilidade para governança legislativa, deliberação eletrônica, painel de plenário e transparência ativa nas Câmaras Municipais do Brasil.
+                Plataforma de apoio à preparação de sessões, deliberação eletrônica, painel de plenário e transparência nas Câmaras Municipais.
               </p>
               <div className="text-xs text-slate-400 space-y-1 pt-2">
-                <p>CNPJ / Registro: Plataforma Governamental Licenciada</p>
-                <p>Tecnologia em conformidade com ADR-027 / ADR-030</p>
+                <p>Demonstrações com dados fictícios; uso oficial sujeito a validação institucional.</p>
+                <p>Arquitetura local em desenvolvimento: ADR-027 / ADR-030.</p>
               </div>
             </div>
 
@@ -1085,7 +968,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 <li><a href="#modulos" className="hover:text-white transition-colors">6 Módulos Integrados</a></li>
                 <li><a href="#arquitetura" className="hover:text-white transition-colors">Resiliência LAN</a></li>
                 <li><a href="#transparencia" className="hover:text-white transition-colors">Transparência Ativa</a></li>
-                <li><a href="#onboarding" className="hover:text-white transition-colors">Auto-Onboarding</a></li>
+                <li><a href="#onboarding" className="hover:text-white transition-colors">Solicitar demonstração</a></li>
               </ul>
             </div>
 
@@ -1098,7 +981,7 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                 <li><a href="#transparencia" className="hover:text-white transition-colors">Lei de Acesso à Informação</a></li>
                 <li><a href="#verificador" className="hover:text-white transition-colors">Verificador Criptográfico</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">Perguntas Frequentes</a></li>
-                <li><span className="text-slate-400">Política de Privacidade</span></li>
+                <li><a href="mailto:contato@edocbr.com.br?subject=Privacidade%20edocBR" className="hover:text-white">Contato sobre privacidade</a></li>
               </ul>
             </div>
 
@@ -1118,8 +1001,8 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
                     </Link>
                   )}
                 </li>
-                <li><a href="#verificador" className="hover:text-white">Validar Código de Ata</a></li>
-                <li><a href="#onboarding" className="hover:text-white">Criar Espaço Demo</a></li>
+                <li><a href="#verificador" className="hover:text-white">Verificar publicação</a></li>
+                <li><a href="#onboarding" className="hover:text-white">Solicitar demonstração</a></li>
                 <li><a href="mailto:contato@edocbr.com.br" className="hover:text-white">Suporte Técnico</a></li>
               </ul>
             </div>
@@ -1132,9 +1015,9 @@ export function LandingView({ onOpenLoginModal }: LandingViewProps) {
             <div className="flex items-center gap-6">
               <span className="flex items-center gap-1.5 text-emerald-400">
                 <span className="size-2 rounded-full bg-emerald-400" />
-                Sistemas 100% Operacionais
+                Ambiente demonstrativo
               </span>
-              <span>Ambiente Protegido SHA-256</span>
+              <span>Recursos sujeitos a validação institucional</span>
             </div>
           </div>
         </div>

@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowUpRight, ExternalLink, Landmark, Lock, ShieldCheck, Sparkles, X } from 'lucide-react'
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { Separator } from '@/components/ui/separator'
 import LoginForm, { type LoggedInActor } from '@/components/app/login-form'
 import { useApp } from '@/lib/store'
@@ -46,19 +46,7 @@ export function InstitutionalLoginDialog({
 
           <DialogHeader className="relative z-10 space-y-2 text-left">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <Image
-                  src="/brand/edocbr-logo-white.svg"
-                  alt="e-docBR"
-                  width={110}
-                  height={28}
-                  className="h-6 w-auto object-contain"
-                />
-                <span className="h-4 w-[1px] bg-white/20" />
-                <span className="text-[10px] font-extrabold tracking-[0.16em] text-amber-400">
-                  PLENÁRIO
-                </span>
-              </div>
+              <BrandLogo inverse compact />
 
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
                 <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />

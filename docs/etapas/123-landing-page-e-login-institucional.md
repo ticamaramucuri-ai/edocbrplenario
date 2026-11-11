@@ -6,19 +6,19 @@
 
 Implementar a Landing Page de alta fidelidade institucional e a página de Login dedicada (Split Vault) para o **edocBR Plenário**, integrando:
 1. Apresentação visual moderna e arquitetônica voltada a Presidentes de Câmara, Vereadores e Diretores Legislativos.
-2. Demonstração interativa dos 6 módulos e cockpit operacional em tempo real (PL 018/2026, 9 assentos em apuração instantânea e rastro ADR-027).
-3. Diagrama e comparativo da arquitetura de resiliência LAN híbrida (ADR-027 / ADR-030: operação sem interrupção mesmo com queda de internet).
-4. Verificador criptográfico em tempo real (`GET /api/v1/public/verify`) integrado no portal de transparência e fé pública.
-5. Trust Center e conformidade explícita com a LGPD (Lei 13.709/2018) e a LAI (Lei 12.527/2011), sem cookies invasivos de rastreamento.
-6. Formulário de Auto-Onboarding (`POST /api/v1/public/onboarding`) com geração automática de slug e consentimento LGPD.
+2. Apresentação dos 6 módulos e cockpit estático com dados fictícios, identificado como cenário ilustrativo.
+3. Exposição da arquitetura LAN pretendida nos ADR-027 / ADR-030, com indicação de que votação offline oficial permanece bloqueada.
+4. Consulta pública de publicações do Diário Eletrônico (`GET /api/v1/public/verify`), sem resultado pré-carregado. A verificação de atas usa outro fluxo.
+5. Informação sobre privacidade, transparência e controles da plataforma, sem presumir conformidade institucional ou certificações não comprovadas.
+6. Formulário de pedido de demonstração (`POST /api/v1/public/onboarding`) com geração de slug e escolha ativa do aviso de privacidade. O pedido fica pendente de análise humana; não provisiona tenant.
 7. Página dedicada de Login institucional (`/login`) com arquitetura Split Vault (cofre escuro com hemiciclo geométrico à esquerda e console de autenticação à direita com suporte a TOTP MFA e seletor de perfis demo).
 8. Rota pública `/apresentacao` e integração com a rota raiz `/` sem regressão de acessibilidade (WCAG 2.1 AA / Axe) ou quebra de testes de homologação/E2E.
 
 ## Componentes Desenvolvidos
 
-- `src/modules/landing/landing-view.tsx`: Visão completa da landing page com barra de telemetria, hero multi-camada com cockpit regimental ao vivo, bento grid dos 6 módulos, blueprint de rede LAN, verificador criptográfico, compliance LGPD, onboarding e FAQ executivo.
-- `src/modules/landing/onboarding-form.tsx`: Formulário interativo de experimentação institucional com validação Zod, auto-slug, consentimento expresso LGPD e tratamento de rate limit (3 criações/hora por IP).
-- `src/modules/landing/public-verifier.tsx`: Consulta em tempo real de integridade documental e autenticidade de atas.
+- `src/modules/landing/landing-view.tsx`: Landing com cockpit fictício, 6 módulos, estado da arquitetura LAN, consulta pública, privacidade, pedido de demonstração e FAQ.
+- `src/modules/landing/onboarding-form.tsx`: Formulário vazio por padrão, validação Zod, auto-slug, escolha ativa do aviso de privacidade e tratamento de rate limit (3 pedidos/hora por IP).
+- `src/modules/landing/public-verifier.tsx`: Consulta de publicação do Diário Eletrônico, com estados de válida, revogada, não localizada e integridade não confirmada.
 - `src/modules/landing/index.tsx`: Exportador do módulo de landing page.
 - `src/components/app/institutional-login-dialog.tsx`: Modal institucional moderno de login com identidade Obsidian/Gold, e-docBR Plenário, MFA TOTP, perfis de demonstração e link para tela cheia (`/login`).
 - `src/components/app/institutional-login.tsx`: Interface Split Vault com suporte a MFA de duas etapas, seletor de Câmara e perfis rápidos de demonstração.
@@ -29,6 +29,7 @@ Implementar a Landing Page de alta fidelidade institucional e a página de Login
 ## Pré-visualizações e Imagens Renderizadas
 
 Protótipos HTML e capturas em alta resolução renderizados via Playwright salvos em `docs/previews/landing-edocbr/v2/`:
+Estas imagens são históricas e podem conter textos anteriores à revisão de 11/11; o código e o teste de navegador são a referência atual.
 - `01-pagina-hero-ecossistema.png`: Dark Architectural Hero & Cockpit Multi-Camada.
 - `02-pagina-funcionalidades-modulos.png`: Bento Grid dos 6 Módulos do Plenário Digital.
 - `03-pagina-arquitetura-lan-prontidao.png`: Diagrama de Resiliência LAN (ADR-027 / ADR-030).
@@ -47,10 +48,23 @@ Protótipos HTML e capturas em alta resolução renderizados via Playwright salv
 - `bun run test:landing:browser` (`bash scripts/test-landing-browser.sh`):
   - Banco SQLite descartável isolado provisionado com seed.
   - Servidor standalone Next.js iniciado na porta 3228.
-  - Modal de login inicial no `/` validado com asserção `getByRole('dialog')` e dispensado interativamente para exploração da Landing Page.
-  - Reabertura do modal via botão *"Área Restrita"* da Landing Page validada.
-  - Rota dedicada `/apresentacao` com acordeão de FAQ, consulta no verificador criptográfico e submissão real de auto-onboarding com validação Zod e consentimento LGPD.
+  - Landing em `/` sem modal inicial; abertura do modal sob demanda pelo botão *"Área Restrita"*.
+  - Rota `/apresentacao` com FAQ, ausência de resultado fictício pré-carregado, resposta real `found=false` para código inexistente e pedido de demonstração confirmado por HTTP 201/status `pendente`.
   - Rota dedicada de Login `/login` validada com arquitetura Split Vault.
-  - Auditoria de acessibilidade Axe-core (`WCAG 2.1 AA` / `WCAG 2.2 AA`) executada em todas as páginas: zero violações críticas ou sérias.
-- Compatibilidade retroativa 100% mantida com suítes de teste de homologação Playwright e Axe.
+  - Auditoria de acessibilidade Axe-core (`WCAG 2.1 AA`) executada nas páginas: zero violações críticas ou sérias.
+- A suíte da landing está incluída no job `application` da CI após o build e a instalação do Chromium.
+
+## Limites
+
+O cockpit é estático e demonstrativo. A operação local, a continuidade de votação sem internet, certificações, metas de disponibilidade e conformidade institucional exigem provas próprias descritas no plano mestre. O formulário registra pedido para revisão humana; não cria conta, tenant nem credenciais. A consulta pública desta página cobre publicações do Diário Eletrônico, não códigos de atas.
+
+## Revisão de identidade e navegação — 11/11/2026
+
+As versões clara e escura do SVG agora representam a mesma assinatura **edocBR Plenário**, sem o subtítulo de outro produto e sem uma segunda marca de texto ao lado. Landing, login, modal e componente compartilhado usam essa assinatura. O topo da apresentação deixou de mostrar a faixa técnica, reduziu a navegação a quatro destinos e ganhou menu móvel; o hero passou a explicar o fluxo da sessão com duas ações principais. O teste de navegador cobre a assinatura acessível e a navegação móvel. As capturas em `docs/previews/landing-edocbr/v2/` continuam históricas.
+
+Capturas atuais do primeiro quadro: [`desktop`](../previews/landing-edocbr/v3/desktop.png) e [`mobile`](../previews/landing-edocbr/v3/mobile.png), obtidas do build standalone em 11/11/2026.
+
+## Correção do primeiro quadro no refresh — 11/11/2026
+
+Na rota `/`, o componente `Boot` aguardava `/api/v1/bootstrap` mostrando o esqueleto claro do painel interno. Esse HTML era entregue antes da hidratação e aparecia brevemente ao atualizar a página. A espera agora usa fundo azul escuro, cabeçalho com a assinatura edocBR Plenário e mensagem de carga, independentemente do estado de autenticação. O teste de navegador lê o HTML inicial com JavaScript desativado e confere a marca e a cor de fundo antes da jornada interativa. A rota `/apresentacao` já servia a landing diretamente e não usava esse esqueleto.
 

@@ -1,23 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, FileCheck2, Loader2, Search, ShieldAlert, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, Search, ShieldAlert, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { PublicVerifyResult } from '@/lib/contracts'
 
 export function PublicVerifier() {
-  const [code, setCode] = useState('EDOC-2026-ATA-9F4A-81C2')
+  const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<PublicVerifyResult | null>({
-    found: true,
-    kind: 'publication',
-    code: 'EDOC-2026-ATA-9F4A-81C2',
-    title: 'Ata da 14ª Sessão Ordinária — Deliberação e Encerramento',
-    tenantName: 'Câmara Municipal de Vila Nova',
-    publishedAt: new Date().toISOString(),
-    status: 'valida',
-  })
+  const [result, setResult] = useState<PublicVerifyResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleVerify(e: React.FormEvent) {
@@ -53,7 +45,8 @@ export function PublicVerifier() {
           <Input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="Ex.: EDOC-2026-ATA-9F4A-81C2 ou código de 8 dígitos"
+            aria-label="Código de verificação da publicação"
+            placeholder="Código de verificação da publicação"
             className="h-10 text-xs sm:text-sm font-mono uppercase bg-slate-950/80 border-slate-700 text-amber-300 placeholder:text-slate-500 focus-visible:ring-amber-400"
             required
           />
@@ -87,6 +80,10 @@ export function PublicVerifier() {
               <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/40">
                 REVOGADO POSTERIORMENTE
               </span>
+            ) : result.found ? (
+              <span className="inline-flex items-center gap-1 rounded bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-500/40">
+                <XCircle className="size-3" /> INTEGRIDADE NÃO CONFIRMADA
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-500/40">
                 <XCircle className="size-3" /> NÃO LOCALIZADO
@@ -114,13 +111,15 @@ export function PublicVerifier() {
                   <span className="text-slate-300">{new Date(result.publishedAt).toLocaleString('pt-BR')}</span>
                 </div>
               )}
-              <div className="pt-1 border-t border-slate-800/80 text-[10px] text-emerald-400/90">
-                ✓ Registro imutável conferido na base oficial do Diário Eletrônico.
-              </div>
+              {result.status === 'valida' && (
+                <div className="pt-1 border-t border-slate-800/80 text-[10px] text-emerald-400/90">
+                  ✓ Integridade do conteúdo publicado conferida na base do Diário Eletrônico.
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-[11px] text-slate-400 leading-relaxed">
-              O código informado <code className="text-amber-300">{result.code}</code> não corresponde a uma publicação oficial aprovada e vigente. Rascunhos em tramitação não recebem código público de autenticidade.
+              O código informado <code className="text-amber-300">{result.code}</code> não corresponde a uma publicação encontrada no Diário Eletrônico. Rascunhos em tramitação não recebem código público de verificação.
             </div>
           )}
         </div>

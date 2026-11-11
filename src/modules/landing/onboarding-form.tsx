@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { CheckCircle2, Copy, ExternalLink, Loader2, RefreshCw, Send, ShieldAlert, Sparkles } from 'lucide-react'
 import { z } from 'zod'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -59,13 +58,13 @@ function generateSlug(chamberName: string, uf: string): string {
 }
 
 export function OnboardingForm() {
-  const [chamberName, setChamberName] = useState('Câmara Municipal de Serra Azul')
-  const [city, setCity] = useState('Serra Azul')
-  const [uf, setUf] = useState('MG')
-  const [email, setEmail] = useState('secretaria@camaraserraazul.mg.leg.br')
-  const [slug, setSlug] = useState('camara-serra-azul-mg')
+  const [chamberName, setChamberName] = useState('')
+  const [city, setCity] = useState('')
+  const [uf, setUf] = useState('')
+  const [email, setEmail] = useState('')
+  const [slug, setSlug] = useState('')
   const [slugManual, setSlugManual] = useState(false)
-  const [lgpdConsent, setLgpdConsent] = useState(true)
+  const [lgpdConsent, setLgpdConsent] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -132,7 +131,6 @@ export function OnboardingForm() {
       }
 
       setSuccessData(data)
-      toast.success('Solicitação de demonstração registrada com sucesso!')
     } catch {
       setError('Falha de rede ao conectar ao servidor. Verifique a conexão e tente novamente.')
     } finally {
@@ -249,11 +247,11 @@ export function OnboardingForm() {
               className="mt-0.5 size-4 rounded border-slate-300 text-[#072348] focus:ring-[#072348]"
             />
             <span>
-              Declaro ciência do tratamento dos dados institucionais informados para fins de contato, validação e configuração do ambiente de demonstração de 14 dias (LGPD).
+              Declaro ciência do tratamento dos dados informados para análise do pedido e contato sobre uma demonstração assistida.
             </span>
           </label>
           <p className="mt-2 text-[11px] text-slate-600 pl-6.5">
-            <strong>Aviso de Privacidade (Art. 7º, I e V da Lei nº 13.709/2018):</strong> Os dados são coletados exclusivamente para a reserva do identificador da Câmara e agendamento da demonstração técnica assistida.
+            <strong>Aviso de privacidade:</strong> os dados deste formulário são usados para registrar e analisar o pedido e entrar em contato. O envio não ativa automaticamente um ambiente.
           </p>
         </div>
 
@@ -270,7 +268,7 @@ export function OnboardingForm() {
           ) : (
             <>
               <Send className="size-4 mr-2 text-amber-300" />
-              Solicitar Ativação do Ambiente Demonstrativo →
+              Enviar Pedido de Demonstração →
             </>
           )}
         </Button>
@@ -280,7 +278,7 @@ export function OnboardingForm() {
       <Dialog open={!!successData} onOpenChange={() => setSuccessData(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#047857]">
+            <DialogTitle className="flex items-center gap-2 text-emerald-950">
               <CheckCircle2 className="size-5" /> Pedido Registrado com Sucesso!
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600 leading-relaxed pt-1">
@@ -305,13 +303,13 @@ export function OnboardingForm() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-700">Status na Fila:</span>
-                  <span className="font-bold uppercase text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                  <span className="font-bold uppercase text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded">
                     {successData.request.status}
                   </span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-700 leading-relaxed">
-                Nossa equipe técnica entrará em contato através de <strong>{successData.request.email}</strong> para apresentar a jornada e fornecer as credenciais temporárias do ambiente demonstrativo isolado.
+                O pedido aguarda análise. A equipe poderá entrar em contato por <strong>{successData.request.email}</strong> para combinar os próximos passos; nenhuma credencial foi criada neste envio.
               </p>
             </div>
           )}

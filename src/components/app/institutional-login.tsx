@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowLeft, CheckCircle2, ChevronRight, KeyRound, Landmark, Lock, ShieldCheck, Sparkles } from 'lucide-react'
 import LoginForm, { type LoggedInActor } from '@/components/app/login-form'
 import { BrandLogo } from '@/components/brand/brand-logo'
@@ -44,20 +43,7 @@ export function InstitutionalLogin({
 
           {/* Topo do Cofre */}
           <div className="relative z-10 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Image
-                src="/brand/edocbr-logo-white.svg"
-                alt="e-docBR"
-                width={120}
-                height={32}
-                className="h-8 w-auto object-contain"
-                priority
-              />
-              <span className="h-5 w-[1px] bg-white/30" />
-              <span className="text-[11px] font-extrabold tracking-[0.16em] text-amber-300">
-                PLENÁRIO
-              </span>
-            </div>
+            <BrandLogo inverse compact />
 
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10.5px] font-mono font-bold text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
