@@ -2,6 +2,8 @@
 
 > **Lista histórica de pendências.** A prioridade e os gates atuais estão no [plano mestre](PLANO-MESTRE.md); este registro não deve ser usado como backlog vigente sem reconciliação.
 
+Incremento P6 em 11/11/2026: o diário local agora persiste a maior época de uma concessão assinada e rejeita recuo após reinício ([etapa 124](etapas/124-maior-epoca-autoridade-local.md)). Ainda faltam entrega da concessão, cercamento dos escritores web, autorização de comandos, ACK e reconciliação; restauração integral de snapshot local exige proteção adicional.
+
 Revisão da landing em 11/11/2026: conteúdo público foi alinhado aos limites do plano mestre. Antes de divulgar institucionalmente, faltam validação da Câmara sobre textos e identidade, comprovação de capacidades anunciadas, política de privacidade e responsável/canal de atendimento definidos, além da liberação dos gates da operação local. A etapa [123](etapas/123-landing-page-e-login-institucional.md) registra a revisão técnica; ela não substitui aceite institucional.
 
 Revisão visual em 11/11/2026: as duas variantes de cor do logo foram unificadas na assinatura edocBR Plenário; cabeçalho e menu móvel foram simplificados. A aprovação da identidade pela instituição continua pendente.

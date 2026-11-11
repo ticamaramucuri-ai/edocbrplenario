@@ -3,6 +3,8 @@ import { Database } from 'bun:sqlite'
 import { createHash, createPublicKey, sign, verify, type KeyObject } from 'node:crypto'
 import { closeSync, lstatSync, openSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
+import { verifySessionAuthorityGrant, type SessionAuthorityGrant,
+  type SignedSessionAuthorityGrant } from './session-authority-contract'
 
 const GENESIS = '0'.repeat(64)
 const FORMAT_VERSION = 1
@@ -14,6 +16,7 @@ type EventRow = {
 }
 type CursorRow = { last_sequence: number; last_hash: string }
 type ScopeRow = { tenant_id: string; device_id: string; public_key_sha256: string; format_version: number }
+type AuthorityRow = { session_id: string; epoch: number; signed_grant_hash: string; device_signature: string }
 export type LocalJournalEvent = {
   tenantId: string; deviceId: string; sessionId: string; sequence: number; commandId: string
   eventType: string; actorId: string; payload: unknown; previousHash: string; eventHash: string
@@ -39,6 +42,10 @@ function hashEvent(event: Omit<LocalJournalEvent, 'eventHash' | 'signatureBase64
 function signedMessage(eventHash: string): Buffer {
   return Buffer.from(`edocbr.local-event-signature.v1\n${eventHash}`, 'utf8')
 }
+function authorityMessage(tenantId: string, deviceId: string, row: Omit<AuthorityRow, 'device_signature'>): Buffer {
+  return Buffer.from(`edocbr.local-authority-epoch.v1\n${canonical({ tenantId, deviceId,
+    sessionId: row.session_id, epoch: row.epoch, signedGrantHash: row.signed_grant_hash })}`, 'utf8')
+}
 function fromRow(row: EventRow, tenantId: string, deviceId: string): LocalJournalEvent {
   return { tenantId, deviceId, sessionId: row.session_id, sequence: row.sequence,
     commandId: row.command_id, eventType: row.event_type, actorId: row.actor_id,
@@ -51,6 +58,9 @@ export function openLocalEventJournal(args: {
 }): {
   append(input: { sessionId: string; commandId: string; expectedSequence: number;
     eventType: string; actorId: string; payload: unknown }): LocalJournalEvent
+  acceptAuthorityGrant(input: { sessionId: string; revisionId: string; manifestSha256: string;
+    signed: SignedSessionAuthorityGrant; trustedKeys: ReadonlyMap<string, KeyObject>;
+    now?: Date }): SessionAuthorityGrant
   list(sessionId: string, afterSequence?: number): LocalJournalEvent[]
   verify(): void
   close(): void
@@ -90,6 +100,9 @@ export function openLocalEventJournal(args: {
       created_at TEXT NOT NULL, PRIMARY KEY (session_id, sequence), UNIQUE (session_id, command_id))`)
     db.run(`CREATE TABLE IF NOT EXISTS session_cursor (
       session_id TEXT PRIMARY KEY, last_sequence INTEGER NOT NULL, last_hash TEXT NOT NULL)`)
+    db.run(`CREATE TABLE IF NOT EXISTS authority_epoch (
+      session_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL CHECK (epoch > 0),
+      signed_grant_hash TEXT NOT NULL, device_signature TEXT NOT NULL)`)
     const initialize = db.transaction(() => {
       const scope = db.query('SELECT tenant_id, device_id, public_key_sha256, format_version FROM journal_scope WHERE id = 1').get() as ScopeRow | null
       if (!scope) db.query('INSERT INTO journal_scope (id, tenant_id, device_id, public_key_sha256, format_version) VALUES (1, ?, ?, ?, ?)')
@@ -128,10 +141,51 @@ export function openLocalEventJournal(args: {
       const sessions = db.query(`SELECT session_id FROM local_events UNION SELECT session_id FROM session_cursor`)
         .all() as Array<{ session_id: string }>
       for (const item of sessions) verifySession(item.session_id)
+      const authorities = db.query('SELECT * FROM authority_epoch').all() as AuthorityRow[]
+      for (const row of authorities) verifyAuthorityRow(row)
+    }
+    function verifyAuthorityRow(row: AuthorityRow): void {
+      if (!row.session_id || !Number.isSafeInteger(row.epoch) || row.epoch < 1 ||
+          !/^[0-9a-f]{64}$/.test(row.signed_grant_hash) ||
+          !verify(null, authorityMessage(args.tenantId, args.deviceId, row), publicKey,
+            Buffer.from(row.device_signature, 'base64'))) {
+        throw new Error(`Época da autoridade local adulterada na sessão ${row.session_id}.`)
+      }
     }
     verifyAll()
 
     return {
+      acceptAuthorityGrant(input) {
+        if (!input.sessionId || input.sessionId.length > 200) throw new Error('Sessão da autoridade local inválida.')
+        const accept = db.transaction(() => {
+          const previous = db.query('SELECT * FROM authority_epoch WHERE session_id = ?')
+            .get(input.sessionId) as AuthorityRow | null
+          if (previous) verifyAuthorityRow(previous)
+          const grant = verifySessionAuthorityGrant(input.signed, {
+            tenantId: args.tenantId, sessionId: input.sessionId, deviceId: args.deviceId,
+            revisionId: input.revisionId, manifestSha256: input.manifestSha256,
+            trustedKeys: input.trustedKeys, now: input.now, minimumEpoch: previous?.epoch,
+          })
+          const signedGrantHash = createHash('sha256').update(canonical(input.signed)).digest('hex')
+          if (previous?.epoch === grant.epoch) {
+            if (previous.signed_grant_hash !== signedGrantHash) {
+              throw new Error('Concessão da mesma época diverge da aceita pelo desktop.')
+            }
+            return grant
+          }
+          const row = { session_id: input.sessionId, epoch: grant.epoch,
+            signed_grant_hash: signedGrantHash }
+          const deviceSignature = sign(null, authorityMessage(args.tenantId, args.deviceId, row),
+            args.privateKey).toString('base64')
+          db.query(`INSERT INTO authority_epoch (session_id, epoch, signed_grant_hash, device_signature)
+            VALUES (?, ?, ?, ?) ON CONFLICT(session_id) DO UPDATE SET epoch = excluded.epoch,
+              signed_grant_hash = excluded.signed_grant_hash,
+              device_signature = excluded.device_signature`).run(input.sessionId, grant.epoch,
+            signedGrantHash, deviceSignature)
+          return grant
+        })
+        return accept.immediate() as SessionAuthorityGrant
+      },
       append(input) {
         if (!input.sessionId || input.sessionId.length > 200 || !input.commandId || input.commandId.length > 200 ||
             !input.actorId || input.actorId.length > 200 ||
