@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>edocBR Plenário · Pré-voo local</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Navegação local">
+      <div class="brand"><span class="brand-mark">▤</span><span>edoc<span class="brand-accent">BR</span><small>Plenário local</small></span></div>
+      <div class="rail-section">Operação da Câmara</div>
+      <div class="rail-item active">Pré-voo</div>
+      <div class="rail-item">Sessões importadas</div>
+      <div class="rail-note">Prévia de laboratório<br>Somente leitura</div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><div class="mobile-brand">edoc<span>BR</span> · Local</div><div id="identity" class="identity">Conferindo dispositivo…</div></header>
+      <main class="content">
+        <div class="heading"><div><p class="kicker">Servidor da Câmara</p><h1>Pré-voo das sessões</h1><p class="subtitle">Confira o pacote importado antes de qualquer operação local.</p></div><button id="refresh" type="button">Atualizar estado</button></div>
+        <section id="status" class="status" role="status" aria-live="polite">Conferindo pacotes importados…</section>
+        <div id="app" class="session-list"></div>
+        <footer class="footer">Este laboratório não permite presença, fala ou voto local. A autorização de sessão e a rede LAN segura serão entregas próprias.</footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

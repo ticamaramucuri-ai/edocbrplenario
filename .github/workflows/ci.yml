@@ -37,6 +37,7 @@ jobs:
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/session-transfer-wire.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-device-keystore.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-server-cli.test.ts
+      - run: bun run test:local:app
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/local-event-journal.test.ts
       - run: DATABASE_URL=file:/tmp/edocbr-unit.db bun test tests/session-authority-contract.test.ts
       - run: bash scripts/test-session-authority-lease.sh
@@ -82,6 +83,7 @@ jobs:
       - run: bun run test:recovery:image-http
       - run: bun run test:recovery:acervo-http
       - run: bunx playwright install chromium
+      - run: bun run test:local:app:browser
       - run: bun run test:landing:browser
       - run: bun run test:a11y:plenario
 
