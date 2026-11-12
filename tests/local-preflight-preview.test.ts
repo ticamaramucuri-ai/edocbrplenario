@@ -37,3 +37,19 @@ test('API local de prévia é somente leitura e não armazena respostas', async 
   expect((await handler(new Request('http://127.0.0.1:3000/secret'))).status).toBe(404)
   expect((await handler(new Request('http://site-externo.invalid:3000/api/status'))).status).toBe(403)
 })
+
+test('resumo de sessão só responde para pacote pronto do mesmo inventário', async () => {
+  const handler = localPreflightHandler({ html: '',
+    readView: async () => createLocalPreflightView({ tenantId: 'camara-a', deviceId: 'mesa-1', sessions: [
+      { sessionId: 'sessao-27', state: 'ready', prepared: { revisionNumber: 4, importedAt: '2026-11-11T14:32:00.000Z' } },
+      { sessionId: 'sessao-28', state: 'incomplete' },
+    ] }),
+    readSummary: async (sessionId) => ({ sessionId, revisionNumber: 4,
+      agenda: [{ title: 'Projeto 18/2026', order: 1 }], documents: [], canVote: false }),
+  })
+  const ready = await handler(new Request('http://127.0.0.1:3000/api/sessions/sessao-27'))
+  expect(ready.status).toBe(200)
+  expect(await ready.json()).toMatchObject({ sessionId: 'sessao-27', agenda: [{ title: 'Projeto 18/2026' }], canVote: false })
+  expect((await handler(new Request('http://127.0.0.1:3000/api/sessions/sessao-28'))).status).toBe(404)
+  expect((await handler(new Request('http://127.0.0.1:3000/api/sessions/outra'))).status).toBe(404)
+})

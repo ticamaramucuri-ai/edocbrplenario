@@ -6,6 +6,7 @@ import { loadLocalDevice } from '../src/lib/local-device-keystore'
 import { inspectLocalPreparations } from '../src/lib/local-preparation-status'
 import { readLocalServiceCredential } from '../src/lib/local-service-credential'
 import { createLocalPreflightView, localPreflightHandler } from '../src/lib/local-preflight-preview'
+import { readLocalSessionSummary } from '../src/lib/local-session-summary'
 
 async function main(): Promise<void> {
   const [root, credential, portText = '3185'] = process.argv.slice(2)
@@ -20,6 +21,8 @@ async function main(): Promise<void> {
   const [html, script, css] = await Promise.all(['index.html', 'app.js', 'app.css']
     .map((file) => readFile(join(appRoot, file), 'utf8')))
   const fetch = localPreflightHandler({ html, script, css,
+    readSummary: (sessionId) => readLocalSessionSummary({ root, tenantId: config.tenantId,
+      sessionId, trustedKeys }),
     readView: async () => createLocalPreflightView({ tenantId: config.tenantId,
       deviceId: config.deviceId!, sessions: await inspectLocalPreparations({ root,
         tenantId: config.tenantId, trustedKeys }) }) })
