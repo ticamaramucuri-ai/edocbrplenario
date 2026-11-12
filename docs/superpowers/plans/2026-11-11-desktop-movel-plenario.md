@@ -22,6 +22,23 @@ Fontes: `docs/PLANO-MESTRE.md`, `docs/MATRIZ-ENTREGA.md`, `docs/adr/ADR-027-saas
 
 Os mockups em `docs/previews/desktop-mobile-plan/` representam essas intenções. Textos, posições e fluxos serão validados com Mesa, secretaria e usuários parlamentares. A tela nunca deve confundir “conectado” com “sincronizado”, nem exibir “voto registrado” antes de ACK durável.
 
+## Referências funcionais das capturas de 12/11/2026
+
+As 11 imagens fornecidas em `Screenshots/Captura de Tela (2–11, 13).png` mostram uma operação do PainelDesk com sessão, relatórios, transmissão, cadastros, importação, configuração, telão de 13 cadeiras e tribuna. Elas servem como referência de **jornada e legibilidade**, não como especificação de regras ou prova de segurança. A captura de configuração contém uma credencial visível; não incorporar imagens brutas, chaves, senhas, dados pessoais ou endereços de rede à documentação pública ou a fixtures.
+
+| Referência visual | Função a aproveitar no edocBR | Estado e decisão de produto |
+|---|---|---|
+| 2 e 13 — operação em três áreas | Mesa vê pauta filtrável, 13 parlamentares e prévia do telão no mesmo contexto; ação principal segue a etapa da sessão. | Presença, pauta, votação, fala e controles do telão existem separados no SaaS. Construir composição operacional desktop após a leitura LAN; evitar três colunas comprimidas em telas menores. |
+| 8 — telão de presença | Mostrar **todos os 13 assentos**, inclusive ausentes e licenciados, com nome/foto quando autorizados, totais consistentes e relógio legível à distância. | O perfil atual lista presentes; ampliar o contrato público e a grade fixa, com estado de conexão/atualização sem divulgar informações restritas. |
+| 11 — roteiro da Mesa | Orientações por função e momento, com campos dinâmicos de sessão, quórum e matéria e prévia antes de usar. | Propor roteiro editável e versionado por Câmara, vinculado à revisão da sessão; texto é auxílio, nunca executa transição nem substitui regra regimental aprovada. No móvel, cada membro vê apenas sua função vigente. |
+| 10 — funções da Mesa na sessão | Conferir presidente, vice e secretários efetivos para a sessão, incluindo substituições registradas. | Há Mesa institucional com histórico temporal. Acrescentar composição efetiva por sessão e trilha de alteração; não sobrescrever silenciosamente o cadastro institucional. |
+| 3 e 9 — relatórios e PDF | Acesso rápido por sessão a pauta, frequência, votação e pronunciamentos; prévia e exportação identificadas por revisão/horário. | Relatórios e impressão/PDF já existem na web. Reunir índice da sessão na Mesa local quando houver dados reconciliados e marcar claramente relatórios provisórios versus definitivos. Não exportar fichas com senhas. |
+| 4 e 6 — transmissão/importação | Mostrar progresso, contagens e divergências por etapa da importação e do retorno ao SaaS. | O edocBR já tem migração legada e importação de pacote. Criar acompanhamento específico da sincronização da sessão com ACK, retry, quarentena e carimbo de origem; não usar envio manual como autoridade concorrente. |
+| 5 e 7 — cadastro/configuração | Busca de parlamentares e grupos, identidade da Câmara, quantidade de cadeiras e opções de tempo/alertas em telas de preparação. | Cadastros e configurações centrais já existem. O desktop recebe revisão assinada e mostra esses dados para conferência; alterações estruturais seguem o SaaS, com segredo e chaves fora da interface comum. |
+| 13 — tribuna | Orador, tipo de fala, assunto, contagem regressiva/progressiva, avisos sonoros locais e prévia do telão. | Fila e cronômetro existem na web/telão. Consolidar os comandos da Mesa e os avisos em uma visão; gravação pelo app requer projeto de consentimento, armazenamento e evidência próprios. |
+
+**Ordem sugerida:** (1) leitura LAN e composição Mesa/pauta/presença/prévia do telão; (2) grade pública das 13 cadeiras e reconexão por snapshot; (3) composição efetiva e roteiro contextual da Mesa; (4) tribuna e alertas locais; (5) centro de relatórios e reconciliação. Os itens que registram atos aguardam os gates de autoridade, identidade, regras e ACK dos ciclos 2–4. O móvel prioriza sessão, pauta, presença, documentos, função/roteiro, pedido de fala e voto confirmado; cadastro, importação e configuração pertencem ao desktop/SaaS.
+
 ## Sequência de desenvolvimento intercalada
 
 Cada ciclo termina em software demonstrável com dados fictícios, testes, registro de limites e decisão sobre o próximo bloqueio. A sequência é por dependência, não por calendário fixo.
