@@ -9,6 +9,9 @@ const [html, script, css] = await Promise.all(['index.html', 'app.js', 'app.css'
   .map((file) => readFile(join(appRoot, file), 'utf8')))
 let broken = false
 const server = Bun.serve({ port: 0, hostname: '127.0.0.1', fetch: localPreflightHandler({ html, script, css,
+  readSummary: async (sessionId) => ({ sessionId, revisionNumber: 4,
+    agenda: [{ title: 'Projeto de Lei 18/2026', order: 1 }],
+    documents: [{ name: 'Parecer.pdf', mimeType: 'application/pdf', sizeBytes: 4096 }], canVote: false }),
   readView: async () => {
     if (broken) throw new Error('synthetic failure')
     return createLocalPreflightView({ tenantId: 'camara-a', deviceId: 'mesa-1', sessions: [
@@ -29,6 +32,9 @@ test('desktop e celular distinguem pacote verificado de sessão autorizada', asy
       expect(await page.getByText('Pacote verificado').count()).toBe(1)
       expect(await page.getByText('Abertura bloqueada').count()).toBeGreaterThan(0)
       expect(await page.getByText('Importação interrompida.').count()).toBe(1)
+      await page.getByRole('button', { name: 'Ver pauta e documentos' }).click()
+      await page.getByText('Projeto de Lei 18/2026').waitFor()
+      expect(await page.getByText('Parecer.pdf').count()).toBe(1)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
       await page.close()
     }

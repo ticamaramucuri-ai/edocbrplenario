@@ -27,6 +27,39 @@ function sessionCard(session) {
   for (const blocker of session.blockers) list.append(element('li', '', blocker))
   blockers.append(list)
   card.append(blockers)
+  if (session.packageState === 'ready') {
+    const button = element('button', 'summary-button', 'Ver pauta e documentos')
+    button.type = 'button'
+    button.setAttribute('aria-expanded', 'false')
+    const panel = element('div', 'summary-panel')
+    panel.hidden = true
+    button.addEventListener('click', async () => {
+      if (!panel.hidden) { panel.hidden = true; button.setAttribute('aria-expanded', 'false'); return }
+      button.disabled = true
+      panel.replaceChildren(element('p', '', 'Conferindo resumo…'))
+      panel.hidden = false
+      try {
+        const response = await fetch(`/api/sessions/${encodeURIComponent(session.sessionId)}`, { cache: 'no-store' })
+        if (!response.ok) throw new Error('Resumo indisponível')
+        const summary = await response.json()
+        panel.replaceChildren()
+        panel.append(element('h3', '', `Pauta · revisão ${summary.revisionNumber}`))
+        const agenda = element('ol')
+        for (const item of summary.agenda) agenda.append(element('li', '', item.title))
+        if (!summary.agenda.length) agenda.append(element('li', '', 'Nenhum item na pauta importada.'))
+        panel.append(agenda, element('h3', '', 'Documentos conferidos'))
+        const docs = element('ul')
+        for (const doc of summary.documents) docs.append(element('li', '', `${doc.name} · ${doc.mimeType}`))
+        if (!summary.documents.length) docs.append(element('li', '', 'Nenhum documento no pacote.'))
+        panel.append(docs, element('p', 'summary-note', 'Leitura de metadados; arquivos e votação local ainda não disponíveis.'))
+        button.setAttribute('aria-expanded', 'true')
+      } catch {
+        panel.replaceChildren(element('p', 'summary-error', 'Resumo indisponível. Atualize o estado e tente novamente.'))
+        button.setAttribute('aria-expanded', 'false')
+      } finally { button.disabled = false }
+    })
+    card.append(button, panel)
+  }
   return card
 }
 

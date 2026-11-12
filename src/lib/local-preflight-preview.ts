@@ -1,5 +1,6 @@
 /** Read-only projection for the first desktop/mobile laboratory preview. */
 import type { LocalPreparationStatus } from './local-preparation-status'
+import type { LocalSessionSummary } from './local-session-summary'
 
 type SessionInput = Pick<LocalPreparationStatus, 'sessionId' | 'state' | 'reason' | 'artifactCount' | 'totalBytes'> & {
   prepared?: { revisionNumber: number; importedAt: string }
@@ -53,6 +54,7 @@ export function localPreflightHandler(args: {
   script?: string
   css?: string
   readView: () => Promise<LocalPreflightView>
+  readSummary?: (sessionId: string) => Promise<LocalSessionSummary>
 }): (request: Request) => Promise<Response> {
   return async (request) => {
     const url = new URL(request.url)
@@ -61,6 +63,19 @@ export function localPreflightHandler(args: {
     if (url.pathname === '/api/status') {
       try { return Response.json(await args.readView(), { headers: commonHeaders }) }
       catch { return Response.json({ error: 'Inventário local indisponível.' }, { status: 503, headers: commonHeaders }) }
+    }
+    if (url.pathname.startsWith('/api/sessions/') && args.readSummary) {
+      const rawId = url.pathname.slice('/api/sessions/'.length)
+      if (!rawId || rawId.includes('/') || rawId.length > 600) return new Response('Não encontrado.', { status: 404, headers: commonHeaders })
+      let sessionId: string
+      try { sessionId = decodeURIComponent(rawId) } catch { return new Response('Não encontrado.', { status: 404, headers: commonHeaders }) }
+      try {
+        const view = await args.readView()
+        if (!view.sessions.some((session) => session.sessionId === sessionId && session.packageState === 'ready')) {
+          return new Response('Não encontrado.', { status: 404, headers: commonHeaders })
+        }
+        return Response.json(await args.readSummary(sessionId), { headers: commonHeaders })
+      } catch { return Response.json({ error: 'Resumo local indisponível.' }, { status: 503, headers: commonHeaders }) }
     }
     if (url.pathname === '/') return new Response(args.html, { headers: { ...commonHeaders,
       'content-type': 'text/html; charset=utf-8',
