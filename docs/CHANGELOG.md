@@ -6,6 +6,7 @@ documentação e verificação reproduzível.
 
 ## [Não lançado] — Desenvolvimento contínuo
 
+- Observador público deixa de rodar por agendamento: o job hospedado era recusado pela cota da conta antes de iniciar e testava um contrato que o ambiente no ar não cumpre (`/` responde 302 para login, health responde 401). Fica só `workflow_dispatch`, com registro em `docs/OPERACAO-GITHUB-FREE.md`. O bloqueio de Actions atinge a conta inteira e foi reduzido desativando Actions em `edocbrNextcloud` e `colaboraEDU`, repositórios parados que mantinham crons diários.
 - Diário local passa a validar concessão de autoridade assinada e a persistir por sessão a maior época aceita; reabertura recusa época antiga ou conteúdo divergente na mesma época. A autorização de atos e a reconciliação seguem pendentes.
 - Rota `/` deixa de mostrar por instantes o esqueleto claro do painel no refresh; o HTML inicial exibe espera escura com a marca do Plenário. Teste de navegador confere o primeiro quadro sem JavaScript.
 - Cabeçalho da landing simplificado: as variantes clara/escura da marca agora trazem uma única assinatura edocBR Plenário; removidas a faixa técnica, a marca duplicada e opções repetidas do hero. Navegação reduzida e menu móvel verificado no navegador; login e sidebar usam a mesma assinatura.

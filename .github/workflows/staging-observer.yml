@@ -1,8 +1,14 @@
+# Observador externo do ambiente público.
+#
+# Agendamento desligado em 20/11/2026: o job hospedado era recusado por cota da
+# conta antes de iniciar e, quando executava, testava um contrato que o ambiente
+# no ar não cumpre (`/` responde 302 para /login e `/api/v1/health?ready=1`
+# responde 401). Reativar o `schedule` só depois de reescrever as verificações
+# para o contrato real e de a cobrança da conta permitir job hospedado.
+# Ver `docs/OPERACAO-GITHUB-FREE.md`.
 name: Staging public observer
 
 on:
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
