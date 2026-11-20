@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Operador local: confirma CI do main e promove exatamente esse commit na VPS.
 set -euo pipefail
-repo='e-docBR/edocBRplenario'
+repo='ticamaramucuri-ai/edocbrplenario'
 target="${EDOCBR_VPS_SSH_TARGET:?Defina EDOCBR_VPS_SSH_TARGET para a VPS de homologação.}"
 commit="${1:-$(git rev-parse HEAD)}"
 [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo 'Informe SHA Git completo.' >&2; exit 2; }

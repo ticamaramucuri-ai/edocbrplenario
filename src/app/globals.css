@@ -152,6 +152,10 @@
 }
 
 @media print {
+  .report-print-new-page {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
   .no-print,
   [data-sonner-toaster] {
     display: none !important;

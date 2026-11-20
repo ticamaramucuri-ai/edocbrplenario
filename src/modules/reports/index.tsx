@@ -281,7 +281,7 @@ function AtaDoc({ ata }: { ata: AtaReportView }) {
           )}
         </div>
 
-        <div>
+        <div className="report-print-new-page">
           <h3 className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-foreground/70">
             5. Discursos
           </h3>
