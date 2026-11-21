@@ -676,6 +676,7 @@ export const SPEECH_KIND_LABEL: Record<string, string> = {
   consideracoes_finais: 'Considerações Finais',
   homenagem: 'Homenagem',
   ordem: 'Questão de Ordem',
+  aparte: 'Aparte',
 }
 
 export const BOARD_ROLE_LABEL: Record<string, string> = {

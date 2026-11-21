@@ -21,17 +21,20 @@ export const dynamic = 'force-dynamic'
 
 const bodySchema = z
   .object({
-    action: z.enum(['reorder', 'status', 'retirar', 'adiar']),
+    action: z.enum(['reorder', 'status', 'retirar', 'adiar', 'vista', 'destaque', 'inversao']),
     order: z.number().int().min(0).optional(),
     status: z.enum(['em_leitura', 'em_discussao', 'aprovado', 'rejeitado']).optional(),
     justification: z.string().min(3).max(2000).optional(),
   })
   .superRefine((body, ctx) => {
-    if (body.action === 'reorder' && body.order === undefined) {
+    if ((body.action === 'reorder' || body.action === 'inversao') && body.order === undefined) {
       ctx.addIssue({ code: 'custom', path: ['order'], message: 'Informe a nova posição (order).' })
     }
     if (body.action === 'status' && !body.status) {
       ctx.addIssue({ code: 'custom', path: ['status'], message: 'Informe o novo status do item.' })
+    }
+    if (['vista', 'destaque', 'inversao'].includes(body.action) && (!body.justification || body.justification.trim().length < 5)) {
+      ctx.addIssue({ code: 'custom', path: ['justification'], message: 'Justificativa obrigatória (mín. 5 caracteres).' })
     }
   })
 
@@ -61,15 +64,15 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
   if (['scheduled', 'check_in'].includes(session.status) && ['retirar', 'adiar'].includes(body.action)) {
     throw new DomainError('AGENDA_INVALID_STATE', 409, 'Pauta publicada', 'Retirada e adiamento antes da abertura exigem emenda versionada à pauta.')
   }
-  if (body.action === 'status' && !['open', 'suspended', 'resumed'].includes(session.status)) {
-    throw new DomainError('AGENDA_INVALID_STATE', 409, 'Sessão não aberta', 'A condução de itens só começa após a abertura da sessão.')
+  if ((body.action === 'status' || ['vista', 'destaque', 'inversao'].includes(body.action)) && !['open', 'suspended', 'resumed'].includes(session.status)) {
+    throw new DomainError('AGENDA_INVALID_STATE', 409, 'Sessão não aberta', 'A condução e incidentes regimentais só ocorrem após a abertura da sessão.')
   }
 
   const agenda = await withTransaction(async (tx) => {
     let summary = ''
     let after: Record<string, unknown> = {}
 
-    if (body.action === 'reorder') {
+    if (body.action === 'reorder' || body.action === 'inversao') {
       const items = await tx.agendaItem.findMany({
         where: { sessionId: item.sessionId },
         orderBy: { order: 'asc' },
@@ -81,7 +84,9 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
       for (const it of reordered) {
         await tx.agendaItem.update({ where: { id: it.id }, data: { order: order++ } })
       }
-      summary = `Item reordenado para a posição ${index + 1} da pauta.`
+      summary = body.action === 'inversao'
+        ? `Inversão de pauta: "${item.title.slice(0, 50)}" movido para posição ${index + 1}.`
+        : `Item reordenado para a posição ${index + 1} da pauta.`
       after = { order: index }
     } else if (body.action === 'status') {
       const status = body.status!
@@ -98,6 +103,13 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx, correlationId) => 
       }
       summary = `Item retirado da pauta${item.matterId ? ' (matéria marcada como retirada)' : ''}.`
       after = { status: 'retirado' }
+    } else if (body.action === 'vista') {
+      await tx.agendaItem.update({ where: { id: item.id }, data: { status: 'adiado' } })
+      summary = `Pedido de vista registrado para "${item.title.slice(0, 60)}".`
+      after = { status: 'adiado', incident: 'vista' }
+    } else if (body.action === 'destaque') {
+      summary = `Destaque regimental registrado em "${item.title.slice(0, 60)}".`
+      after = { status: item.status, incident: 'destaque' }
     } else {
       // adiar
       await tx.agendaItem.update({ where: { id: item.id }, data: { status: 'adiado' } })

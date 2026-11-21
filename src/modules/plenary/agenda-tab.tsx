@@ -61,6 +61,8 @@ import { cn } from '@/lib/utils'
 import { AGENDA_SECTIONS, resultSummaryClass, VOTING_CREATION_STATUSES } from './helpers'
 import { AgendaAmendmentDialog } from '@/modules/sessions/agenda-amendment-dialog'
 
+type AgendaIncidentAction = 'retirar' | 'adiar' | 'vista' | 'destaque'
+
 type Props = { data: SessionDetail; invalidate: () => void; onGoToVoting: () => void }
 
 const VOTING_MODE_HINT: Record<VotingMode, string> = {
@@ -74,7 +76,7 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
   const canConduct = useApp((s) => s.can('session.transition'))
   const canVote = useApp((s) => s.can('voting.write'))
   const [votingItem, setVotingItem] = useState<AgendaItemView | null>(null)
-  const [justifyTarget, setJustifyTarget] = useState<{ item: AgendaItemView; action: 'retirar' | 'adiar' } | null>(null)
+  const [justifyTarget, setJustifyTarget] = useState<{ item: AgendaItemView; action: AgendaIncidentAction } | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [amendOpen, setAmendOpen] = useState(false)
 
@@ -242,7 +244,7 @@ function AgendaRow({
   onMove: (dir: -1 | 1) => void
   onStatus: (status: 'em_leitura' | 'em_discussao') => void
   onOpenVoting: () => void
-  onJustify: (action: 'retirar' | 'adiar') => void
+  onJustify: (action: AgendaIncidentAction) => void
 }) {
   const editableStatus = !['aprovado', 'rejeitado', 'retirado', 'adiado'].includes(item.status)
   const canStartVoting =
@@ -312,16 +314,44 @@ function AgendaRow({
         </Button>
 
         {canRetire && editableStatus && (
-          <ItemMenu onRetirar={() => onJustify('retirar')} onAdiar={() => onJustify('adiar')} title={item.title} />
+          <ItemMenu
+            onRetirar={() => onJustify('retirar')}
+            onAdiar={() => onJustify('adiar')}
+            onVista={canConduct ? () => onJustify('vista') : undefined}
+            onDestaque={canConduct ? () => onJustify('destaque') : undefined}
+            title={item.title}
+          />
         )}
       </div>
     </div>
   )
 }
 
-function ItemMenu({ onRetirar, onAdiar, title }: { onRetirar: () => void; onAdiar: () => void; title: string }) {
+function ItemMenu({
+  onRetirar,
+  onAdiar,
+  onVista,
+  onDestaque,
+  title,
+}: {
+  onRetirar: () => void
+  onAdiar: () => void
+  onVista?: () => void
+  onDestaque?: () => void
+  title: string
+}) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
+      {onVista && (
+        <Button size="sm" variant="ghost" onClick={onVista} aria-label={`Pedido de vista em ${title}`}>
+          <Eye /> Vista
+        </Button>
+      )}
+      {onDestaque && (
+        <Button size="sm" variant="ghost" onClick={onDestaque} aria-label={`Destaque em ${title}`}>
+          Destaque
+        </Button>
+      )}
       <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={onRetirar}>
         Retirar
       </Button>
@@ -640,21 +670,28 @@ function JustifyDialog({
   onConfirm,
   busy,
 }: {
-  target: { item: AgendaItemView; action: 'retirar' | 'adiar' } | null
+  target: { item: AgendaItemView; action: AgendaIncidentAction } | null
   onOpenChange: (open: boolean) => void
   onConfirm: (justification: string) => void
   busy: boolean
 }) {
   const [justification, setJustification] = useState('')
 
-  const label = target?.action === 'retirar' ? 'Retirar o item da pauta' : 'Adiar o item para sessão futura'
-  const valid = justification.trim().length >= 3
+  const LABELS: Record<AgendaIncidentAction, { title: string; cta: string }> = {
+    retirar: { title: 'Retirar o item da pauta', cta: 'Retirar item' },
+    adiar: { title: 'Adiar o item para sessão futura', cta: 'Adiar item' },
+    vista: { title: 'Conceder pedido de vista', cta: 'Registrar vista' },
+    destaque: { title: 'Registrar destaque regimental', cta: 'Registrar destaque' },
+  }
+  const meta = target ? LABELS[target.action] : LABELS.retirar
+  const minLen = target && ['vista', 'destaque'].includes(target.action) ? 5 : 3
+  const valid = justification.trim().length >= minLen
 
   return (
     <AlertDialog open={!!target} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{label}?</AlertDialogTitle>
+          <AlertDialogTitle>{meta.title}?</AlertDialogTitle>
           <AlertDialogDescription>
             {target ? target.item.title : ''} — a justificativa é registrada em auditoria.
           </AlertDialogDescription>
@@ -669,16 +706,16 @@ function JustifyDialog({
             onChange={(e) => setJustification(e.target.value)}
             rows={3}
             maxLength={2000}
-            placeholder="Ex.: A pedido do autor, para reapreciação na próxima sessão…"
+            placeholder="Ex.: A pedido do autor / vereador para análise ou votação em separado…"
           />
           {justification.trim().length > 0 && !valid && (
-            <p className="text-xs text-destructive">Informe ao menos 3 caracteres.</p>
+            <p className="text-xs text-destructive">Informe ao menos {minLen} caracteres.</p>
           )}
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel>Voltar</AlertDialogCancel>
           <AlertDialogAction disabled={!valid || busy} onClick={(e) => { e.preventDefault(); onConfirm(justification.trim()) }}>
-            {target?.action === 'retirar' ? 'Retirar item' : 'Adiar item'}
+            {meta.cta}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

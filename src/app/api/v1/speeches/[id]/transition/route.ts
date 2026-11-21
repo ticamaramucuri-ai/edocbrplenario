@@ -19,7 +19,7 @@ import { toSpeechView } from '@/lib/server/serializers'
 export const dynamic = 'force-dynamic'
 
 const bodySchema = z.object({
-  action: z.enum(['start', 'pause', 'resume', 'extend', 'finish']),
+  action: z.enum(['start', 'pause', 'resume', 'extend', 'finish', 'cancel']),
   seconds: z.number().int().min(1).max(3600).optional(),
 })
 
@@ -29,6 +29,7 @@ const TIMER_LABEL: Record<string, string> = {
   resume: 'retomar',
   extend: 'estender',
   finish: 'encerrar',
+  cancel: 'cancelar',
 }
 
 const AUDIT_LABEL: Record<string, string> = {
@@ -37,6 +38,7 @@ const AUDIT_LABEL: Record<string, string> = {
   resume: 'resumed',
   extend: 'extended',
   finish: 'finished',
+  cancel: 'canceled',
 }
 
 export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
@@ -102,6 +104,13 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       const seconds = body.seconds ?? 60
       data.plannedSeconds = speech.plannedSeconds + seconds
       summary = `Tempo estendido em ${seconds}s (novo total: ${data.plannedSeconds}s).`
+    } else if (body.action === 'cancel') {
+      if (speech.status !== 'fila') {
+        throw invalid(`Apenas inscrições na fila podem ser canceladas — status atual: ${speech.status}.`)
+      }
+      data.status = 'cancelado'
+      data.finishedAt = now
+      summary = 'Inscrição de discurso cancelada na fila.'
     } else {
       // finish
       if (speech.status !== 'falando' && speech.status !== 'pausado') {

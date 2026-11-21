@@ -20,6 +20,7 @@ import {
   UserRound,
   Volume2,
   VolumeX,
+  XCircle,
 } from 'lucide-react'
 
 import { api } from '@/lib/api-client'
@@ -119,7 +120,14 @@ export function SpeechesTab({ data, invalidate }: Props) {
           </CardHeader>
           <CardContent className="divide-y p-0">
             {queue.map((s, i) => (
-              <SpeechRow key={s.id} speech={s} position={i + 1} attendance={data.attendance} />
+              <SpeechRow
+                key={s.id}
+                speech={s}
+                position={i + 1}
+                attendance={data.attendance}
+                canWrite={canWrite}
+                invalidate={invalidate}
+              />
             ))}
           </CardContent>
         </Card>
@@ -369,13 +377,24 @@ function SpeechRow({
   position,
   attendance,
   done = false,
+  canWrite = false,
+  invalidate,
 }: {
   speech: SpeechView
   position?: number
   attendance: SessionDetail['attendance']
   done?: boolean
+  canWrite?: boolean
+  invalidate?: () => void
 }) {
   const member = attendance.find((a) => a.parliamentarianId === speech.parliamentarianId)
+  const cancel = useMutation({
+    mutationFn: () => api.transitionSpeech(speech.id, 'cancel'),
+    onSuccess: () => {
+      invalidate?.()
+      toast.success(`Inscrição de ${speech.speakerName} cancelada`)
+    },
+  })
   return (
     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 p-3.5', done && 'opacity-70')}>
       {position && (
@@ -403,6 +422,19 @@ function SpeechRow({
         {speech.side && <SideBadge side={speech.side} />}
         <SpeechStatusBadge status={speech.status} />
         <span className="text-xs text-muted-foreground tabular-nums">{fmtDuration(speech.plannedSeconds)}</span>
+        {!done && speech.status === 'fila' && canWrite && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-7 text-muted-foreground hover:text-destructive"
+            disabled={cancel.isPending}
+            onClick={() => cancel.mutate()}
+            aria-label={`Cancelar inscrição de ${speech.speakerName}`}
+            title="Cancelar inscrição na fila"
+          >
+            <XCircle className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   )
