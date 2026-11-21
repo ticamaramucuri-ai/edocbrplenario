@@ -52,6 +52,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   const ackedSeqs: number[] = []
   const quarantined: Array<{ seq: number; commandId: string; reason: string }> = []
   let deduplicatedCount = 0
+  let appliedCount = 0
 
   await withTransaction(async (tx) => {
     for (const ev of ordered) {
@@ -74,6 +75,69 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         deduplicatedCount += 1
         ackedSeqs.push(ev.seq)
         continue
+      }
+
+      // Aplicação material no estado persistido da sessão (presença e votos)
+      if ((ev.kind === 'attendance.check_in' || ev.kind === 'attendance.check_out') && typeof ev.payload.parliamentarianId === 'string') {
+        const parl = await tx.parliamentarian.findFirst({
+          where: { id: ev.payload.parliamentarianId, tenantId: session.tenantId },
+          select: { id: true },
+        })
+        if (parl) {
+          const priorAtt = await tx.attendanceEvent.findUnique({
+            where: { sessionId_commandId: { sessionId: session.id, commandId: ev.commandId } },
+            select: { id: true },
+          })
+          if (!priorAtt) {
+            await tx.attendanceEvent.create({
+              data: {
+                sessionId: session.id,
+                parliamentarianId: parl.id,
+                kind: ev.kind === 'attendance.check_in' ? 'check_in' : 'check_out',
+                status: ev.kind === 'attendance.check_in' ? 'presente' : 'saida_temporaria',
+                source: 'local_server',
+                actorId: actor.id,
+                commandId: ev.commandId,
+                createdAt: new Date(ev.occurredAt),
+              },
+            })
+            appliedCount += 1
+          }
+        }
+      } else if (
+        ev.kind === 'vote.cast' &&
+        typeof ev.payload.votingId === 'string' &&
+        typeof ev.payload.parliamentarianId === 'string' &&
+        typeof ev.payload.value === 'string'
+      ) {
+        const [voting, parl] = await Promise.all([
+          tx.voting.findFirst({ where: { id: ev.payload.votingId, sessionId: session.id }, select: { id: true } }),
+          tx.parliamentarian.findFirst({ where: { id: ev.payload.parliamentarianId, tenantId: session.tenantId }, select: { id: true } }),
+        ])
+        if (voting && parl) {
+          const priorVote = await tx.vote.findUnique({
+            where: { votingId_commandId: { votingId: voting.id, commandId: ev.commandId } },
+            select: { id: true },
+          })
+          if (!priorVote) {
+            await tx.vote.upsert({
+              where: { votingId_parliamentarianId: { votingId: voting.id, parliamentarianId: parl.id } },
+              create: {
+                votingId: voting.id,
+                parliamentarianId: parl.id,
+                value: ev.payload.value,
+                commandId: ev.commandId,
+                receivedAt: new Date(ev.occurredAt),
+              },
+              update: {
+                value: ev.payload.value,
+                commandId: ev.commandId,
+                changedAt: new Date(ev.occurredAt),
+              },
+            })
+            appliedCount += 1
+          }
+        }
       }
 
       await writeAudit(tx, {
@@ -118,7 +182,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     sessionId: session.id,
     epoch: body.epoch,
     ackedSeqs,
+    appliedCount,
     deduplicatedCount,
     quarantined,
   })
 })
+

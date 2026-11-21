@@ -69,6 +69,13 @@ test('concessão via API e reconciliação deduplicada de eventos locais com qua
     },
   })
 
+  const member = await db.parliamentarian.create({
+    data: { tenantId: tenant.id, name: 'Ver. Reconcile', party: 'SEM' },
+  })
+  const voting = await db.voting.create({
+    data: { sessionId: session.id, question: 'Questão Reconcile?', mode: 'nominal', status: 'open' },
+  })
+
   // 1. Concessão de autoridade via API
   const grantRes = await grantAuthority(
     post(`http://localhost/api/v1/sessions/${session.id}/authority/grant`, admin.id, {
@@ -89,7 +96,7 @@ test('concessão via API e reconciliação deduplicada de eventos locais com qua
       seq: 2,
       commandId: cmd2,
       kind: 'vote.cast',
-      payload: { value: 'sim' },
+      payload: { votingId: voting.id, parliamentarianId: member.id, value: 'sim' },
       occurredAt: new Date().toISOString(),
       entrySha256: 'e'.repeat(64),
     },
@@ -97,13 +104,13 @@ test('concessão via API e reconciliação deduplicada de eventos locais com qua
       seq: 1,
       commandId: cmd1,
       kind: 'attendance.check_in',
-      payload: { status: 'presente' },
+      payload: { parliamentarianId: member.id, status: 'presente' },
       occurredAt: new Date().toISOString(),
       entrySha256: 'f'.repeat(64),
     },
   ]
 
-  // 2. Reconciliação inicial
+  // 2. Reconciliação inicial (aplica presença e voto no banco)
   const rec1 = await reconcileAuthority(
     post(`http://localhost/api/v1/sessions/${session.id}/authority/reconcile`, admin.id, {
       deviceId: device.id,
@@ -115,8 +122,11 @@ test('concessão via API e reconciliação deduplicada de eventos locais com qua
   expect(rec1.status).toBe(200)
   const recBody1 = await rec1.json()
   expect(recBody1.ackedSeqs).toEqual([1, 2])
+  expect(recBody1.appliedCount).toBe(2)
   expect(recBody1.deduplicatedCount).toBe(0)
   expect(recBody1.quarantined).toEqual([])
+  expect(await db.attendanceEvent.count({ where: { sessionId: session.id, parliamentarianId: member.id } })).toBe(1)
+  expect(await db.vote.count({ where: { votingId: voting.id, parliamentarianId: member.id, value: 'sim' } })).toBe(1)
 
   // 3. Reenvio dos mesmos eventos -> deduplicado
   const rec2 = await reconcileAuthority(
@@ -145,3 +155,4 @@ test('concessão via API e reconciliação deduplicada de eventos locais com qua
   const recBodyStale = await recStale.json()
   expect(recBodyStale.quarantined.length).toBe(1)
 })
+
