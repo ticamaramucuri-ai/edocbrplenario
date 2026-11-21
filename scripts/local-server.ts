@@ -6,8 +6,9 @@ import { synchronizePreparedSessions } from '../src/lib/local-session-discovery'
 import { readLocalServiceCredential } from '../src/lib/local-service-credential'
 import { inspectLocalPreparations } from '../src/lib/local-preparation-status'
 import { openLocalEventJournal } from '../src/lib/local-event-journal'
+import { startLocalLanServer } from '../src/lib/local-lan-server'
 
-const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | status <raiz> | journal-verify <raiz> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos]'
+const usage = 'Uso: bun scripts/local-server.ts init <raiz-absoluta> <tenantId> <https-baseUrl> | enroll <raiz> <deviceId> | trust <raiz> <keyId> <chave-publica.pem> <sha256-spki> | status <raiz> | journal-verify <raiz> | sync <raiz> | run <raiz> [intervalo-segundos] | run-credential <raiz> <arquivo-credencial-absoluto> [intervalo-segundos] | serve <raiz> [porta] [hostname]'
 
 async function readSecret(): Promise<string> {
   if (!process.stdin.isTTY) {
@@ -101,9 +102,33 @@ async function main(): Promise<void> {
     emit({ keyId: arg1, publicKeySpkiSha256: fingerprint })
     return
   }
-  if (command !== 'status' && command !== 'journal-verify' && command !== 'sync' && command !== 'run' && command !== 'run-credential') throw new Error(usage)
+  if (command !== 'status' && command !== 'journal-verify' && command !== 'sync' && command !== 'run' && command !== 'run-credential' && command !== 'serve') throw new Error(usage)
   if (command === 'run-credential' && !arg1) throw new Error(usage)
   const passphrase = command === 'run-credential' ? await readLocalServiceCredential(arg1!) : await readSecret()
+  if (command === 'serve') {
+    const { config, privateKey, trustedKeys } = await loadLocalDevice({ root, passphrase })
+    if (!config.deviceId) throw new Error('Dispositivo local não pareado (execute enroll antes de serve).')
+    const port = arg1 === undefined ? 4310 : Number(arg1)
+    if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Porta inválida.')
+    const hostname = arg2 || '0.0.0.0'
+    const lan = startLocalLanServer({
+      root,
+      tenantId: config.tenantId,
+      deviceId: config.deviceId,
+      baseUrl: config.baseUrl,
+      privateKey,
+      trustedKeys,
+      hostname,
+      port,
+    })
+    emit({ status: 'listening', port: lan.port, hostname, url: `http://${hostname === '0.0.0.0' ? '127.0.0.1' : hostname}:${lan.port}/` })
+    await new Promise<void>((resolveStop) => {
+      const stop = () => { lan.close(); resolveStop() }
+      process.once('SIGINT', stop)
+      process.once('SIGTERM', stop)
+    })
+    return
+  }
   if (command === 'status') {
     const { config, trustedKeys } = await loadLocalDevice({ root, passphrase })
     const sessions = await inspectLocalPreparations({ root, tenantId: config.tenantId, trustedKeys })

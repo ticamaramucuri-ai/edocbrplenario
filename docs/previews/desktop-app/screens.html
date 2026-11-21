@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prévias App Desktop — edocBR Plenário</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: #e2e8f0;
+      color: #0f172a;
+      line-height: 1.45;
+    }
+    .screen {
+      width: 1280px;
+      height: 800px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-bottom: 4px solid #94a3b8;
+    }
+    /* Titlebar */
+    .titlebar {
+      height: 44px;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .titlebar-left { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .dot-green { background: #22c55e; }
+    .dot-amber { background: #f59e0b; }
+    .dot-blue { background: #3b82f6; }
+    .titlebar-right { display: flex; align-items: center; gap: 14px; font-size: 12px; color: #cbd5e1; }
+    .pill {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-green { background: #dcfce7; color: #166534; }
+    .pill-amber { background: #fef3c7; color: #92400e; }
+    .pill-blue { background: #dbeafe; color: #1e40af; }
+    .pill-red { background: #fee2e2; color: #991b1b; }
+    .pill-slate { background: #e2e8f0; color: #334155; }
+    .pill-dark-green { background: #14532d; color: #86efac; }
+    .pill-dark-amber { background: #78350f; color: #fde68a; }
+
+    /* Layout */
+    .workspace { display: flex; flex: 1; min-height: 0; }
+    .sidebar {
+      width: 240px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .nav-group { display: flex; flex-direction: column; gap: 4px; }
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      padding: 6px 10px 4px;
+    }
+    .nav-item {
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-item.active {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    .sidebar-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+      font-size: 11px;
+      color: #475569;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .main {
+      flex: 1;
+      padding: 22px 26px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .page-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .page-title { font-size: 20px; font-weight: 700; color: #0f172a; }
+    .page-sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+    .btn-success { background: #15803d; color: #ffffff; border-color: #15803d; }
+    .btn-danger { background: #b91c1c; color: #ffffff; border-color: #b91c1c; }
+    .btn-amber { background: #b45309; color: #ffffff; border-color: #b45309; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+    .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .kv { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; }
+    .kv:last-child { border-bottom: none; }
+    .kv-k { color: #64748b; }
+    .kv-v { font-weight: 600; color: #0f172a; font-variant-numeric: tabular-nums; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { text-align: left; padding: 8px 10px; background: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
+    .banner {
+      padding: 12px 16px;
+      border-radius: 9px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .banner-green { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .banner-amber { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .banner-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+
+    .tabs { display: flex; gap: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .tab { padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #475569; }
+    .tab.active { background: #0f172a; color: #ffffff; }
+    .qr-box {
+      width: 112px; height: 112px; border: 2px solid #0f172a; border-radius: 8px; padding: 8px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: #fff;
+    }
+    .qr-cell { background: #0f172a; }
+    .qr-empty { background: transparent; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA 1: PAREAMENTO, IDENTIDADE E COFRE -->
+  <section id="screen-1" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-green"></span>
+        <span>edocBR Plenário Desktop — v1.0</span>
+        <span class="pill pill-dark-green">Serviço Residente Ativo</span>
+      </div>
+      <div class="titlebar-right">
+        <span>Câmara Municipal de Mucuri/BA</span>
+        <span class="pill pill-slate">Tela 1 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item active">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item">2. Central de Sessões <span class="pill pill-blue">2</span></div>
+          <div class="nav-item">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item">4. Mesa Local (Plenário)</div>
+          <div class="nav-item">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item">6. Diário &amp; Reconciliação</div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>SO:</strong> Linux systemd (ativo)</div>
+          <div><strong>LAN:</strong> https://192.168.10.50:3443</div>
+          <div><strong>SaaS:</strong> edocbrplenario.com.br</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Pareamento, Identidade e Cofre Local</h1>
+            <p class="page-sub">Configuração criptográfica do computador designado pela Câmara e estado do serviço em segundo plano.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span class="btn">Testar Conexão SaaS</span>
+            <span class="btn btn-primary">Atualizar Chaves Confiáveis</span>
+          </div>
+        </div>
+
+        <div class="banner banner-green">
+          <div><strong>Equipamento Pareado e Designado:</strong> Este computador está autorizado pelo SaaS como servidor oficial da Câmara Municipal de Mucuri/BA.</div>
+          <span class="pill pill-green">Identidade Válida</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Identidade Criptográfica (Ed25519) <span class="pill pill-green">Registrado</span></div>
+            <div class="kv"><span class="kv-k">Tenant / Câmara</span><span class="kv-v">camara-mucuri-ba</span></div>
+            <div class="kv"><span class="kv-k">ID do Dispositivo</span><span class="kv-v mono">dev_cmw8k9p210001</span></div>
+            <div class="kv"><span class="kv-k">Nome do Equipamento</span><span class="kv-v">Servidor Plenário Mesa 01</span></div>
+            <div class="kv"><span class="kv-k">Impressão Digital (SPKI SHA-256)</span><span class="kv-v mono">8f4c...e912a3</span></div>
+            <div class="kv"><span class="kv-k">Cofre de Chave Privada</span><span class="kv-v">Cifrado (AES-256-GCM · Modo 0600)</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Serviço Residente &amp; Rede Local (LAN) <span class="pill pill-blue">Online</span></div>
+            <div class="kv"><span class="kv-k">Processo em Segundo Plano</span><span class="kv-v">Ativo (sobrevive ao fechar janela)</span></div>
+            <div class="kv"><span class="kv-k">Endpoint HTTPS da Nuvem</span><span class="kv-v mono">https://edocbrplenario.com.br</span></div>
+            <div class="kv"><span class="kv-k">Servidor LAN Local</span><span class="kv-v mono">https://192.168.10.50:3443</span></div>
+            <div class="kv"><span class="kv-k">Certificado TLS Local</span><span class="kv-v">Válido até 20/11/2027 (LAN)</span></div>
+            <div class="kv"><span class="kv-k">Diretório de Dados e Mídia</span><span class="kv-v mono">/var/lib/edocbr-local</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Chaves Públicas Confiáveis do SaaS (Trust Store)</div>
+          <table>
+            <thead>
+              <tr><th>Key ID</th><th>Finalidade</th><th>SHA-256 SPKI</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono">edocbr-transfer-key-1</td><td>Assinatura de Manifestos e Pautas</td><td class="mono">4a91d0e2...77c109b4</td><td><span class="pill pill-green">Confiável</span></td></tr>
+              <tr><td class="mono">edocbr-authority-1</td><td>Concessão de Época de Autoridade</td><td class="mono">9c22f10a...31ab44d8</td><td><span class="pill pill-green">Confiável</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TELA 2: CENTRAL DE SESSÕES IMPORTADAS -->
+  <section id="screen-2" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-green"></span>
+        <span>edocBR Plenário Desktop — v1.0</span>
+        <span class="pill pill-dark-green">WAN Conectada</span>
+      </div>
+      <div class="titlebar-right">
+        <span>Última verificação: há 18 segundos</span>
+        <span class="pill pill-slate">Tela 2 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item active">2. Central de Sessões <span class="pill pill-blue">2</span></div>
+          <div class="nav-item">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item">4. Mesa Local (Plenário)</div>
+          <div class="nav-item">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item">6. Diário &amp; Reconciliação</div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>Armazenamento:</strong> 142 GB livres</div>
+          <div><strong>Pacotes Locais:</strong> 2 sessões</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Central de Sessões Importadas</h1>
+            <p class="page-sub">Baixe as sessões preparadas na web e valide 100% dos hashes SHA-256 dos anexos antes de ir ao plenário.</p>
+          </div>
+          <span class="btn btn-primary">Sincronizar Pacotes Agora</span>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Sessões Disponíveis no Equipamento</div>
+          <table>
+            <thead>
+              <tr><th>Sessão</th><th>Data / Hora</th><th>Revisão Pauta</th><th>Anexos PDF</th><th>Integridade</th><th>Ação</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>18ª Sessão Ordinária / 2026</strong></td>
+                <td>21/11/2026 · 18:00</td>
+                <td>Rev. 3 (12 itens)</td>
+                <td>8 / 8 PDFs (14,2 MB)</td>
+                <td><span class="pill pill-green">Pacote Íntegro · ACK Enviado</span></td>
+                <td><span class="btn btn-primary">Abrir Pré-Voo</span></td>
+              </tr>
+              <tr>
+                <td><strong>4ª Sessão Extraordinária / 2026</strong></td>
+                <td>24/11/2026 · 10:00</td>
+                <td>Rev. 1 (3 itens)</td>
+                <td>2 / 3 PDFs (baixando)</td>
+                <td><span class="pill pill-amber">Incompleto — Abertura Bloqueada</span></td>
+                <td><span class="btn">Retomar Download</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Conferência do Manifesto — 18ª Sessão Ordinária (Rev. 3) <span class="pill pill-green">SHA-256 Conferido</span></div>
+          <table>
+            <thead>
+              <tr><th>Artefato / Matéria</th><th>Tipo</th><th>Tamanho</th><th>Hash SHA-256</th><th>Estado Local</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>PL 042/2026 — Texto Integral.pdf</td><td>Texto Integral</td><td>2,4 MB</td><td class="mono">a31f92c0...8910e2</td><td><span class="pill pill-green">Verificado</span></td></tr>
+              <tr><td>PL 042/2026 — Parecer CCJ.pdf</td><td>Parecer</td><td>840 KB</td><td class="mono">b87c11e4...44f019</td><td><span class="pill pill-green">Verificado</span></td></tr>
+              <tr><td>Regras Regimentais v2026.2 (JSON)</td><td>Política</td><td>18 KB</td><td class="mono">910e44a1...cc2011</td><td><span class="pill pill-green">Verificado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TELA 3: PRÉ-VOO E AUTORIDADE -->
+  <section id="screen-3" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-green"></span>
+        <span>edocBR Plenário Desktop — v1.0</span>
+        <span class="pill pill-dark-green">18ª Sessão Ordinária</span>
+      </div>
+      <div class="titlebar-right">
+        <span>Época Local: 1 (válida por 14m 20s)</span>
+        <span class="pill pill-slate">Tela 3 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item">2. Central de Sessões</div>
+          <div class="nav-item active">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item">4. Mesa Local (Plenário)</div>
+          <div class="nav-item">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item">6. Diário &amp; Reconciliação</div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>Autoridade:</strong> Desktop Local (Época 1)</div>
+          <div><strong>Web SaaS:</strong> Cercada (Bloqueada)</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Pré-Voo e Concessão de Autoridade</h1>
+            <p class="page-sub">Checklist obrigatório antes de liberar a sessão na rede interna. Bloqueios impedem abertura até serem sanados.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span class="btn">Renovar Concessão (Lease)</span>
+            <span class="btn btn-success">Abrir Sessão na Rede Local</span>
+          </div>
+        </div>
+
+        <div class="banner banner-green">
+          <div><strong>Pronto para Operar na LAN:</strong> Todos os 4 requisitos obrigatórios passaram. A nuvem está cercada para evitar dupla autoridade.</div>
+          <span class="pill pill-green">4 / 4 Gates Aprovados</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">1. Integridade do Pacote e Documentos <span class="pill pill-green">OK</span></div>
+            <div class="kv"><span class="kv-k">Revisão Importada</span><span class="kv-v">Revisão 3 (12 itens na pauta)</span></div>
+            <div class="kv"><span class="kv-k">Assinatura do Manifesto</span><span class="kv-v">Válida (edocbr-transfer-key-1)</span></div>
+            <div class="kv"><span class="kv-k">PDFs Verificados em Disco</span><span class="kv-v">8 / 8 arquivos íntegros</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">2. Autoridade Única (Fencing) <span class="pill pill-green">Ativa</span></div>
+            <div class="kv"><span class="kv-k">Época da Concessão</span><span class="kv-v">Época #1 (Persistida no Diário)</span></div>
+            <div class="kv"><span class="kv-k">Renovação Automática</span><span class="kv-v">A cada 5 minutos enquanto online</span></div>
+            <div class="kv"><span class="kv-k">Escritores Web (SaaS)</span><span class="kv-v">Bloqueados (HTTP 409)</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">3. Rede Local (LAN) e Telões <span class="pill pill-green">OK</span></div>
+            <div class="kv"><span class="kv-k">Terminais Parlamentares Conectados</span><span class="kv-v">9 tablets ativos na LAN</span></div>
+            <div class="kv"><span class="kv-k">Telões Conectados</span><span class="kv-v">2 TVs (Plenário Principal + Galeria)</span></div>
+            <div class="kv"><span class="kv-k">Latência Média na LAN</span><span class="kv-v">4 ms</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">4. Gravação e Backup Local <span class="pill pill-green">OK</span></div>
+            <div class="kv"><span class="kv-k">Espaço em Disco Disponível</span><span class="kv-v">142 GB (suficiente para +40h)</span></div>
+            <div class="kv"><span class="kv-k">Captura Local (OBS/MediaMTX)</span><span class="kv-v">Sinal de câmera e áudio detectados</span></div>
+            <div class="kv"><span class="kv-k">Diário Criptográfico Local</span><span class="kv-v">Verificado (0 divergências)</span></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TELA 4: MESA DE CONDUÇÃO LOCAL (OFFLINE / LAN) -->
+  <section id="screen-4" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-amber"></span>
+        <span>edocBR Plenário Desktop — MESA LOCAL</span>
+        <span class="pill pill-dark-amber">Operando em Rede Local (Sem Internet)</span>
+      </div>
+      <div class="titlebar-right">
+        <span>Diário Local: 18 eventos gravados (pendentes de envio)</span>
+        <span class="pill pill-slate">Tela 4 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item">2. Central de Sessões</div>
+          <div class="nav-item">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item active">4. Mesa Local (Plenário)</div>
+          <div class="nav-item">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item">6. Diário &amp; Reconciliação <span class="pill pill-amber">18</span></div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>Sessão:</strong> 18ª Ordinária (Aberta)</div>
+          <div><strong>Quórum:</strong> 11 / 7 presentes (OK)</div>
+          <div><strong>Gravação Local:</strong> Gravando (00:42:15)</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Mesa de Condução Local — 18ª Sessão Ordinária</h1>
+            <p class="page-sub">Todos os comandos abaixo são gravados localmente com hash e assinatura Ed25519 e replicados para os tablets e telões na LAN.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span class="btn">Suspender Sessão</span>
+            <span class="btn btn-danger">Encerrar Sessão</span>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab">Presença (11/13)</div>
+          <div class="tab">Pauta (12 itens)</div>
+          <div class="tab active">Votação Ativa</div>
+          <div class="tab">Discursos &amp; Apartes</div>
+          <div class="tab">Telão LAN</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Votação Nominal Aberta <span class="pill pill-blue">Maioria Absoluta</span></div>
+            <p style="font-size:13px;font-weight:600;margin-bottom:12px;">PL 042/2026 — Institui o Programa Municipal de Conectividade Escolar</p>
+            <div class="grid-3" style="margin-bottom:14px;">
+              <div class="card" style="padding:10px;text-align:center;background:#f0fdf4;border-color:#bbf7d0;">
+                <div style="font-size:24px;font-weight:800;color:#166534;">8</div>
+                <div style="font-size:11px;font-weight:700;color:#166534;">SIM</div>
+              </div>
+              <div class="card" style="padding:10px;text-align:center;background:#fef2f2;border-color:#fecaca;">
+                <div style="font-size:24px;font-weight:800;color:#991b1b;">2</div>
+                <div style="font-size:11px;font-weight:700;color:#991b1b;">NÃO</div>
+              </div>
+              <div class="card" style="padding:10px;text-align:center;background:#fffbeb;border-color:#fde68a;">
+                <div style="font-size:24px;font-weight:800;color:#92400e;">1</div>
+                <div style="font-size:11px;font-weight:700;color:#92400e;">ABSTENÇÃO</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span class="btn">Pausar Votação</span>
+              <span class="btn btn-primary">Encerrar e Apurar</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Votos Confirmados no Diário Local (11/11)</div>
+            <table>
+              <thead><tr><th>Parlamentar</th><th>Voto</th><th>Seq. Diário</th><th>ACK Tablet</th></tr></thead>
+              <tbody>
+                <tr><td>Ver. Carlos Silva</td><td><span class="pill pill-green">SIM</span></td><td class="mono">#14</td><td>Confirmado</td></tr>
+                <tr><td>Ver. Carla Mendes</td><td><span class="pill pill-green">SIM</span></td><td class="mono">#15</td><td>Confirmado</td></tr>
+                <tr><td>Ver. Roberto Lima</td><td><span class="pill pill-red">NÃO</span></td><td class="mono">#16</td><td>Confirmado</td></tr>
+                <tr><td>Ver. Ana Paula</td><td><span class="pill pill-amber">ABSTENÇÃO</span></td><td class="mono">#17</td><td>Confirmado</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TELA 5: MONITOR DE REDE LAN E TELÕES -->
+  <section id="screen-5" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-green"></span>
+        <span>edocBR Plenário Desktop — REDE LAN</span>
+        <span class="pill pill-dark-green">Servidor WebSocket Local Ativo</span>
+      </div>
+      <div class="titlebar-right">
+        <span>11 dispositivos conectados</span>
+        <span class="pill pill-slate">Tela 5 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item">2. Central de Sessões</div>
+          <div class="nav-item">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item">4. Mesa Local (Plenário)</div>
+          <div class="nav-item active">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item">6. Diário &amp; Reconciliação</div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>IP Local:</strong> 192.168.10.50:3443</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Monitor de Rede LAN e Telões</h1>
+            <p class="page-sub">Conexão direta dos tablets dos vereadores e TVs do plenário ao servidor local, sem depender de internet.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span class="btn">Forçar Snapshot em Todos</span>
+            <span class="btn btn-amber">Congelar Telões</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card" style="display:flex;gap:16px;align-items:center;">
+            <div class="qr-box">
+              <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+              <div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div>
+              <div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-empty"></div>
+              <div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div>
+              <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Terminal do Parlamentar (PWA LAN)</div>
+              <div class="mono" style="margin-bottom:6px;">https://192.168.10.50:3443/pwa</div>
+              <p style="font-size:12px;color:#64748b;">Aponte a câmera do tablet/celular conectado no Wi-Fi do Plenário para votar localmente.</p>
+            </div>
+          </div>
+
+          <div class="card" style="display:flex;gap:16px;align-items:center;">
+            <div class="qr-box">
+              <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div>
+              <div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-empty"></div>
+              <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+              <div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div>
+              <div class="qr-cell"></div><div class="qr-empty"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-empty"></div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Telão do Plenário (TV 1 / TV 2)</div>
+              <div class="mono" style="margin-bottom:6px;">https://192.168.10.50:3443/telao</div>
+              <p style="font-size:12px;color:#64748b;">URL para abrir em modo tela cheia nas Smart TVs ou mini-PCs ligados aos painéis.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Dispositivos Conectados Agora na LAN</div>
+          <table>
+            <thead><tr><th>Dispositivo / Usuário</th><th>Tipo</th><th>IP LAN</th><th>Último Cursor</th><th>Latência</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>TV Plenário Principal (4K)</td><td>Telão</td><td class="mono">192.168.10.21</td><td class="mono">seq #18</td><td>2 ms</td><td><span class="pill pill-green">Sincronizado</span></td></tr>
+              <tr><td>TV Galeria Pública</td><td>Telão</td><td class="mono">192.168.10.22</td><td class="mono">seq #18</td><td>3 ms</td><td><span class="pill pill-green">Sincronizado</span></td></tr>
+              <tr><td>Tablet — Ver. Carla Mendes</td><td>PWA Vereador</td><td class="mono">192.168.10.104</td><td class="mono">seq #18</td><td>6 ms</td><td><span class="pill pill-green">Conectado</span></td></tr>
+              <tr><td>Tablet — Ver. Marcos Souza</td><td>PWA Vereador</td><td class="mono">192.168.10.118</td><td class="mono">seq #15</td><td>—</td><td><span class="pill pill-amber">Reconectando…</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TELA 6: DIÁRIO CRIPTOGRÁFICO, RECONCILIAÇÃO E BACKUP -->
+  <section id="screen-6" class="screen">
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="dot dot-green"></span>
+        <span>edocBR Plenário Desktop — PÓS-SESSÃO</span>
+        <span class="pill pill-dark-green">WAN Restabelecida</span>
+      </div>
+      <div class="titlebar-right">
+        <span>Cadeia local íntegra</span>
+        <span class="pill pill-slate">Tela 6 de 6</span>
+      </div>
+    </div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="nav-group">
+          <div class="nav-label">Servidor Local</div>
+          <div class="nav-item">1. Pareamento &amp; Cofre</div>
+          <div class="nav-item">2. Central de Sessões</div>
+          <div class="nav-item">3. Pré-Voo &amp; Autoridade</div>
+          <div class="nav-label">Operação LAN</div>
+          <div class="nav-item">4. Mesa Local (Plenário)</div>
+          <div class="nav-item">5. Rede LAN &amp; Telões</div>
+          <div class="nav-item active">6. Diário &amp; Reconciliação</div>
+        </div>
+        <div class="sidebar-footer">
+          <div><strong>Último Backup:</strong> Hoje 15:10</div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Diário Criptográfico, Reconciliação e Backup</h1>
+            <p class="page-sub">Envio sequencial e idempotente dos atos gravados na LAN para o SaaS, com verificação de cadeia Ed25519.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <span class="btn">Exportar Backup Local (.zip)</span>
+            <span class="btn">Devolver Autoridade</span>
+            <span class="btn btn-primary">Reconciliar Pendentes (2)</span>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card"><div style="font-size:11px;color:#64748b;">Total no Diário</div><div style="font-size:24px;font-weight:800;">18</div></div>
+          <div class="card"><div style="font-size:11px;color:#64748b;">Confirmados (ACK SaaS)</div><div style="font-size:24px;font-weight:800;color:#166534;">16</div></div>
+          <div class="card"><div style="font-size:11px;color:#64748b;">Pendentes de Envio</div><div style="font-size:24px;font-weight:800;color:#b45309;">2</div></div>
+          <div class="card"><div style="font-size:11px;color:#64748b;">Em Quarentena</div><div style="font-size:24px;font-weight:800;color:#0f172a;">0</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Registros do Diário Local Assinado (18ª Sessão Ordinária) <span class="pill pill-green">Cadeia SHA-256 + Ed25519 Válida</span></div>
+          <table>
+            <thead><tr><th>Seq</th><th>Hora</th><th>Evento</th><th>Command ID</th><th>Hash da Cadeia</th><th>Status SaaS</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">#18</td><td>18:45:12</td><td>vote.cast (Ver. Ana Paula · Abstenção)</td><td class="mono">f9a21c84-...</td><td class="mono">910e44...b821</td><td><span class="pill pill-amber">Pendente</span></td></tr>
+              <tr><td class="mono">#17</td><td>18:44:58</td><td>vote.cast (Ver. Roberto Lima · Não)</td><td class="mono">7d112b09-...</td><td class="mono">4c910a...f312</td><td><span class="pill pill-amber">Pendente</span></td></tr>
+              <tr><td class="mono">#16</td><td>18:44:40</td><td>vote.cast (Ver. Carla Mendes · Sim)</td><td class="mono">3a801e22-...</td><td class="mono">8b2210...a904</td><td><span class="pill pill-green">ACK Confirmado</span></td></tr>
+              <tr><td class="mono">#15</td><td>18:44:15</td><td>vote.cast (Ver. Carlos Silva · Sim)</td><td class="mono">1c4409d1-...</td><td class="mono">2d9041...c718</td><td><span class="pill pill-green">ACK Confirmado</span></td></tr>
+              <tr><td class="mono">#14</td><td>18:05:02</td><td>attendance.check_in (11 membros)</td><td class="mono">08f12c90-...</td><td class="mono">7e1029...e441</td><td><span class="pill pill-green">ACK Confirmado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+
+</body>
+</html>
+
