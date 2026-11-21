@@ -4,21 +4,38 @@
  * Uso: bun scripts/launch-desktop.ts <raiz-dispositivo> [--port=4310] [--host=127.0.0.1] [--open]
  */
 import { spawn } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { loadLocalDevice } from '../src/lib/local-device-keystore'
 import { startLocalLanServer } from '../src/lib/local-lan-server'
 
 function parseArgs(argv: string[]) {
-  let root = ''
+  let root = join(homedir(), '.local', 'share', 'edocbr-plenario', 'device')
   let port = 4310
-  let hostname = '127.0.0.1'
+  let hostname = '0.0.0.0'
   let openWindow = false
   for (const arg of argv) {
     if (arg === '--open') openWindow = true
     else if (arg.startsWith('--port=')) port = Number(arg.slice('--port='.length))
     else if (arg.startsWith('--host=')) hostname = arg.slice('--host='.length)
-    else if (!root && !arg.startsWith('-')) root = arg
+    else if (arg.startsWith('--root=')) root = arg.slice('--root='.length)
+    else if (!arg.startsWith('-')) root = arg
   }
   return { root, port, hostname, openWindow }
+}
+
+async function resolvePassphrase(): Promise<string> {
+  const fromEnv = process.env.EDOCBR_LOCAL_PASSPHRASE?.trim()
+  if (fromEnv) return fromEnv
+  const keyFile = join(homedir(), '.local', 'share', 'edocbr-plenario', 'passphrase')
+  try {
+    const fromFile = (await readFile(keyFile, 'utf8')).trim()
+    if (fromFile) return fromFile
+  } catch {
+    // sem arquivo de senha
+  }
+  throw new Error('Defina EDOCBR_LOCAL_PASSPHRASE ou crie ~/.local/share/edocbr-plenario/passphrase (0600).')
 }
 
 function tryOpenAppWindow(url: string) {
@@ -41,15 +58,7 @@ function tryOpenAppWindow(url: string) {
 
 async function main() {
   const { root, port, hostname, openWindow } = parseArgs(process.argv.slice(2))
-  if (!root) {
-    console.error('Uso: bun scripts/launch-desktop.ts <raiz-dispositivo> [--port=4310] [--host=127.0.0.1] [--open]')
-    process.exit(1)
-  }
-  const passphrase = process.env.EDOCBR_LOCAL_PASSPHRASE?.trim()
-  if (!passphrase) {
-    console.error('Defina EDOCBR_LOCAL_PASSPHRASE para desbloquear o cofre local.')
-    process.exit(1)
-  }
+  const passphrase = await resolvePassphrase()
   const { config, privateKey, trustedKeys } = await loadLocalDevice({ root, passphrase })
   if (!config.deviceId) {
     console.error('Dispositivo local não pareado (execute enroll antes).')
@@ -88,3 +97,4 @@ main().catch((err) => {
   console.error(err instanceof Error ? err.message : String(err))
   process.exit(1)
 })
+

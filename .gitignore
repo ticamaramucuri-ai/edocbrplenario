@@ -1,5 +1,6 @@
 node_modules/
 dist/local-server/
+dist/desktop/
 **/node_modules/
 .next/
 *.tsbuildinfo
