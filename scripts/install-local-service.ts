@@ -43,10 +43,22 @@ WantedBy=default.target
 `
   const unitDir = join(homedir(), '.config', 'systemd', 'user')
   const unitPath = join(unitDir, 'edocbr-plenario-local.service')
+  const desktopDir = join(homedir(), '.local', 'share', 'applications')
+  const desktopPath = join(desktopDir, 'edocbr-plenario-desktop.desktop')
+  const desktopEntry = `[Desktop Entry]
+Type=Application
+Name=edocBR Plenário Desktop
+Comment=Mesa de Condução Local e Servidor LAN do Plenário
+Exec=${bunBin} ${join(repoDir, 'scripts', 'launch-desktop.ts')} ${resolve(root)} --port=${port} --open
+Terminal=false
+Categories=Office;Utility;
+`
   if (apply) {
     await mkdir(unitDir, { recursive: true })
     await writeFile(unitPath, unit, { mode: 0o644 })
-    console.log(JSON.stringify({ installed: true, unitPath, next: 'systemctl --user daemon-reload && systemctl --user enable --now edocbr-plenario-local.service' }))
+    await mkdir(desktopDir, { recursive: true })
+    await writeFile(desktopPath, desktopEntry, { mode: 0o644 })
+    console.log(JSON.stringify({ installed: true, unitPath, desktopPath, next: 'systemctl --user daemon-reload && systemctl --user enable --now edocbr-plenario-local.service' }))
   } else {
     console.log(unit)
   }
@@ -56,3 +68,4 @@ main().catch((err) => {
   console.error(err instanceof Error ? err.message : String(err))
   process.exit(1)
 })
+

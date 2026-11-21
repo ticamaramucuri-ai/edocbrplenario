@@ -224,11 +224,13 @@ export function renderDesktopAppHtml(meta: {
         <div class="grid-4">
           <div class="card"><div style="font-size:11px;color:#64748b;">Total no Diário</div><div style="font-size:22px;font-weight:800;" id="j-total">0</div></div>
           <div class="card"><div style="font-size:11px;color:#64748b;">Último Sequencial</div><div style="font-size:22px;font-weight:800;" id="j-seq">0</div></div>
+          <div class="card"><div style="font-size:11px;color:#64748b;">ACK SaaS</div><div style="font-size:22px;font-weight:800;color:#15803d;" id="j-acked">0</div></div>
+          <div class="card"><div style="font-size:11px;color:#64748b;">Pendentes</div><div style="font-size:22px;font-weight:800;color:#b45309;" id="j-pending">0</div></div>
         </div>
         <div class="card">
           <table>
-            <thead><tr><th>Seq</th><th>Hora</th><th>Evento</th><th>Hash Cadeia</th></tr></thead>
-            <tbody id="journal-tbody"><tr><td colspan="4">Nenhum evento no diário.</td></tr></tbody>
+            <thead><tr><th>Seq</th><th>Hora</th><th>Evento</th><th>Hash Cadeia</th><th>Status</th></tr></thead>
+            <tbody id="journal-tbody"><tr><td colspan="5">Nenhum evento no diário.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -314,6 +316,7 @@ export function renderDesktopAppHtml(meta: {
         '<div class="kv"><span class="kv-k">Sessão</span><span class="kv-v mono">' + pf.sessionId + '</span></div>' +
         '<div class="kv"><span class="kv-k">Estado do Pacote</span><span class="kv-v">' + pf.packageState + '</span></div>' +
         '<div class="kv"><span class="kv-k">Diário Verificado</span><span class="kv-v">' + (pf.journalVerified ? 'Sim' : 'Não') + '</span></div>' +
+        '<div class="kv"><span class="kv-k">Espaço em Disco</span><span class="kv-v">' + (pf.disk && pf.disk.ok ? Math.round(pf.disk.freeBytes / (1024 * 1024)) + ' MB livres' : 'Insuficiente') + '</span></div>' +
         '<div class="kv"><span class="kv-k">Eventos Gravados</span><span class="kv-v">' + pf.journalCount + '</span></div>';
     }
 
@@ -334,12 +337,16 @@ export function renderDesktopAppHtml(meta: {
     async function loadJournal() {
       if (!activeSessionId) return;
       const j = await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/journal');
+      const acked = j.lastAckedSeq || 0;
       document.getElementById('j-total').textContent = j.events.length;
       document.getElementById('j-seq').textContent = j.events.length ? j.events[j.events.length - 1].sequence : 0;
+      document.getElementById('j-acked').textContent = acked;
+      document.getElementById('j-pending').textContent = j.pendingCount ?? 0;
       const tbody = document.getElementById('journal-tbody');
-      tbody.innerHTML = j.events.length === 0 ? '<tr><td colspan="4">Nenhum evento no diário.</td></tr>' : [...j.events].reverse().map(ev =>
-        '<tr><td class="mono">#' + ev.sequence + '</td><td>' + ev.createdAt.slice(11, 19) + '</td><td>' + ev.eventType + '</td><td class="mono">' + ev.eventHash.slice(0, 14) + '…</td></tr>'
-      ).join('');
+      tbody.innerHTML = j.events.length === 0 ? '<tr><td colspan="5">Nenhum evento no diário.</td></tr>' : [...j.events].reverse().map(ev => {
+        const badge = ev.sequence <= acked ? '<span class="pill pill-green">ACK SaaS</span>' : '<span class="pill pill-amber">Pendente</span>';
+        return '<tr><td class="mono">#' + ev.sequence + '</td><td>' + ev.createdAt.slice(11, 19) + '</td><td>' + ev.eventType + '</td><td class="mono">' + ev.eventHash.slice(0, 14) + '…</td><td>' + badge + '</td></tr>';
+      }).join('');
     }
 
     async function sendAttendance(kind) {

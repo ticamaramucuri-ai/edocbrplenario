@@ -102,6 +102,32 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
           data: { status: 'closed', closedAt: new Date(ev.occurredAt) },
         })
         if (updated.count > 0) appliedCount += 1
+      } else if (ev.kind === 'speech.started' && typeof ev.payload.parliamentarianId === 'string') {
+        const parl = await tx.parliamentarian.findFirst({
+          where: { id: ev.payload.parliamentarianId, tenantId: session.tenantId },
+          select: { id: true },
+        })
+        if (parl) {
+          await tx.speech.upsert({
+            where: { id: ev.commandId },
+            create: {
+              id: ev.commandId,
+              sessionId: session.id,
+              parliamentarianId: parl.id,
+              status: 'falando',
+              plannedSeconds: typeof ev.payload.durationSeconds === 'number' ? ev.payload.durationSeconds : 300,
+              startedAt: new Date(ev.occurredAt),
+            },
+            update: {},
+          })
+          appliedCount += 1
+        }
+      } else if (ev.kind === 'speech.stopped') {
+        const stopped = await tx.speech.updateMany({
+          where: { sessionId: session.id, status: 'falando' },
+          data: { status: 'encerrado', finishedAt: new Date(ev.occurredAt) },
+        })
+        if (stopped.count > 0) appliedCount += 1
       } else if ((ev.kind === 'attendance.check_in' || ev.kind === 'attendance.check_out') && typeof ev.payload.parliamentarianId === 'string') {
         const parl = await tx.parliamentarian.findFirst({
           where: { id: ev.payload.parliamentarianId, tenantId: session.tenantId },

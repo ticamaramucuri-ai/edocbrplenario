@@ -66,6 +66,17 @@ describe('local-lan-server', () => {
         if (u.endsWith('/authority/release')) {
           return new Response(JSON.stringify({ released: true, epoch: 2 }), { status: 200 })
         }
+        if (u.endsWith('/authority/reconcile')) {
+          return new Response(JSON.stringify({
+            reconciled: true,
+            sessionId,
+            epoch: 1,
+            ackedSeqs: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            appliedCount: 9,
+            deduplicatedCount: 0,
+            quarantined: [],
+          }), { status: 200 })
+        }
         return new Response(JSON.stringify({}), { status: 404 })
       },
     })
@@ -229,6 +240,19 @@ describe('local-lan-server', () => {
       const backupJson = await backupRes.json()
       expect(backupJson.sessionId).toBe(sessionId)
       expect(backupJson.events.length).toBeGreaterThanOrEqual(9)
+
+      const recRes = await fetch(`${base}/api/local/sessions/${sessionId}/reconcile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ epoch: 1 }),
+      })
+      expect(recRes.status).toBe(200)
+      const recJson = await recRes.json()
+      expect(recJson.lastAckedSeq).toBe(9)
+
+      const journalAfter = await fetch(`${base}/api/local/sessions/${sessionId}/journal`).then((r) => r.json())
+      expect(journalAfter.lastAckedSeq).toBe(9)
+      expect(journalAfter.pendingCount).toBe(0)
 
       const stAfter = await fetch(`${base}/api/local/status`).then((r) => r.json())
       expect(stAfter.lanClients.length).toBeGreaterThanOrEqual(1)

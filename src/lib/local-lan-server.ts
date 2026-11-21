@@ -4,8 +4,10 @@
  * gravando comandos no diário criptográfico assinado (local-event-journal.ts).
  */
 import type { KeyObject } from 'node:crypto'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { statfs } from 'node:fs/promises'
 import { networkInterfaces } from 'node:os'
+import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
 import { openLocalEventJournal, type LocalJournalEvent } from './local-event-journal'
 import { inspectLocalPreparations } from './local-preparation-status'
@@ -129,6 +131,22 @@ export function startLocalLanServer(args: {
     privateKey: args.privateKey,
   })
   const clients = new Map<string, { ws: ServerWebSocket<LanClientData>; meta: LanClientData }>()
+  const ackFilePath = join(args.root, 'reconcile-acks.json')
+  const ackedBySession = new Map<string, number>()
+  try {
+    const raw = JSON.parse(readFileSync(ackFilePath, 'utf8')) as Record<string, unknown>
+    for (const [sid, seq] of Object.entries(raw)) {
+      if (typeof seq === 'number' && Number.isInteger(seq) && seq >= 0) ackedBySession.set(sid, seq)
+    }
+  } catch {
+    // sem histórico de ACK prévio
+  }
+  const persistAck = (sessionId: string, seq: number) => {
+    const prev = ackedBySession.get(sessionId) ?? 0
+    if (seq <= prev) return
+    ackedBySession.set(sessionId, seq)
+    writeFileSync(ackFilePath, JSON.stringify(Object.fromEntries(ackedBySession), null, 2), { mode: 0o600 })
+  }
 
   const broadcast = (event: string, data: unknown) => {
     const msg = JSON.stringify({ event, data, at: new Date().toISOString() })
@@ -305,7 +323,15 @@ export function startLocalLanServer(args: {
 
           if (sub === 'journal' && req.method === 'GET') {
             const after = Number(url.searchParams.get('after') ?? '0') || 0
-            return json({ sessionId, events: journal.list(sessionId, after) })
+            const allEvents = journal.list(sessionId, 0)
+            const lastAckedSeq = ackedBySession.get(sessionId) ?? 0
+            const pendingCount = allEvents.filter((ev) => ev.sequence > lastAckedSeq).length
+            return json({
+              sessionId,
+              lastAckedSeq,
+              pendingCount,
+              events: after > 0 ? allEvents.filter((ev) => ev.sequence > after) : allEvents,
+            })
           }
 
           if (sub === 'backup' && req.method === 'GET') {
@@ -446,7 +472,7 @@ export function startLocalLanServer(args: {
 
             if (sub === 'reconcile') {
               const epoch = typeof body.epoch === 'number' ? body.epoch : 1
-              const after = typeof body.afterSequence === 'number' ? body.afterSequence : 0
+              const after = typeof body.afterSequence === 'number' ? body.afterSequence : (ackedBySession.get(sessionId) ?? 0)
               const pending = journal.list(sessionId, after)
               const result = await pushLocalJournalBatch({
                 baseUrl: args.baseUrl,
@@ -457,6 +483,9 @@ export function startLocalLanServer(args: {
                 headers: args.reconcileHeaders,
                 fetchImpl: args.fetchImpl as typeof fetch | undefined,
               })
+              if (result.lastAckedSeq > 0) {
+                persistAck(sessionId, result.lastAckedSeq)
+              }
               return json(result)
             }
           }
