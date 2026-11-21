@@ -689,15 +689,91 @@ function AtaSignaturesPanel({ sessionId }: { sessionId: string }) {
   )
 }
 
+function ataToMarkdown(ata: AtaReportView): string {
+  const lines: string[] = [
+    `# Ata — ${ata.session.label}`,
+    `**Tipo:** ${SESSION_TYPE_LABEL[ata.session.type]} · **Data:** ${fmtDateTime(ata.session.scheduledAt)} · **Local:** ${ata.session.location}`,
+    '',
+    '## 1. Abertura',
+    ata.opening,
+    '',
+    '## 2. Presença',
+    `Presentes (${ata.attendanceSummary.presentCount}/${ata.attendanceSummary.totalMembers}): ${
+      ata.attendanceSummary.present.length > 0 ? ata.attendanceSummary.present.join(', ') : '—'
+    }`,
+    '',
+    '## 3. Expediente',
+    ...(ata.expediente.length === 0
+      ? ['Nenhum item de expediente registrado.']
+      : ata.expediente.map((item) => `- **${item.order}. ${item.title}** (${AGENDA_STATUS_LABEL[item.status]})`)),
+    '',
+    '## 4. Ordem do Dia e Votações',
+    ...(ata.votings.length === 0
+      ? ['Nenhuma votação registrada.']
+      : ata.votings.map((v) => {
+          const counts = v.counts
+            ? ` (Sim: ${v.counts.sim}, Não: ${v.counts.nao}, Abst.: ${v.counts.abstencoes})`
+            : ''
+          return `- **${v.question}** (${VOTING_RULE_LABEL[v.rule]} · ${VOTING_MODE_LABEL[v.mode]}): ${v.result}${counts}`
+        })),
+    '',
+    '## 5. Discursos',
+    ...(ata.speeches.length === 0
+      ? ['Nenhum discurso registrado.']
+      : ata.speeches.map(
+          (s, i) => `- ${i + 1}. **${s.speakerName}** (${SPEECH_KIND_LABEL[s.kind]}) — ${fmtDuration(s.durationSeconds)}`
+        )),
+    '',
+    '## 6. Encerramento',
+    ata.closing,
+    '',
+    `Código de verificação da minuta: \`${formatVerificationCode(ata.verificationCode)}\``,
+  ]
+  return lines.join('\n')
+}
+
 function AtaTab({ sessions, sessionsError, sessionsLoading, refetchSessions }: {
   sessions: SessionSummary[]
   sessionsError: boolean
   sessionsLoading: boolean
   refetchSessions: () => void
 }) {
+  const { can } = useApp()
+  const qc = useQueryClient()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [viewId, setViewId] = useState<string | null>(null)
   const [retryVersion, setRetryVersion] = useState(0)
+
+  const canPublish = can('publication.write')
+
+  const sendToDiary = useMutation({
+    mutationFn: async (ata: AtaReportView) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+      if (actorId) headers['x-actor-id'] = actorId
+      const res = await fetch('/api/v1/publications', {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          kind: 'ata_sessao',
+          title: `Ata — ${ata.session.label}`.slice(0, 200),
+          contentMd: ataToMarkdown(ata),
+          sessionId: ata.session.id,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.detail || json.title || 'Erro ao criar rascunho no Diário Eletrônico.')
+      return json as { publication: { numberLabel: string } }
+    },
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: ['publications'] })
+      toast.success('Rascunho enviado ao Diário Eletrônico', {
+        description: `Publicação ${data.publication.numberLabel} criada em rascunho para revisão e publicação independente.`,
+      })
+    },
+    onError: (err) => toast.error('Falha ao enviar para o Diário', { description: err instanceof Error ? err.message : 'Erro inesperado.' }),
+  })
 
   const effectiveId =
     selectedId && sessions.some((s) => s.id === selectedId)
@@ -763,6 +839,16 @@ function AtaTab({ sessions, sessionsError, sessionsLoading, refetchSessions }: {
               >
                 <Download /> Exportar JSON
               </Button>
+              {canPublish && (
+                <Button
+                  variant="secondary"
+                  onClick={() => sendToDiary.mutate(ataQ.data.ata)}
+                  disabled={sendToDiary.isPending}
+                >
+                  {sendToDiary.isPending ? <Loader2 className="animate-spin" /> : <ScrollText />}
+                  Enviar p/ Diário (Rascunho)
+                </Button>
+              )}
             </>
           )}
         </div>

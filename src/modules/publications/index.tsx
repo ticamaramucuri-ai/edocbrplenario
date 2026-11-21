@@ -177,6 +177,7 @@ type PublicationRow = {
   reviewedByName: string | null
   reviewedAt: string | null
   publishedContentSha256: string | null
+  rectifiesPublicationId: string | null
 }
 
 type PublicationDetail = PublicationRow & { contentMd: string; currentReviewHash: string; reviewReference: string | null }
@@ -831,6 +832,103 @@ function RevokePublicationDialog({
   )
 }
 
+/** Dialog retificar publicação (revoga se publicada e gera novo rascunho vinculado). */
+function RectifyPublicationDialog({
+  publication,
+  onClose,
+  onRectified,
+}: {
+  publication: PublicationRow
+  onClose: () => void
+  onRectified: (draft: PublicationRow) => void
+}) {
+  const qc = useQueryClient()
+  const [reason, setReason] = useState('')
+  const [title, setTitle] = useState(
+    `Retificação (${publication.numberLabel}) — ${publication.title}`.slice(0, 200)
+  )
+
+  const rectify = useMutation({
+    mutationFn: () =>
+      apiFetch<{ publication: PublicationRow; rectifiedPublication?: PublicationRow }>(
+        `/api/v1/publications/${publication.id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            action: 'rectify',
+            reason: reason.trim(),
+            title: title.trim(),
+          }),
+        }
+      ),
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: ['publications'] })
+      void qc.invalidateQueries({ queryKey: ['publication-detail', publication.id] })
+      toast.success('Retificação gerada em rascunho', {
+        description: `Novo rascunho ${data.rectifiedPublication?.numberLabel ?? ''} criado. Edite o texto, revise e publique por outro papel.`,
+      })
+      onClose()
+      if (data.rectifiedPublication) onRectified(data.rectifiedPublication)
+    },
+    onError: (err) =>
+      toast.error('Falha ao retificar', { description: problemMessage(err) }),
+  })
+
+  const reasonValid = reason.trim().length >= 10
+  const titleValid = title.trim().length >= 5 && title.trim().length <= 200
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Reply className="size-5 text-primary" /> Retificar {publication.numberLabel}
+          </DialogTitle>
+          <DialogDescription>
+            {publication.status === 'published'
+              ? 'Este ato será revogado definitivamente com o motivo abaixo e um novo rascunho vinculado será criado com o texto atual para correção, revisão e publicação independente.'
+              : 'Um novo rascunho vinculado a este ato revogado será criado com o texto atual para correção, revisão e publicação independente.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="rectify-title">Título do novo ato</Label>
+            <Input
+              id="rectify-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              aria-invalid={!titleValid}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rectify-reason">Motivo da retificação (mín. 10 caracteres)</Label>
+            <Textarea
+              id="rectify-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Ex.: Correção de erro material na contagem nominal registrada no item 2 da pauta."
+              className="min-h-24"
+              aria-invalid={!reasonValid}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => rectify.mutate()}
+            disabled={rectify.isPending || !reasonValid || !titleValid}
+          >
+            {rectify.isPending && <RefreshCw className="animate-spin" />} Gerar rascunho retificador
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function PublicationsTab({ canWrite }: { canWrite: boolean }) {
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('all')
@@ -841,6 +939,7 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
   const [dialog, setDialog] = useState<PublicationDialogState>(null)
   const [viewTarget, setViewTarget] = useState<PublicationRow | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<PublicationRow | null>(null)
+  const [rectifyTarget, setRectifyTarget] = useState<PublicationRow | null>(null)
   const [publishTarget, setPublishTarget] = useState<PublicationRow | null>(null)
   const [reviewTarget, setReviewTarget] = useState<PublicationRow | null>(null)
   const [reviewReference, setReviewReference] = useState('')
@@ -1016,6 +1115,7 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
                   <TableCell>
                     <PublicationStatusBadge status={p.status} />
                     {p.kind === 'ata_sessao' && p.reviewHash && p.status === 'draft' && <Badge variant="outline" className="ml-1">Revisada</Badge>}
+                    {p.rectifiesPublicationId && <Badge variant="secondary" className="ml-1">Retificação</Badge>}
                   </TableCell>
                   <TableCell className="hidden text-sm text-muted-foreground md:table-cell">
                     {fmtDate(p.publishedAt)}
@@ -1048,15 +1148,20 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
                             </DropdownMenuItem>
                           </>
                         )}
-                        {canWrite && p.status === 'published' && (
+                        {canWrite && (p.status === 'published' || p.status === 'revoked') && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setRevokeTarget(p)}
-                            >
-                              <Ban /> Revogar…
+                            <DropdownMenuItem onClick={() => setRectifyTarget(p)}>
+                              <Reply /> Retificar ato…
                             </DropdownMenuItem>
+                            {p.status === 'published' && (
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setRevokeTarget(p)}
+                              >
+                                <Ban /> Revogar…
+                              </DropdownMenuItem>
+                            )}
                           </>
                         )}
                       </DropdownMenuContent>
@@ -1100,6 +1205,13 @@ function PublicationsTab({ canWrite }: { canWrite: boolean }) {
         <RevokePublicationDialog
           publication={revokeTarget}
           onClose={() => setRevokeTarget(null)}
+        />
+      )}
+      {rectifyTarget && (
+        <RectifyPublicationDialog
+          publication={rectifyTarget}
+          onClose={() => setRectifyTarget(null)}
+          onRectified={(draft) => setDialog({ mode: 'edit', publication: draft })}
         />
       )}
 

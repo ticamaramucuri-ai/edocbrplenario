@@ -23,6 +23,7 @@ import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import {
   assertPublicationTransition,
+  generateVerificationCode,
   publicationReviewHash,
   publicationNumberLabel,
   toPublicationDetailView,
@@ -55,6 +56,21 @@ const patchSchema = z.discriminatedUnion('action', [
       .trim()
       .min(10, 'Motivo da revogação é obrigatório (mín. 10 caracteres).')
       .max(2000),
+  }),
+  z.object({
+    action: z.literal('rectify'),
+    reason: z
+      .string()
+      .trim()
+      .min(10, 'Motivo da retificação é obrigatório (mín. 10 caracteres).')
+      .max(2000),
+    title: z
+      .string()
+      .trim()
+      .min(5, 'Título deve ter entre 5 e 200 caracteres.')
+      .max(200)
+      .optional(),
+    contentMd: z.string().max(60000).optional(),
   }),
   z.object({
     action: z.literal('edit'),
@@ -90,8 +106,57 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
     throw notFound('Publicação não encontrada neste tenant.')
   }
 
+  let rectifiedPublication: Awaited<ReturnType<typeof db.publication.create>> | null = null
+
   const publication = await withTransaction(async (tx) => {
     const current = await tx.publication.findUniqueOrThrow({ where: { id, tenantId } })
+
+    const revokeInTx = async (reason: string) => {
+      assertPublicationTransition(current.status, 'revoked')
+      const revokedAt = new Date()
+      const changed = await tx.publication.updateMany({
+        where: { id: current.id, tenantId, status: 'published' },
+        data: { status: 'revoked', revokedAt, revokedReason: reason, activeAtaSessionKey: null },
+      })
+      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Publicação alterada', 'Recarregue a publicação.')
+      const updated = await tx.publication.findUniqueOrThrow({ where: { id: current.id } })
+      await writeAudit(tx, {
+        tenantId,
+        actor,
+        action: 'publication.revoked',
+        aggregateType: 'publication',
+        aggregateId: current.id,
+        summary: `Publicação nº ${publicationNumberLabel(current.number, current.year)} REVOGADA: ${current.title.slice(0, 60)}.`,
+        before: { status: current.status },
+        after: { status: 'revoked', revokedAt: revokedAt.toISOString(), revokedReason: reason },
+        justification: reason,
+        correlationId,
+        ip,
+      })
+      await emitOutbox(tx, {
+        tenantId,
+        eventType: 'publication.revoked',
+        aggregateId: current.id,
+        aggregateVersion: await nextAggregateVersion(tx, tenantId, current.id),
+        correlationId,
+        origin: 'operator',
+        internalPayload: {
+          publicationId: current.id,
+          number: current.number,
+          year: current.year,
+          title: current.title,
+          status: 'revoked',
+          reason,
+        },
+        publicPayload: {
+          publicationId: current.id,
+          numberLabel: publicationNumberLabel(current.number, current.year),
+          title: current.title,
+          reason,
+        },
+      })
+      return updated
+    }
     if (body.action === 'review') {
       if (current.kind !== 'ata_sessao' || current.status !== 'draft' || !current.sessionId) {
         throw new DomainError('PUBLICATION_INVALID_TRANSITION', 409, 'Revisão indisponível', 'Somente rascunho de ata vinculado à sessão pode ser revisado.')
@@ -193,50 +258,64 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
     }
 
     if (body.action === 'revoke') {
-      assertPublicationTransition(current.status, 'revoked')
-      const revokedAt = new Date()
-      const changed = await tx.publication.updateMany({
-        where: { id: current.id, tenantId, status: 'published' },
-        data: { status: 'revoked', revokedAt, revokedReason: body.reason, activeAtaSessionKey: null },
+      return revokeInTx(body.reason)
+    }
+
+    if (body.action === 'rectify') {
+      if (current.status === 'draft') {
+        throw new DomainError(
+          'PUBLICATION_INVALID_TRANSITION',
+          409,
+          'Transição inválida',
+          'Rascunhos devem ser editados diretamente; somente atos publicados ou revogados podem ser retificados.'
+        )
+      }
+      const sourceUpdated = current.status === 'published' ? await revokeInTx(body.reason) : current
+      const year = new Date().getFullYear()
+      const last = await tx.publication.findFirst({
+        where: { tenantId, year },
+        orderBy: { number: 'desc' },
+        select: { number: true },
       })
-      if (changed.count !== 1) throw new DomainError('CONFLICT_VERSION', 409, 'Publicação alterada', 'Recarregue a publicação.')
-      const updated = await tx.publication.findUniqueOrThrow({ where: { id: current.id } })
+      const number = (last?.number ?? 0) + 1
+      const title = body.title ?? `Retificação (${publicationNumberLabel(current.number, current.year)}) — ${current.title}`.slice(0, 200)
+      const contentMd = body.contentMd ?? current.contentMd
+      const created = await tx.publication.create({
+        data: {
+          tenantId,
+          number,
+          year,
+          kind: current.kind,
+          title,
+          contentMd,
+          sessionId: current.sessionId,
+          matterId: current.matterId,
+          status: 'draft',
+          verificationCode: generateVerificationCode(),
+          rectifiesPublicationId: current.id,
+        },
+      })
       await writeAudit(tx, {
         tenantId,
         actor,
-        action: 'publication.revoked',
+        action: 'publication.rectified',
         aggregateType: 'publication',
-        aggregateId: current.id,
-        summary: `Publicação nº ${publicationNumberLabel(current.number, current.year)} REVOGADA: ${current.title.slice(0, 60)}.`,
-        before: { status: current.status },
-        after: { status: 'revoked', revokedAt: revokedAt.toISOString(), revokedReason: body.reason },
+        aggregateId: created.id,
+        summary: `Publicação nº ${publicationNumberLabel(number, year)} criada como retificação do ato nº ${publicationNumberLabel(current.number, current.year)}.`,
+        after: {
+          number,
+          year,
+          kind: created.kind,
+          title: created.title,
+          rectifiesPublicationId: current.id,
+          sessionId: created.sessionId,
+        },
         justification: body.reason,
         correlationId,
         ip,
       })
-      await emitOutbox(tx, {
-        tenantId,
-        eventType: 'publication.revoked',
-        aggregateId: current.id,
-        aggregateVersion: await nextAggregateVersion(tx, tenantId, current.id),
-        correlationId,
-        origin: 'operator',
-        internalPayload: {
-          publicationId: current.id,
-          number: current.number,
-          year: current.year,
-          title: current.title,
-          status: 'revoked',
-          reason: body.reason,
-        },
-        publicPayload: {
-          publicationId: current.id,
-          numberLabel: publicationNumberLabel(current.number, current.year),
-          title: current.title,
-          reason: body.reason,
-        },
-      })
-      return updated
+      rectifiedPublication = created
+      return sourceUpdated
     }
 
     // action === 'edit' — apenas rascunho é editável.
@@ -273,5 +352,8 @@ export const PATCH = apiHandler(async (req: Request, ctx, correlationId) => {
     return updated
   })
 
-  return Response.json({ publication: toPublicationView(publication) })
+  return Response.json({
+    publication: toPublicationView(publication),
+    ...(rectifiedPublication ? { rectifiedPublication: toPublicationView(rectifiedPublication) } : {}),
+  })
 })

@@ -274,6 +274,7 @@ model Publication {
   reviewReference  String?
   publishedContentSha256 String?
   activeAtaSessionKey String? @unique // sessão com ata publicada ativa; nulo para rascunho/revogação
+  rectifiesPublicationId String? // ID da publicação revogada/retificada por este novo ato
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

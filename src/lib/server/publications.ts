@@ -100,6 +100,7 @@ export function toPublicationView(p: Publication) {
     reviewedByName: p.reviewedByName ?? null,
     reviewedAt: p.reviewedAt?.toISOString() ?? null,
     publishedContentSha256: p.publishedContentSha256 ?? null,
+    rectifiesPublicationId: p.rectifiesPublicationId ?? null,
     createdAt: p.createdAt.toISOString(),
   }
 }
@@ -124,6 +125,7 @@ export function toPublicPublicationListView(p: Publication) {
     statusLabel: PUBLICATION_STATUS_LABEL[p.status] ?? p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     revokedAt: p.revokedAt?.toISOString() ?? null,
+    rectifiesPublicationId: p.rectifiesPublicationId ?? null,
   }
 }
 
