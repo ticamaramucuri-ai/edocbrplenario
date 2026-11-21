@@ -84,11 +84,43 @@ export function AgendaAmendmentDialog({ sessionId, version, agenda, onClose }: {
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {preview && <div className="rounded-md border bg-muted/40 p-3 text-sm"><p className="font-semibold">Prévia da revisão {preview.revision}</p><p>{preview.summary}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {([{ label: 'Antes', items: preview.before }, { label: 'Depois', items: preview.after }] as const).map((column) => <div key={column.label}>
-            <p className="mb-1 font-medium">{column.label}</p><ol className="max-h-40 space-y-1 overflow-y-auto text-xs">
-              {column.items.map((item, index) => <li key={item.id} className="rounded bg-background px-2 py-1">{index + 1}. {item.title}{item.status === 'retirado' ? ' (retirado)' : ''}</li>)}
+          <div>
+            <p className="mb-1 font-medium">Antes</p>
+            <ol className="max-h-40 space-y-1 overflow-y-auto text-xs">
+              {preview.before.map((item, index) => (
+                <li key={item.id} className="rounded bg-background px-2 py-1">
+                  {index + 1}. {item.title}{item.status === 'retirado' ? ' (retirado)' : ''}
+                </li>
+              ))}
             </ol>
-          </div>)}
+          </div>
+          <div>
+            <p className="mb-1 font-medium">Depois (com alterações destacadas)</p>
+            <ol className="max-h-40 space-y-1 overflow-y-auto text-xs">
+              {preview.after.map((item, index) => {
+                const oldIdx = preview.before.findIndex((b) => b.id === item.id)
+                const oldItem = oldIdx >= 0 ? preview.before[oldIdx] : null
+                const isAdded = !oldItem
+                const isRetired = item.status === 'retirado' && oldItem?.status !== 'retirado'
+                const isMoved = !!oldItem && oldIdx !== index && !isRetired
+                const cls = isAdded
+                  ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                  : isRetired
+                    ? 'border border-rose-500/40 bg-rose-500/10 text-rose-800 dark:text-rose-300 line-through'
+                    : isMoved
+                      ? 'border border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                      : 'bg-background'
+                return (
+                  <li key={item.id} className={`rounded px-2 py-1 ${cls}`}>
+                    <span>{index + 1}. {item.title}</span>
+                    {isAdded && <span className="ml-1.5 font-semibold">[+ Incluído]</span>}
+                    {isRetired && <span className="ml-1.5 font-semibold no-underline">[Retirado]</span>}
+                    {isMoved && <span className="ml-1.5 font-semibold">[Posição {oldIdx + 1} → {index + 1}]</span>}
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
         </div>
         <p className="mt-2 text-muted-foreground">A justificativa ficará pública.</p></div>}
     </div>
