@@ -223,7 +223,10 @@ export function toParliamentarianView(p: ParlRow): ParliamentarianView {
 
 // ─── Sessões ────────────────────────────────────────────────────────────────
 
-export function toAgendaItemView(item: AgendaItemRow & { matter?: MatterRow | null }): AgendaItemView {
+export function toAgendaItemView(
+  item: AgendaItemRow & { matter?: (MatterRow & { attachments?: Array<{ kind: string }> }) | null }
+): AgendaItemView {
+  const attachments = item.matter?.attachments
   return {
     id: item.id,
     order: item.order,
@@ -235,6 +238,12 @@ export function toAgendaItemView(item: AgendaItemRow & { matter?: MatterRow | nu
     kind: item.kind as AgendaItemView['kind'],
     status: item.status as AgendaItemView['status'],
     resultSummary: item.resultSummary ?? null,
+    ...(attachments
+      ? {
+          attachmentsCount: attachments.length,
+          hasParecer: attachments.some((a) => a.kind === 'parecer'),
+        }
+      : {}),
   }
 }
 
@@ -460,7 +469,7 @@ export async function buildSessionDetail(
     client.agendaItem.findMany({
       where: { sessionId: session.id },
       orderBy: { order: 'asc' },
-      include: { matter: true },
+      include: { matter: { include: { attachments: { select: { kind: true } } } } },
     }),
     currentAttendance(client, session.id, session.tenantId),
     client.voting.findMany({

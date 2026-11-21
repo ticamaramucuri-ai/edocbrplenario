@@ -291,6 +291,8 @@ export type AgendaItemView = {
   kind: 'individual' | 'lote'
   status: AgendaItemStatus
   resultSummary: string | null
+  attachmentsCount?: number
+  hasParecer?: boolean
 }
 
 export type AttendanceRow = {

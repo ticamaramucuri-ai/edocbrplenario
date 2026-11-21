@@ -146,6 +146,23 @@ export function AgendaPanel({
                           {item.resultSummary && (
                             <span className="block text-xs text-muted-foreground">{item.resultSummary}</span>
                           )}
+                          {item.matterId && item.attachmentsCount !== undefined && (
+                            <span className="mt-0.5 inline-block text-[11px]">
+                              {item.hasParecer ? (
+                                <span className="text-emerald-700 dark:text-emerald-400">
+                                  Parecer anexado ({item.attachmentsCount} arq.)
+                                </span>
+                              ) : item.attachmentsCount > 0 ? (
+                                <span className="text-muted-foreground">
+                                  {item.attachmentsCount} anexo(s) · sem parecer
+                                </span>
+                              ) : (
+                                <span className="text-amber-700 dark:text-amber-400">
+                                  Sem anexos/parecer
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </span>
                         <AgendaStatusBadge status={item.status} />
                         {canEdit && (
