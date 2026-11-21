@@ -124,6 +124,31 @@ test('diário local -> cliente de reconciliação -> SaaS aplica eventos e build
       actorId: admin.id,
       payload: { parliamentarianId: member.id, status: 'presente' },
     })
+    const offlineVotingId = `voting-local-${suffix}`
+    journal.append({
+      sessionId: session.id,
+      commandId: crypto.randomUUID(),
+      expectedSequence: 1,
+      eventType: 'voting.opened',
+      actorId: admin.id,
+      payload: { votingId: offlineVotingId, question: 'PL 5/2044', mode: 'nominal' },
+    })
+    journal.append({
+      sessionId: session.id,
+      commandId: crypto.randomUUID(),
+      expectedSequence: 2,
+      eventType: 'vote.cast',
+      actorId: admin.id,
+      payload: { votingId: offlineVotingId, parliamentarianId: member.id, value: 'sim' },
+    })
+    journal.append({
+      sessionId: session.id,
+      commandId: crypto.randomUUID(),
+      expectedSequence: 3,
+      eventType: 'voting.closed',
+      actorId: admin.id,
+      payload: { votingId: offlineVotingId },
+    })
 
     const events = journal.list(session.id, 0)
     const batch = await pushLocalJournalBatch({
@@ -145,8 +170,16 @@ test('diário local -> cliente de reconciliação -> SaaS aplica eventos e build
       }) as typeof fetch,
     })
     expect(batch.reconciled).toBe(true)
-    expect(batch.appliedCount).toBe(1)
-    expect(batch.lastAckedSeq).toBe(1)
+    expect(batch.appliedCount).toBe(4)
+    expect(batch.lastAckedSeq).toBe(4)
+
+    const materializedVoting = await db.voting.findUnique({
+      where: { id: offlineVotingId },
+      include: { votes: true },
+    })
+    expect(materializedVoting?.status).toBe('closed')
+    expect(materializedVoting?.votes).toHaveLength(1)
+    expect(materializedVoting?.votes[0].value).toBe('sim')
     journal.close()
   } finally {
     rmSync(dir, { recursive: true, force: true })
