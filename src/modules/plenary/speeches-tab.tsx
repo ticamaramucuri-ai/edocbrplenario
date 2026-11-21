@@ -102,7 +102,13 @@ export function SpeechesTab({ data, invalidate }: Props) {
       )}
 
       {stage ? (
-        <SpeechStage speech={stage} invalidate={invalidate} canWrite={canWrite} />
+        <SpeechStage
+          speech={stage}
+          sessionId={data.session.id}
+          attendance={data.attendance}
+          invalidate={invalidate}
+          canWrite={canWrite}
+        />
       ) : queue.length > 0 ? (
         <NextSpeakerPanel speech={queue[0]} canWrite={canWrite} invalidate={invalidate} />
       ) : (
@@ -161,17 +167,48 @@ export function SpeechesTab({ data, invalidate }: Props) {
 
 function SpeechStage({
   speech,
+  sessionId,
+  attendance,
   invalidate,
   canWrite,
 }: {
   speech: SpeechView
+  sessionId: string
+  attendance: SessionDetail['attendance']
   invalidate: () => void
   canWrite: boolean
 }) {
   const soundAlerts = useApp((s) => s.bootstrap?.tenant.settings.soundAlerts ?? true)
   const [muted, setMuted] = useState(false)
+  const [aparteOpen, setAparteOpen] = useState(false)
+  const [aparteMemberId, setAparteMemberId] = useState('')
+  const [aparteSeconds, setAparteSeconds] = useState('60')
   const now = useNow(1000, true)
   const beeped = useRef<Set<string>>(new Set())
+
+  const presentOthers = attendance.filter((a) => a.present && a.parliamentarianId !== speech.parliamentarianId)
+
+  const grantAparte = useMutation({
+    mutationFn: async () => {
+      await api.transitionSpeech(speech.id, 'pause')
+      const created = await api.enqueueSpeech(sessionId, {
+        parliamentarianId: aparteMemberId,
+        kind: 'aparte',
+        subject: `Aparte a ${speech.speakerName}`.slice(0, 300),
+        plannedSeconds: Number(aparteSeconds) || 60,
+      })
+      await api.transitionSpeech(created.speech.id, 'start')
+    },
+    onSuccess: () => {
+      setAparteOpen(false)
+      setAparteMemberId('')
+      invalidate()
+      toast.success('Aparte concedido e iniciado')
+    },
+    onError: () => {
+      invalidate()
+    },
+  })
 
   const transition = useMutation({
     mutationFn: (vars: { action: string; seconds?: number; success: string }) =>
@@ -236,14 +273,29 @@ function SpeechStage({
           {canWrite && (
             <div className="flex flex-wrap items-center gap-2">
               {speech.status === 'falando' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => transition.mutate({ action: 'pause', success: 'Discurso pausado' })}
-                  disabled={transition.isPending}
-                >
-                  <PauseCircle /> Pausar
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => transition.mutate({ action: 'pause', success: 'Discurso pausado' })}
+                    disabled={transition.isPending}
+                  >
+                    <PauseCircle /> Pausar
+                  </Button>
+                  {speech.kind !== 'aparte' && presentOthers.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setAparteMemberId(presentOthers[0]?.parliamentarianId ?? '')
+                        setAparteOpen(true)
+                      }}
+                      disabled={transition.isPending}
+                    >
+                      <Mic /> Conceder Aparte
+                    </Button>
+                  )}
+                </>
               )}
               {speech.status === 'pausado' && (
                 <Button
@@ -326,6 +378,58 @@ function SpeechStage({
           className="w-full max-w-xl [&>div]:bg-emerald-600 data-[over=true]:[&>div]:bg-rose-600"
         />
       </CardContent>
+
+      <Dialog open={aparteOpen} onOpenChange={setAparteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Conceder Aparte</DialogTitle>
+            <DialogDescription>
+              O cronômetro de {speech.speakerName} será pausado enquanto o apartista faz uso da palavra.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="aparte-member">Parlamentar apartista</Label>
+              <Select value={aparteMemberId} onValueChange={setAparteMemberId}>
+                <SelectTrigger id="aparte-member">
+                  <SelectValue placeholder="Selecione o vereador presente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presentOthers.map((m) => (
+                    <SelectItem key={m.parliamentarianId} value={m.parliamentarianId}>
+                      {m.name} ({m.party})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="aparte-seconds">Tempo do aparte (segundos)</Label>
+              <Select value={aparteSeconds} onValueChange={setAparteSeconds}>
+                <SelectTrigger id="aparte-seconds">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="60">1 minuto (60s)</SelectItem>
+                  <SelectItem value="120">2 minutos (120s)</SelectItem>
+                  <SelectItem value="180">3 minutos (180s)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAparteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!aparteMemberId || grantAparte.isPending}
+              onClick={() => grantAparte.mutate()}
+            >
+              {grantAparte.isPending ? 'Iniciando…' : 'Iniciar Aparte'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

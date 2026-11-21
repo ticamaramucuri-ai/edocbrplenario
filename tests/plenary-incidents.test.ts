@@ -2,6 +2,7 @@ import { afterAll, expect, test } from 'bun:test'
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { PATCH as patchAgendaItem } from '@/app/api/v1/agenda-items/[itemId]/route'
+import { POST as createSpeech } from '@/app/api/v1/sessions/[id]/speeches/route'
 import { POST as transitionSpeech } from '@/app/api/v1/speeches/[id]/transition/route'
 
 afterAll(async () => {
@@ -113,4 +114,34 @@ test('incidentes regimentais (vista, destaque, inversao) e cancelamento de discu
     { params: Promise.resolve({ id: speech.id }) }
   )
   expect(cancelAgain.status).toBe(409)
+
+  // Fluxo de Aparte: orador principal falando -> pausa -> aparte inicia -> encerra -> principal retoma
+  const member2 = await db.parliamentarian.create({ data: { tenantId: tenant.id, name: 'Ver. Apartista', party: 'SEM' } })
+  const mainSpeechRes = await createSpeech(
+    post(`http://localhost/api/v1/sessions/${session.id}/speeches`, operator.id, {
+      parliamentarianId: member.id,
+      kind: 'grande_expediente',
+      plannedSeconds: 300,
+    }),
+    { params: Promise.resolve({ id: session.id }) }
+  )
+  expect(mainSpeechRes.status).toBe(201)
+  const mainSpeechId = (await mainSpeechRes.json()).speech.id as string
+  expect((await transitionSpeech(post(`http://localhost/api/v1/speeches/${mainSpeechId}/transition`, operator.id, { action: 'start' }), { params: Promise.resolve({ id: mainSpeechId }) })).status).toBe(200)
+  expect((await transitionSpeech(post(`http://localhost/api/v1/speeches/${mainSpeechId}/transition`, operator.id, { action: 'pause' }), { params: Promise.resolve({ id: mainSpeechId }) })).status).toBe(200)
+
+  const aparteRes = await createSpeech(
+    post(`http://localhost/api/v1/sessions/${session.id}/speeches`, operator.id, {
+      parliamentarianId: member2.id,
+      kind: 'aparte',
+      subject: 'Aparte ao Ver. Teste',
+      plannedSeconds: 60,
+    }),
+    { params: Promise.resolve({ id: session.id }) }
+  )
+  expect(aparteRes.status).toBe(201)
+  const aparteId = (await aparteRes.json()).speech.id as string
+  expect((await transitionSpeech(post(`http://localhost/api/v1/speeches/${aparteId}/transition`, operator.id, { action: 'start' }), { params: Promise.resolve({ id: aparteId }) })).status).toBe(200)
+  expect((await transitionSpeech(post(`http://localhost/api/v1/speeches/${aparteId}/transition`, operator.id, { action: 'finish' }), { params: Promise.resolve({ id: aparteId }) })).status).toBe(200)
+  expect((await transitionSpeech(post(`http://localhost/api/v1/speeches/${mainSpeechId}/transition`, operator.id, { action: 'resume' }), { params: Promise.resolve({ id: mainSpeechId }) })).status).toBe(200)
 })

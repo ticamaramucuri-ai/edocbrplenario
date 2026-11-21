@@ -14,6 +14,7 @@ import { loadSession } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { tenantSettings } from '@/lib/server/domain'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { toSpeechView } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 
@@ -35,7 +36,7 @@ const bodySchema = z
   .object({
     parliamentarianId: z.string().min(1).optional(),
     externalSpeaker: z.string().min(2).max(120).optional(),
-    kind: z.enum(['grande_expediente', 'explicacoes_pessoais', 'consideracoes_finais', 'homenagem', 'ordem']),
+    kind: z.enum(['grande_expediente', 'explicacoes_pessoais', 'consideracoes_finais', 'homenagem', 'ordem', 'aparte']),
     subject: z.string().max(300).optional(),
     side: z.enum(['situacao', 'oposicao', 'neutro']).optional(),
     plannedSeconds: z.number().int().min(30).max(3600).optional(),
@@ -86,6 +87,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   }
 
   const speech = await withTransaction(async (tx) => {
+    await assertNoActiveLocalAuthority(tx, session.id)
     const created = await tx.speech.create({
       data: {
         sessionId: session.id,
