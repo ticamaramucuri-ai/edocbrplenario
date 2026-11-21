@@ -136,5 +136,37 @@ export const GET = apiHandler(async (req: NextRequest, _ctx, _correlationId) => 
     total: queue.length,
   }
 
-  return Response.json(view)
+  // Anexos da matéria ativa (em votação aberta ou item em leitura/discussão/votação)
+  let targetMatterId: string | null = null
+  if (openVoting?.agendaItemId) {
+    const item = await db.agendaItem.findUnique({ where: { id: openVoting.agendaItemId }, select: { matterId: true } })
+    targetMatterId = item?.matterId ?? null
+  }
+  if (!targetMatterId) {
+    const activeAgendaItem = await db.agendaItem.findFirst({
+      where: { sessionId: session.id, status: { in: ['em_votacao', 'em_discussao', 'em_leitura'] }, matterId: { not: null } },
+      orderBy: { order: 'asc' },
+      select: { matterId: true },
+    })
+    targetMatterId = activeAgendaItem?.matterId ?? null
+  }
+  const activeMatterAttachments = targetMatterId
+    ? (
+        await db.matterAttachment.findMany({
+          where: { matterId: targetMatterId },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, matterId: true, name: true, kind: true, sizeBytes: true, url: true, sha256: true },
+        })
+      ).map((a) => ({
+        id: a.id,
+        matterId: a.matterId,
+        name: a.name,
+        kind: a.kind,
+        sizeBytes: a.sizeBytes,
+        url: a.url ?? null,
+        hasFile: !!a.sha256,
+      }))
+    : []
+
+  return Response.json({ ...view, activeMatterAttachments })
 })

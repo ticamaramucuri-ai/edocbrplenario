@@ -108,10 +108,21 @@ export type MyVoteReceiptRow = {
 }
 
 /** Fase 18 — contexto /me com as opções customizadas da votação ativa (aditivo). */
+export type ActiveMatterAttachmentView = {
+  id: string
+  matterId: string
+  name: string
+  kind: string
+  sizeBytes: number
+  url: string | null
+  hasFile: boolean
+}
+
 export type MeContextViewExt = Omit<MeContextView, 'activeVoting'> & {
   activeVoting: (NonNullable<MeContextView['activeVoting']> & {
     voting: NonNullable<MeContextView['activeVoting']>['voting'] & { options?: VotingOptionView[] }
   }) | null
+  activeMatterAttachments?: ActiveMatterAttachmentView[]
 }
 
 /** Fase 18 — votação do telão com os rótulos das opções customizadas (aditivo). */

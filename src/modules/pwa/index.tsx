@@ -16,9 +16,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  AlertTriangle,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  ExternalLink,
+  FileText,
   History,
   Landmark,
   Mic,
@@ -478,6 +481,51 @@ function VotingCard({ context }: { context: MeContextViewExt }) {
   )
 }
 
+// ─── Cartão: documentos da matéria em pauta/votação ────────────────────────
+
+function MatterAttachmentsCard({ context }: { context: MeContextViewExt }) {
+  const attachments = context.activeMatterAttachments ?? []
+  if (attachments.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <FileText className="size-4 text-primary" aria-hidden />
+          Documentos da matéria em pauta
+        </CardTitle>
+        <CardDescription>
+          Consulte os textos e pareceres da matéria em discussão ou votação.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {attachments.map((att) => {
+          const href = att.hasFile
+            ? `/api/v1/matters/${encodeURIComponent(att.matterId)}/attachments/${encodeURIComponent(att.id)}/file`
+            : att.url
+          return (
+            <div key={att.id} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{att.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {att.kind}{att.sizeBytes > 0 ? ` · ${Math.max(1, Math.round(att.sizeBytes / 1024))} KB` : ''}
+                </p>
+              </div>
+              {href && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={href} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-3.5" /> Abrir
+                  </a>
+                </Button>
+              )}
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Cartão: fila de oradores ───────────────────────────────────────────────
 
 function SpeechCard({ context }: { context: MeContextViewExt }) {
@@ -874,6 +922,15 @@ function ParliamentarianApp() {
         <ConnectionBadge state={connection} />
       </div>
 
+      {connection === 'unavailable' && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300" role="status">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Tempo real instável ou desconectado. Presença e votos só são confirmados após resposta do servidor.
+          </span>
+        </div>
+      )}
+
       {isLoading ? (
         <>
           <Skeleton className="h-48 w-full rounded-xl" />
@@ -913,6 +970,7 @@ function ParliamentarianApp() {
           </Card>}
           <SignAtaCard context={data} />
           <VotingCard context={data} />
+          <MatterAttachmentsCard context={data} />
           <SpeechCard context={data} />
           <HistoryCard enabled />
           <p className="flex items-center justify-center gap-1.5 pb-2 text-center text-[11px] text-muted-foreground">
