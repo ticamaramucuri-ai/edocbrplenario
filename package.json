@@ -82,6 +82,7 @@
     "db:generate": "prisma generate",
     "transfer:key:provision": "bun scripts/provision-session-transfer-key.ts",
     "local:server": "bun scripts/local-server.ts",
+    "local:desktop": "bun scripts/launch-desktop.ts",
     "test:local:inventory": "bun scripts/local-test-inventory.ts",
     "db:register:mucuri": "bun scripts/register-mucuri.ts",
     "db:migrate": "prisma migrate dev",

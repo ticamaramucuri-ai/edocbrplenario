@@ -8,7 +8,9 @@ import type { ServerWebSocket } from 'bun'
 import { openLocalEventJournal, type LocalJournalEvent } from './local-event-journal'
 import { inspectLocalPreparations } from './local-preparation-status'
 import { pushLocalJournalBatch } from './local-reconcile-client'
+import { synchronizePreparedSessions } from './local-session-discovery'
 import { renderDesktopAppHtml } from './local-desktop-ui'
+import { renderLanTelaoHtml, renderLanVereadorHtml } from './local-lan-clients-ui'
 
 type LanClientData = { id: string; kind: string; connectedAt: string }
 
@@ -16,6 +18,17 @@ export type LocalSessionSnapshot = {
   sessionId: string
   presentParliamentarianIds: string[]
   displayFrozen: boolean
+  activeSpeech: {
+    active: boolean
+    parliamentarianId: string
+    aparteBy: string | null
+    startedAt: string
+  } | null
+  activeAgendaItem: {
+    title: string
+    incident: string | null
+    parliamentarianId: string | null
+  } | null
   activeVoting: {
     id: string
     question: string
@@ -30,6 +43,8 @@ export type LocalSessionSnapshot = {
 function computeSnapshot(sessionId: string, events: LocalJournalEvent[]): LocalSessionSnapshot {
   const present = new Set<string>()
   let displayFrozen = false
+  let activeSpeech: LocalSessionSnapshot['activeSpeech'] = null
+  let activeAgendaItem: LocalSessionSnapshot['activeAgendaItem'] = null
   let activeVoting: LocalSessionSnapshot['activeVoting'] = null
 
   for (const ev of events) {
@@ -40,6 +55,20 @@ function computeSnapshot(sessionId: string, events: LocalJournalEvent[]): LocalS
       present.delete(p.parliamentarianId)
     } else if (ev.eventType === 'display.freeze') {
       displayFrozen = p.frozen === true
+    } else if (ev.eventType === 'speech.started' && typeof p.parliamentarianId === 'string') {
+      activeSpeech = { active: true, parliamentarianId: p.parliamentarianId, aparteBy: null, startedAt: ev.createdAt }
+    } else if (ev.eventType === 'speech.aparte' && activeSpeech && typeof p.parliamentarianId === 'string') {
+      activeSpeech.aparteBy = p.parliamentarianId
+    } else if (ev.eventType === 'speech.stopped') {
+      activeSpeech = null
+    } else if (ev.eventType === 'agenda.selected' && typeof p.itemTitle === 'string') {
+      activeAgendaItem = { title: p.itemTitle, incident: null, parliamentarianId: null }
+    } else if ((ev.eventType === 'agenda.vista' || ev.eventType === 'agenda.destaque') && typeof p.itemTitle === 'string') {
+      activeAgendaItem = {
+        title: p.itemTitle,
+        incident: ev.eventType === 'agenda.vista' ? 'vista' : 'destaque',
+        parliamentarianId: typeof p.parliamentarianId === 'string' ? p.parliamentarianId : null,
+      }
     } else if (ev.eventType === 'voting.opened' && typeof p.votingId === 'string') {
       activeVoting = {
         id: p.votingId,
@@ -72,6 +101,8 @@ function computeSnapshot(sessionId: string, events: LocalJournalEvent[]): LocalS
     sessionId,
     presentParliamentarianIds: [...present],
     displayFrozen,
+    activeSpeech,
+    activeAgendaItem,
     activeVoting,
     lastSequence: events.length > 0 ? events[events.length - 1].sequence : 0,
   }
@@ -87,6 +118,7 @@ export function startLocalLanServer(args: {
   hostname?: string
   port?: number
   reconcileHeaders?: Record<string, string>
+  fetchImpl?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 }) {
   const journal = openLocalEventJournal({
     root: args.root,
@@ -144,6 +176,28 @@ export function startLocalLanServer(args: {
         )
       }
 
+      if (path === '/telao' && req.method === 'GET') {
+        return new Response(
+          renderLanTelaoHtml({
+            tenantId: args.tenantId,
+            deviceId: args.deviceId,
+            sessionId: url.searchParams.get('sessionId') ?? undefined,
+          }),
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        )
+      }
+
+      if (path === '/vereador' && req.method === 'GET') {
+        return new Response(
+          renderLanVereadorHtml({
+            tenantId: args.tenantId,
+            deviceId: args.deviceId,
+            sessionId: url.searchParams.get('sessionId') ?? undefined,
+          }),
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        )
+      }
+
       try {
         if (path === '/api/local/status' && req.method === 'GET') {
           let journalVerified = false
@@ -166,6 +220,29 @@ export function startLocalLanServer(args: {
             sessions,
             lanClients: [...clients.values()].map((c) => c.meta),
           })
+        }
+
+        if (path === '/api/local/sync' && req.method === 'POST') {
+          const result = await synchronizePreparedSessions({
+            localRoot: args.root,
+            tenantId: args.tenantId,
+            deviceId: args.deviceId,
+            baseUrl: args.baseUrl,
+            privateKey: args.privateKey,
+            trustedKeys: args.trustedKeys,
+            fetchImpl: args.fetchImpl as typeof fetch | undefined,
+          })
+          return json({ ok: true, result })
+        }
+
+        const disconnectMatch = /^\/api\/local\/clients\/([^/]+)\/disconnect$/.exec(path)
+        if (disconnectMatch && req.method === 'POST') {
+          const clientId = decodeURIComponent(disconnectMatch[1])
+          const target = clients.get(clientId)
+          if (!target) return json({ error: 'Dispositivo não conectado.' }, 404)
+          try { target.ws.close(1000, 'Desconectado pelo operador') } catch {}
+          clients.delete(clientId)
+          return json({ ok: true, disconnectedClientId: clientId })
         }
 
         const sessionMatch = /^\/api\/local\/sessions\/([^/]+)\/(.+)$/.exec(path)
@@ -206,6 +283,26 @@ export function startLocalLanServer(args: {
           if (sub === 'journal' && req.method === 'GET') {
             const after = Number(url.searchParams.get('after') ?? '0') || 0
             return json({ sessionId, events: journal.list(sessionId, after) })
+          }
+
+          if (sub === 'backup' && req.method === 'GET') {
+            const events = journal.list(sessionId, 0)
+            const snapshot = computeSnapshot(sessionId, events)
+            const bundle = {
+              exportedAt: new Date().toISOString(),
+              tenantId: args.tenantId,
+              deviceId: args.deviceId,
+              sessionId,
+              snapshot,
+              events,
+            }
+            return new Response(JSON.stringify(bundle, null, 2), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Content-Disposition': `attachment; filename="backup-${sessionId.replace(/[^a-zA-Z0-9_-]/g, '_')}.json"`,
+              },
+            })
           }
 
           if (req.method === 'POST') {
@@ -277,6 +374,53 @@ export function startLocalLanServer(args: {
               return json({ ok: true, event: ev })
             }
 
+            if (sub === 'speeches') {
+              const action = body.action === 'stop' ? 'speech.stopped' : body.action === 'aparte' ? 'speech.aparte' : 'speech.started'
+              if (action !== 'speech.stopped' && (typeof body.parliamentarianId !== 'string' || !body.parliamentarianId)) {
+                return json({ error: 'parliamentarianId é obrigatório.' }, 422)
+              }
+              const ev = appendAndBroadcast(action, {
+                parliamentarianId: typeof body.parliamentarianId === 'string' ? body.parliamentarianId : null,
+                durationSeconds: typeof body.durationSeconds === 'number' ? body.durationSeconds : 300,
+              })
+              return json({ ok: true, event: ev })
+            }
+
+            if (sub === 'agenda') {
+              const action = body.action === 'vista' ? 'agenda.vista' : body.action === 'destaque' ? 'agenda.destaque' : 'agenda.selected'
+              if (typeof body.itemTitle !== 'string' || !body.itemTitle) {
+                return json({ error: 'itemTitle é obrigatório.' }, 422)
+              }
+              const ev = appendAndBroadcast(action, {
+                itemTitle: body.itemTitle,
+                parliamentarianId: typeof body.parliamentarianId === 'string' ? body.parliamentarianId : null,
+              })
+              return json({ ok: true, event: ev })
+            }
+
+            if (sub === 'broadcast-snapshot') {
+              const snapshot = computeSnapshot(sessionId, journal.list(sessionId, 0))
+              broadcast('session.snapshot', { sessionId, snapshot })
+              return json({ ok: true, clientsNotified: clients.size, snapshot })
+            }
+
+            if (sub === 'authority/grant' || sub === 'authority/release') {
+              const kind = sub === 'authority/grant' ? 'grant' : 'release'
+              const doFetch = args.fetchImpl ?? fetch
+              const targetUrl = `${args.baseUrl.replace(/\/+$/, '')}/api/v1/sessions/${encodeURIComponent(sessionId)}/authority/${kind}`
+              const res = await doFetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(args.reconcileHeaders ?? {}) },
+                body: JSON.stringify({ deviceId: args.deviceId }),
+              })
+              const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+              if (!res.ok) {
+                return json({ error: (data.detail as string) || (data.title as string) || `Falha em authority/${kind} (HTTP ${res.status}).` }, res.status)
+              }
+              const ev = appendAndBroadcast(`authority.${kind}`, data)
+              return json({ ok: true, authority: data, event: ev })
+            }
+
             if (sub === 'reconcile') {
               const epoch = typeof body.epoch === 'number' ? body.epoch : 1
               const after = typeof body.afterSequence === 'number' ? body.afterSequence : 0
@@ -288,6 +432,7 @@ export function startLocalLanServer(args: {
                 epoch,
                 events: pending,
                 headers: args.reconcileHeaders,
+                fetchImpl: args.fetchImpl as typeof fetch | undefined,
               })
               return json(result)
             }
@@ -321,3 +466,4 @@ export function startLocalLanServer(args: {
     },
   }
 }
+

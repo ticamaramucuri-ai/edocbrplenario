@@ -124,7 +124,10 @@ export function renderDesktopAppHtml(meta: {
       <section class="screen-pane" id="pane-2">
         <div class="page-head">
           <div><h1 class="page-title">Central de Sessões Importadas</h1><p class="page-sub">Pacotes verificados por assinatura e SHA-256 em armazenamento local.</p></div>
-          <button class="btn btn-primary" onclick="refreshAll()">Recarregar Pacotes</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn" onclick="syncPackages()">Sincronizar Pacotes Agora</button>
+            <button class="btn btn-primary" onclick="refreshAll()">Recarregar Pacotes</button>
+          </div>
         </div>
         <div class="card">
           <table>
@@ -138,7 +141,10 @@ export function renderDesktopAppHtml(meta: {
       <section class="screen-pane" id="pane-3">
         <div class="page-head">
           <div><h1 class="page-title">Pré-Voo e Concessão de Autoridade</h1><p class="page-sub">Conferência de integridade e bloqueios antes da operação na rede interna.</p></div>
-          <button class="btn btn-primary" onclick="loadPreflight()">Revalidar Pré-Voo</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success" onclick="grantAuthority()">Assumir Autoridade Local</button>
+            <button class="btn btn-primary" onclick="loadPreflight()">Revalidar Pré-Voo</button>
+          </div>
         </div>
         <div class="card" id="preflight-box">Selecione uma sessão na Central de Sessões para conferir o Pré-Voo.</div>
       </section>
@@ -170,6 +176,13 @@ export function renderDesktopAppHtml(meta: {
                 <button class="btn" onclick="castLocalVote('nao')">Votar NÃO</button>
                 <button class="btn btn-amber" onclick="closeLocalVoting()">Encerrar Votação</button>
               </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                <button class="btn" onclick="sendSpeech('start')">Iniciar Tribuna</button>
+                <button class="btn" onclick="sendSpeech('aparte')">Conceder Aparte</button>
+                <button class="btn" onclick="sendSpeech('stop')">Encerrar Tribuna</button>
+                <button class="btn" onclick="sendAgenda('select')">Destacar Pauta</button>
+                <button class="btn" onclick="sendAgenda('vista')">Pedido de Vista</button>
+              </div>
             </div>
           </div>
         </div>
@@ -179,12 +192,17 @@ export function renderDesktopAppHtml(meta: {
       <section class="screen-pane" id="pane-5">
         <div class="page-head">
           <div><h1 class="page-title">Monitor de Rede LAN e Telões</h1><p class="page-sub">Dispositivos (tablets e telões) conectados ao WebSocket local.</p></div>
-          <button class="btn btn-amber" onclick="toggleFreeze()">Congelar / Liberar Telões</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="btn" href="/telao" target="_blank">Abrir Telão LAN</a>
+            <a class="btn" href="/vereador" target="_blank">Abrir Terminal Vereador</a>
+            <button class="btn btn-primary" onclick="broadcastSnapshotNow()">Reenviar Snapshot</button>
+            <button class="btn btn-amber" onclick="toggleFreeze()">Congelar / Liberar Telões</button>
+          </div>
         </div>
         <div class="card">
           <table>
-            <thead><tr><th>ID Cliente</th><th>Tipo</th><th>Conectado em</th></tr></thead>
-            <tbody id="lan-tbody"><tr><td colspan="3">Nenhum dispositivo conectado no momento.</td></tr></tbody>
+            <thead><tr><th>ID Cliente</th><th>Tipo</th><th>Conectado em</th><th>Ação</th></tr></thead>
+            <tbody id="lan-tbody"><tr><td colspan="4">Nenhum dispositivo conectado no momento.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -193,7 +211,11 @@ export function renderDesktopAppHtml(meta: {
       <section class="screen-pane" id="pane-6">
         <div class="page-head">
           <div><h1 class="page-title">Diário Criptográfico e Reconciliação</h1><p class="page-sub">Eventos assinados localmente e envio ordenado para o SaaS.</p></div>
-          <button class="btn btn-primary" onclick="reconcileNow()">Reconciliar com SaaS</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="exportBackup()">Exportar Backup Local</button>
+            <button class="btn btn-amber" onclick="releaseAuthority()">Devolver Autoridade para Web</button>
+            <button class="btn btn-primary" onclick="reconcileNow()">Reconciliar com SaaS</button>
+          </div>
         </div>
         <div class="grid-4">
           <div class="card"><div style="font-size:11px;color:#64748b;">Total no Diário</div><div style="font-size:22px;font-weight:800;" id="j-total">0</div></div>
@@ -256,8 +278,8 @@ export function renderDesktopAppHtml(meta: {
         }).join('');
 
         const lanBody = document.getElementById('lan-tbody');
-        lanBody.innerHTML = st.lanClients.length === 0 ? '<tr><td colspan="3">Nenhum dispositivo conectado.</td></tr>' : st.lanClients.map(c =>
-          '<tr><td class="mono">' + c.id + '</td><td>' + c.kind + '</td><td>' + c.connectedAt + '</td></tr>'
+        lanBody.innerHTML = st.lanClients.length === 0 ? '<tr><td colspan="4">Nenhum dispositivo conectado.</td></tr>' : st.lanClients.map(c =>
+          '<tr><td class="mono">' + c.id + '</td><td>' + c.kind + '</td><td>' + c.connectedAt + '</td><td><button class="btn" onclick="disconnectClient(\\'' + c.id + '\\')">Desconectar</button></td></tr>'
         ).join('');
 
         if (!activeSessionId && st.sessions[0]) activeSessionId = st.sessions[0].sessionId;
@@ -371,6 +393,77 @@ export function renderDesktopAppHtml(meta: {
       } catch (e) { showToast(e.message); }
     }
 
+    async function syncPackages() {
+      try {
+        await api('/api/local/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        showToast('Pacotes sincronizados com sucesso');
+        refreshAll();
+      } catch (e) { showToast(e.message); }
+    }
+
+    async function grantAuthority() {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      try {
+        await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/authority/grant', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        showToast('Autoridade local assumida');
+        refreshAll();
+      } catch (e) { showToast(e.message); }
+    }
+
+    async function releaseAuthority() {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      try {
+        await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/authority/release', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        showToast('Autoridade devolvida para a Web');
+        refreshAll();
+      } catch (e) { showToast(e.message); }
+    }
+
+    async function sendSpeech(action) {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      const pid = document.getElementById('cmd-parl').value.trim() || 'parl_1';
+      await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/speeches', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, parliamentarianId: pid, commandId: crypto.randomUUID() })
+      });
+      showToast('Tribuna atualizada localmente');
+      refreshAll();
+    }
+
+    async function sendAgenda(action) {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      const pid = document.getElementById('cmd-parl').value.trim() || 'parl_1';
+      await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/agenda', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, itemTitle: 'Item de Pauta Local', parliamentarianId: pid, commandId: crypto.randomUUID() })
+      });
+      showToast('Pauta atualizada localmente');
+      refreshAll();
+    }
+
+    async function broadcastSnapshotNow() {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      const res = await api('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/broadcast-snapshot', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+      });
+      showToast('Snapshot reenviado para ' + res.clientsNotified + ' cliente(s)');
+    }
+
+    async function disconnectClient(clientId) {
+      await api('/api/local/clients/' + encodeURIComponent(clientId) + '/disconnect', { method: 'POST' });
+      showToast('Cliente desconectado');
+      refreshAll();
+    }
+
+    function exportBackup() {
+      if (!activeSessionId) return showToast('Selecione uma sessão');
+      window.open('/api/local/sessions/' + encodeURIComponent(activeSessionId) + '/backup', '_blank');
+    }
+
     function connectWs() {
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(proto + '//' + location.host + '/ws?kind=desktop');
@@ -385,3 +478,4 @@ export function renderDesktopAppHtml(meta: {
 </body>
 </html>`
 }
+

@@ -58,6 +58,16 @@ describe('local-lan-server', () => {
       trustedKeys,
       hostname: '127.0.0.1',
       port: 0,
+      fetchImpl: async (input) => {
+        const u = String(input)
+        if (u.endsWith('/authority/grant')) {
+          return new Response(JSON.stringify({ granted: true, epoch: 2 }), { status: 200 })
+        }
+        if (u.endsWith('/authority/release')) {
+          return new Response(JSON.stringify({ released: true, epoch: 2 }), { status: 200 })
+        }
+        return new Response(JSON.stringify({}), { status: 404 })
+      },
     })
     serversToClose.push(lan)
 
@@ -168,6 +178,56 @@ describe('local-lan-server', () => {
       expect(freezeEvents.length).toBe(1)
       expect(voteEvents.length).toBe(1)
       expect(freezeEvents[0].data.sequence).toBe(5)
+
+      // 12. LAN client pages: /telao & /vereador
+      const telaoRes = await fetch(`${base}/telao?sessionId=${sessionId}`)
+      expect(telaoRes.status).toBe(200)
+      expect(await telaoRes.text()).toContain('Telão LAN')
+
+      const vereadorRes = await fetch(`${base}/vereador?sessionId=${sessionId}`)
+      expect(vereadorRes.status).toBe(200)
+      expect(await vereadorRes.text()).toContain('Terminal do Vereador (LAN)')
+
+      // 13. Speeches, Agenda, Broadcast Snapshot, Authority Grant/Release, Backup, Client Disconnect
+      const speechRes = await fetch(`${base}/api/local/sessions/${sessionId}/speeches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', parliamentarianId: 'parl_1' }),
+      })
+      expect(speechRes.status).toBe(200)
+
+      const agendaRes = await fetch(`${base}/api/local/sessions/${sessionId}/agenda`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'vista', itemTitle: 'PL 012/2026', parliamentarianId: 'parl_2' }),
+      })
+      expect(agendaRes.status).toBe(200)
+
+      const snap2 = await fetch(`${base}/api/local/sessions/${sessionId}/snapshot`).then((r) => r.json())
+      expect(snap2.activeSpeech?.parliamentarianId).toBe('parl_1')
+      expect(snap2.activeAgendaItem?.incident).toBe('vista')
+
+      const bcastRes = await fetch(`${base}/api/local/sessions/${sessionId}/broadcast-snapshot`, { method: 'POST' })
+      expect(bcastRes.status).toBe(200)
+      const bcastData = await bcastRes.json()
+      expect(bcastData.clientsNotified).toBeGreaterThanOrEqual(1)
+
+      const grantRes = await fetch(`${base}/api/local/sessions/${sessionId}/authority/grant`, { method: 'POST' })
+      expect(grantRes.status).toBe(200)
+      const releaseRes = await fetch(`${base}/api/local/sessions/${sessionId}/authority/release`, { method: 'POST' })
+      expect(releaseRes.status).toBe(200)
+
+      const backupRes = await fetch(`${base}/api/local/sessions/${sessionId}/backup`)
+      expect(backupRes.status).toBe(200)
+      const backupJson = await backupRes.json()
+      expect(backupJson.sessionId).toBe(sessionId)
+      expect(backupJson.events.length).toBeGreaterThanOrEqual(9)
+
+      const stAfter = await fetch(`${base}/api/local/status`).then((r) => r.json())
+      expect(stAfter.lanClients.length).toBeGreaterThanOrEqual(1)
+      const clientId = stAfter.lanClients[0].id
+      const discRes = await fetch(`${base}/api/local/clients/${clientId}/disconnect`, { method: 'POST' })
+      expect(discRes.status).toBe(200)
     } finally {
       ws.close()
     }
