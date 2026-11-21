@@ -4,6 +4,8 @@
  * gravando comandos no diário criptográfico assinado (local-event-journal.ts).
  */
 import type { KeyObject } from 'node:crypto'
+import { statfs } from 'node:fs/promises'
+import { networkInterfaces } from 'node:os'
 import type { ServerWebSocket } from 'bun'
 import { openLocalEventJournal, type LocalJournalEvent } from './local-event-journal'
 import { inspectLocalPreparations } from './local-preparation-status'
@@ -212,11 +214,22 @@ export function startLocalLanServer(args: {
             tenantId: args.tenantId,
             trustedKeys: args.trustedKeys,
           })
+          const portInUse = srv.port ?? args.port ?? 3443
+          const lanAddresses: string[] = []
+          const ifaces = networkInterfaces()
+          for (const entries of Object.values(ifaces)) {
+            for (const entry of entries ?? []) {
+              if (entry.family === 'IPv4' && !entry.internal) {
+                lanAddresses.push(`http://${entry.address}:${portInUse}`)
+              }
+            }
+          }
           return json({
             tenantId: args.tenantId,
             deviceId: args.deviceId,
             baseUrl: args.baseUrl,
             journalVerified,
+            lanAddresses,
             sessions,
             lanClients: [...clients.values()].map((c) => c.meta),
           })
@@ -265,13 +278,23 @@ export function startLocalLanServer(args: {
               journalVerified = false
             }
             const events = journal.list(sessionId, 0)
+            let disk = { freeBytes: 0, totalBytes: 0, ok: false }
+            try {
+              const fsStats = await statfs(args.root)
+              const freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize)
+              const totalBytes = Number(fsStats.blocks) * Number(fsStats.bsize)
+              disk = { freeBytes, totalBytes, ok: freeBytes > 50 * 1024 * 1024 }
+            } catch {
+              disk = { freeBytes: 0, totalBytes: 0, ok: false }
+            }
             return json({
               sessionId,
               packageState: found?.state ?? 'missing',
               artifactCount: found?.artifactCount ?? 0,
               journalVerified,
               journalCount: events.length,
-              ready: found?.state === 'ready' && journalVerified,
+              disk,
+              ready: found?.state === 'ready' && journalVerified && disk.ok,
             })
           }
 

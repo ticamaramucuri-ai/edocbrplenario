@@ -199,6 +199,10 @@ export function renderDesktopAppHtml(meta: {
             <button class="btn btn-amber" onclick="toggleFreeze()">Congelar / Liberar Telões</button>
           </div>
         </div>
+        <div class="card" style="margin-bottom:4px;">
+          <div class="card-title">Endereços na Rede Interna (LAN) para Tablets e Telões</div>
+          <div id="lan-urls" class="mono" style="font-size:12px;color:#334155;">Carregando interfaces LAN…</div>
+        </div>
         <div class="card">
           <table>
             <thead><tr><th>ID Cliente</th><th>Tipo</th><th>Conectado em</th><th>Ação</th></tr></thead>
@@ -281,6 +285,14 @@ export function renderDesktopAppHtml(meta: {
         lanBody.innerHTML = st.lanClients.length === 0 ? '<tr><td colspan="4">Nenhum dispositivo conectado.</td></tr>' : st.lanClients.map(c =>
           '<tr><td class="mono">' + c.id + '</td><td>' + c.kind + '</td><td>' + c.connectedAt + '</td><td><button class="btn" onclick="disconnectClient(\\'' + c.id + '\\')">Desconectar</button></td></tr>'
         ).join('');
+
+        const lanUrlsEl = document.getElementById('lan-urls');
+        if (lanUrlsEl) {
+          const bases = (st.lanAddresses && st.lanAddresses.length) ? st.lanAddresses : [location.origin];
+          lanUrlsEl.innerHTML = bases.map(b =>
+            '<div>Telão: <strong>' + b + '/telao</strong> · Vereador: <strong>' + b + '/vereador</strong></div>'
+          ).join('');
+        }
 
         if (!activeSessionId && st.sessions[0]) activeSessionId = st.sessions[0].sessionId;
         if (activeSessionId) {

@@ -77,8 +77,32 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         continue
       }
 
-      // Aplicação material no estado persistido da sessão (presença e votos)
-      if ((ev.kind === 'attendance.check_in' || ev.kind === 'attendance.check_out') && typeof ev.payload.parliamentarianId === 'string') {
+      // Aplicação material no estado persistido da sessão (presença, votações e votos)
+      if (ev.kind === 'voting.opened' && typeof ev.payload.votingId === 'string') {
+        const existingVoting = await tx.voting.findUnique({
+          where: { id: ev.payload.votingId },
+          select: { id: true },
+        })
+        if (!existingVoting) {
+          await tx.voting.create({
+            data: {
+              id: ev.payload.votingId,
+              sessionId: session.id,
+              question: typeof ev.payload.question === 'string' ? ev.payload.question : 'Deliberação Local',
+              mode: typeof ev.payload.mode === 'string' ? ev.payload.mode : 'nominal',
+              status: 'open',
+              openedAt: new Date(ev.occurredAt),
+            },
+          })
+          appliedCount += 1
+        }
+      } else if (ev.kind === 'voting.closed' && typeof ev.payload.votingId === 'string') {
+        const updated = await tx.voting.updateMany({
+          where: { id: ev.payload.votingId, sessionId: session.id, status: { not: 'closed' } },
+          data: { status: 'closed', closedAt: new Date(ev.occurredAt) },
+        })
+        if (updated.count > 0) appliedCount += 1
+      } else if ((ev.kind === 'attendance.check_in' || ev.kind === 'attendance.check_out') && typeof ev.payload.parliamentarianId === 'string') {
         const parl = await tx.parliamentarian.findFirst({
           where: { id: ev.payload.parliamentarianId, tenantId: session.tenantId },
           select: { id: true },

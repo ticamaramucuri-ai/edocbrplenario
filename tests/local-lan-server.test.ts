@@ -90,13 +90,20 @@ describe('local-lan-server', () => {
     expect(html).toContain('Monitor de Rede LAN e Telões')
     expect(html).toContain('Diário Criptográfico e Reconciliação')
 
-    // 3. GET /api/local/status
+    // 3. GET /api/local/status & /preflight
     const statusRes = await fetch(`${base}/api/local/status`)
     expect(statusRes.status).toBe(200)
     const status = await statusRes.json()
     expect(status.journalVerified).toBe(true)
     expect(status.tenantId).toBe(tenantId)
     expect(status.deviceId).toBe(deviceId)
+    expect(Array.isArray(status.lanAddresses)).toBe(true)
+
+    const preflightRes = await fetch(`${base}/api/local/sessions/${sessionId}/preflight`)
+    expect(preflightRes.status).toBe(200)
+    const preflight = await preflightRes.json()
+    expect(preflight.disk.ok).toBe(true)
+    expect(preflight.disk.freeBytes).toBeGreaterThan(0)
 
     // 4. Connect WebSocket client on /ws?kind=telao
     const wsMessages: any[] = []
