@@ -10,8 +10,9 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Gavel, MapPin, RotateCcw, UserCog, Users, CalendarDays, ScrollText } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { AlertTriangle, CheckCircle2, Gavel, MapPin, RotateCcw, ShieldCheck, UserCog, Users, CalendarDays, ScrollText } from 'lucide-react'
 
 import { api } from '@/lib/api-client'
 import { useApp, type ConnectionState } from '@/lib/store'
@@ -142,6 +143,112 @@ function Mesa({
   return <MesaBody data={data} tab={tab} onTabChange={onTabChange} invalidate={invalidate} onExit={onExit} connection={connection} />
 }
 
+function PreflightBar({ sessionId, sessionStatus, onReleased }: { sessionId: string; sessionStatus: string; onReleased: () => void }) {
+  const canTransition = useApp((s) => s.can('session.transition'))
+  const qc = useQueryClient()
+  const preflightQ = useQuery({
+    queryKey: ['session-preflight', sessionId],
+    queryFn: async () => {
+      const headers: Record<string, string> = {}
+      const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+      if (actorId) headers['x-actor-id'] = actorId
+      const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/preflight`, { headers, credentials: 'same-origin' })
+      if (!res.ok) throw new Error('Falha ao consultar pré-voo')
+      return res.json() as Promise<{
+        preflight: {
+          agendaPublished: boolean
+          agendaCount: number
+          quorum: { present: number; required: number; ok: boolean }
+          transferConfirmed: boolean
+          designatedDesktop: { id: string; name: string } | null
+          localAuthority: { active: boolean; epoch: number | null; deviceName: string | null }
+          readyForWebOpen: boolean
+          blockers: string[]
+        }
+      }>
+    },
+    enabled: ['scheduled', 'check_in', 'open', 'resumed'].includes(sessionStatus),
+    refetchInterval: 20_000,
+  })
+
+  const release = useMutation({
+    mutationFn: async (justification: string) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      const actorId = typeof window !== 'undefined' ? localStorage.getItem('legis.actorId') : null
+      if (actorId) headers['x-actor-id'] = actorId
+      const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/authority/release`, {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify({ justification }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.detail || json.title || 'Erro ao liberar autoridade.')
+      return json
+    },
+    onSuccess: () => {
+      toast.success('Autoridade local liberada; operação web desbloqueada.')
+      void qc.invalidateQueries({ queryKey: ['session-preflight', sessionId] })
+      onReleased()
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Erro ao liberar autoridade'),
+  })
+
+  const pf = preflightQ.data?.preflight
+  if (!pf) return null
+  const showFullPreflight = sessionStatus === 'scheduled' || sessionStatus === 'check_in'
+  if (!showFullPreflight && !pf.localAuthority.active) return null
+
+  return (
+    <Card className={pf.localAuthority.active ? 'border-amber-500/50 bg-amber-500/5' : undefined}>
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex items-center gap-1.5 font-semibold">
+            {pf.localAuthority.active ? (
+              <AlertTriangle className="size-4 text-amber-600" />
+            ) : pf.readyForWebOpen ? (
+              <CheckCircle2 className="size-4 text-emerald-600" />
+            ) : (
+              <ShieldCheck className="size-4 text-muted-foreground" />
+            )}
+            {pf.localAuthority.active
+              ? `Sob autoridade local (${pf.localAuthority.deviceName ?? 'Desktop'} · época ${pf.localAuthority.epoch})`
+              : 'Pré-voo da sessão'}
+          </span>
+          {showFullPreflight && (
+            <>
+              <span className={pf.agendaPublished && pf.agendaCount > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700'}>
+                Pauta: {pf.agendaPublished ? `${pf.agendaCount} item(ns)` : 'não publicada'}
+              </span>
+              <span className={pf.quorum.ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700'}>
+                Quórum: {pf.quorum.present}/{pf.quorum.required}
+              </span>
+              {pf.designatedDesktop && (
+                <span className={pf.transferConfirmed ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}>
+                  Desktop ({pf.designatedDesktop.name}): {pf.transferConfirmed ? 'manifesto OK' : 'pendente'}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+        {pf.localAuthority.active && canTransition && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={release.isPending}
+            onClick={() => {
+              const reason = window.prompt('Informe a justificativa para liberar a autoridade local (mín. 5 caracteres):')
+              if (reason && reason.trim().length >= 5) release.mutate(reason.trim())
+            }}
+          >
+            Liberar autoridade local
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 function MesaBody({
   data,
   tab,
@@ -163,6 +270,8 @@ function MesaBody({
   return (
     <div className="flex flex-col gap-4">
       <TransitionsBar session={session} invalidate={invalidate} />
+
+      <PreflightBar sessionId={session.id} sessionStatus={session.status} onReleased={invalidate} />
 
       <PageHeader
         icon={<Gavel />}

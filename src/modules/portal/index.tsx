@@ -17,7 +17,7 @@
  *    consulta o código no endpoint público /api/v1/public/verify.
  * Consome SOMENTE rotas públicas /api/v1/public/* (sem x-actor-id).
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -863,6 +863,14 @@ function SessionDetailSheet({
   })
 
   const session: PublicSessionDetail | null = data ?? null
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  const jumpToMarker = (offsetSeconds: number) => {
+    const el = videoRef.current
+    if (!el) return
+    el.currentTime = offsetSeconds
+    void el.play().catch(() => {})
+  }
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -894,7 +902,33 @@ function SessionDetailSheet({
               </span>
             </div>
             {session.transmissionLink && <a href={session.transmissionLink.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium underline" style={{ color: primaryColor }}><ExternalLink className="size-4" aria-hidden /> Abrir transmissão desta sessão</a>}
-            {session.localReplay && <section aria-label="Replay local da sessão" className="space-y-2"><p className="font-medium">Replay local</p><video controls preload="metadata" className="w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(sessionId)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label="Replay desta sessão" /><p className="break-all text-[10px] text-zinc-500">SHA-256 do vídeo: {session.localReplay.replaySha256}</p></section>}
+            {session.localReplay && <section aria-label="Replay local da sessão" className="space-y-2"><p className="font-medium">Replay local</p><video ref={videoRef} controls preload="metadata" className="w-full rounded" src={`/api/v1/public/sessions/${encodeURIComponent(sessionId)}/replay?tenant=${encodeURIComponent(slug)}`} aria-label="Replay desta sessão" /><p className="break-all text-[10px] text-zinc-500">SHA-256 do vídeo: {session.localReplay.replaySha256}</p></section>}
+            {session.replayMarkers && session.replayMarkers.length > 0 && (
+              <section aria-label="Capítulos da sessão">
+                <h4 className="mb-1.5 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                  Linha do tempo / Marcadores ({session.replayMarkers.length})
+                </h4>
+                <ul className="max-h-48 space-y-1 overflow-y-auto custom-scroll pr-1 text-xs">
+                  {session.replayMarkers.map((m) => (
+                    <li key={`${m.type}-${m.refId}-${m.offsetSeconds}`} className="flex items-center justify-between gap-2 rounded bg-zinc-50 px-2 py-1">
+                      <span className="truncate">{m.label}</span>
+                      {session.localReplay ? (
+                        <button
+                          type="button"
+                          onClick={() => jumpToMarker(m.offsetSeconds)}
+                          className="shrink-0 font-mono font-semibold underline"
+                          style={{ color: primaryColor }}
+                        >
+                          {fmtDuration(m.offsetSeconds)}
+                        </button>
+                      ) : (
+                        <span className="shrink-0 font-mono text-zinc-500">{fmtDuration(m.offsetSeconds)}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {session.ata && <p className="break-all text-xs text-zinc-600">Ata publicada nº {session.ata.verificationCode} · SHA-256 do texto: {session.ata.contentSha256 ?? 'não registrado'}</p>}
 
             {/* Pauta publicada */}

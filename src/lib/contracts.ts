@@ -1100,6 +1100,13 @@ export type PublicSessionDetail = {
     }
   }>
   speeches: Array<{ speakerName: string; kind: string; subject: string | null; durationSeconds: number }>
+  replayMarkers?: Array<{
+    type: 'session_opened' | 'voting_opened' | 'voting_closed' | 'speech_started'
+    label: string
+    at: string
+    offsetSeconds: number
+    refId: string
+  }>
 }
 
 export type OpenDataDataset = 'matters' | 'sessions' | 'attendance' | 'votes'
