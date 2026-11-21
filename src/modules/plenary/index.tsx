@@ -162,6 +162,7 @@ function PreflightBar({ sessionId, sessionStatus, onReleased }: { sessionId: str
           transferConfirmed: boolean
           designatedDesktop: { id: string; name: string } | null
           localAuthority: { active: boolean; epoch: number | null; deviceName: string | null }
+          reconciliation?: { reconciledEventsCount: number; lastReconciledAt: string | null }
           readyForWebOpen: boolean
           blockers: string[]
         }
@@ -226,6 +227,11 @@ function PreflightBar({ sessionId, sessionStatus, onReleased }: { sessionId: str
               {pf.designatedDesktop && (
                 <span className={pf.transferConfirmed ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}>
                   Desktop ({pf.designatedDesktop.name}): {pf.transferConfirmed ? 'manifesto OK' : 'pendente'}
+                </span>
+              )}
+              {pf.reconciliation && pf.reconciliation.reconciledEventsCount > 0 && (
+                <span className="text-muted-foreground">
+                  Sincronizados: {pf.reconciliation.reconciledEventsCount} evento(s) locais
                 </span>
               )}
             </>

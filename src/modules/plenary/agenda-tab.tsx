@@ -76,6 +76,8 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
   const canConduct = useApp((s) => s.can('session.transition'))
   const canVote = useApp((s) => s.can('voting.write'))
   const [votingItem, setVotingItem] = useState<AgendaItemView | null>(null)
+  const [blockSelectedIds, setBlockSelectedIds] = useState<string[]>([])
+  const [blockVotingOpen, setBlockVotingOpen] = useState(false)
   const [justifyTarget, setJustifyTarget] = useState<{ item: AgendaItemView; action: AgendaIncidentAction } | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [amendOpen, setAmendOpen] = useState(false)
@@ -124,10 +126,17 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
           {agenda.length} {agenda.length === 1 ? 'item na pauta' : 'itens na pauta'} · conduza os
           trabalhos item a item
         </p>
-        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)} disabled={!editAllowed}>
-          <Plus /> Adicionar matérias à pauta
-        </Button>
-        {session.status === 'scheduled' && canConduct && <Button size="sm" variant="outline" onClick={() => setAmendOpen(true)}>Emendar pauta publicada</Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {canVote && votingAllowed && blockSelectedIds.length >= 2 && (
+            <Button size="sm" onClick={() => setBlockVotingOpen(true)}>
+              <Gavel /> Votar em bloco ({blockSelectedIds.length})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setAddOpen(true)} disabled={!editAllowed}>
+            <Plus /> Adicionar matérias à pauta
+          </Button>
+          {session.status === 'scheduled' && canConduct && <Button size="sm" variant="outline" onClick={() => setAmendOpen(true)}>Emendar pauta publicada</Button>}
+        </div>
       </div>
 
       {!votingAllowed && (
@@ -157,6 +166,12 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
                 canVote={canVote}
                 votingAllowed={votingAllowed}
                 busy={patch.isPending}
+                blockChecked={blockSelectedIds.includes(item.id)}
+                onToggleBlock={(checked) =>
+                  setBlockSelectedIds((prev) =>
+                    checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
+                  )
+                }
                 onMove={(dir) => move(item, dir)}
                 onStatus={(status) =>
                   void patch.mutate({
@@ -175,12 +190,22 @@ export function AgendaTab({ data, invalidate, onGoToVoting }: Props) {
 
       <VotingSetupDialog
         item={votingItem}
-        open={!!votingItem}
-        onOpenChange={(open) => !open && setVotingItem(null)}
+        blockItems={blockVotingOpen ? agenda.filter((i) => blockSelectedIds.includes(i.id)) : []}
+        open={!!votingItem || blockVotingOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setVotingItem(null)
+            setBlockVotingOpen(false)
+          }
+        }}
         sessionId={data.session.id}
         official={data.session.official}
         invalidate={invalidate}
-        onCreated={onGoToVoting}
+        onCreated={() => {
+          setBlockSelectedIds([])
+          setBlockVotingOpen(false)
+          onGoToVoting()
+        }}
       />
 
       <JustifyDialog
@@ -226,6 +251,8 @@ function AgendaRow({
   canVote,
   votingAllowed,
   busy,
+  blockChecked,
+  onToggleBlock,
   onMove,
   onStatus,
   onOpenVoting,
@@ -241,6 +268,8 @@ function AgendaRow({
   canVote: boolean
   votingAllowed: boolean
   busy: boolean
+  blockChecked: boolean
+  onToggleBlock: (checked: boolean) => void
   onMove: (dir: -1 | 1) => void
   onStatus: (status: 'em_leitura' | 'em_discussao') => void
   onOpenVoting: () => void
@@ -253,6 +282,14 @@ function AgendaRow({
   return (
     <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-start gap-3">
+        {canStartVoting && (
+          <Checkbox
+            checked={blockChecked}
+            onCheckedChange={(v) => onToggleBlock(v === true)}
+            aria-label={`Selecionar "${item.title}" para votação em bloco`}
+            className="mt-1.5"
+          />
+        )}
         <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-bold tabular-nums">
           {num}
         </span>
@@ -379,6 +416,7 @@ const KEY_RE = /^[a-z0-9_]{2,40}$/
 
 function VotingSetupDialog({
   item,
+  blockItems = [],
   open,
   onOpenChange,
   sessionId,
@@ -387,6 +425,7 @@ function VotingSetupDialog({
   onCreated,
 }: {
   item: AgendaItemView | null
+  blockItems?: AgendaItemView[]
   open: boolean
   onOpenChange: (open: boolean) => void
   sessionId: string
@@ -420,8 +459,20 @@ function VotingSetupDialog({
         { key: '', label: '' },
         { key: '', label: '' },
       ])
+    } else if (blockItems.length >= 2) {
+      setQuestion(
+        `Votação em bloco (${blockItems.length} itens): ${blockItems.map((b) => b.title.slice(0, 40)).join('; ')}`.slice(0, 300)
+      )
+      setMode('simbolico')
+      setRule('maioria_simples')
+      setHidePartial(hideByDefault)
+      setUseCustomOptions(false)
+      setCustomOptions([
+        { key: '', label: '' },
+        { key: '', label: '' },
+      ])
     }
-  }, [item, hideByDefault, votingPolicy?.rule])
+  }, [item, blockItems, hideByDefault, votingPolicy?.rule])
 
   const filledOptions = customOptions.filter((o) => o.label.trim().length > 0 || o.key.trim().length > 0)
   const optionsErrors: string[] = []
@@ -446,15 +497,15 @@ function VotingSetupDialog({
   }
 
   const submit = async () => {
-    if (!item) return
+    if (!item && blockItems.length < 2) return
     setBusy(true)
     try {
       const options = useCustomOptions
         ? filledOptions.map((o) => ({ key: o.key.trim() || slugify(o.label), label: o.label.trim() }))
         : undefined
       await api.createVoting(sessionId, {
-        agendaItemId: item.id,
-        question: question.trim() || item.title,
+        ...(item ? { agendaItemId: item.id } : { agendaItemIds: blockItems.map((b) => b.id) }),
+        question: question.trim() || item?.title || 'Votação em bloco',
         mode,
         rule,
         hidePartial,

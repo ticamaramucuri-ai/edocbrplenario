@@ -17,6 +17,7 @@ import { loadSession } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
 import { emitOutbox } from '@/lib/server/outbox'
 import { tenantSettings } from '@/lib/server/domain'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { toVotingView } from '@/lib/server/serializers'
 import { SESSION_STATUS_LABEL } from '@/lib/contracts'
 
@@ -54,6 +55,7 @@ const optionSchema = z.object({
 const bodySchema = z
   .object({
     agendaItemId: z.string().min(1).optional(),
+    agendaItemIds: z.array(z.string().min(1)).min(2).max(30).optional(),
     question: z.string().min(3).max(500).optional(),
     mode: z.enum(['nominal', 'simbolico', 'secreto']),
     rule: z.enum(['maioria_simples', 'maioria_absoluta', 'unanimidade']).optional(),
@@ -62,11 +64,11 @@ const bodySchema = z
     options: z.array(optionSchema).max(5, 'Informe no máximo 5 opções.').optional(),
   })
   .superRefine((body, ctx) => {
-    if (!body.agendaItemId && !body.question) {
+    if (!body.agendaItemId && !body.agendaItemIds?.length && !body.question) {
       ctx.addIssue({
         code: 'custom',
         path: ['question'],
-        message: 'Informe a questão ou vincule um item da pauta.',
+        message: 'Informe a questão ou vincule ao menos um item da pauta.',
       })
     }
     if (body.options && body.options.length > 0) {
@@ -121,6 +123,23 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     }
   }
 
+  let blockItems: Awaited<ReturnType<typeof db.agendaItem.findMany>> = []
+  if (body.agendaItemIds && body.agendaItemIds.length > 0) {
+    const uniqueIds = [...new Set(body.agendaItemIds)]
+    blockItems = await db.agendaItem.findMany({
+      where: { id: { in: uniqueIds }, sessionId: session.id },
+      orderBy: { order: 'asc' },
+    })
+    if (blockItems.length !== uniqueIds.length) {
+      throw new DomainError(
+        'VALIDATION_ERROR',
+        422,
+        'Dados inválidos',
+        'Todos os itens da votação em bloco devem pertencer a esta sessão.'
+      )
+    }
+  }
+
   const matter = agendaItem?.matterId ? await db.legislativeMatter.findFirst({
     where: { id: agendaItem.matterId, tenantId: session.tenantId }, select: { type: true },
   }) : null
@@ -133,6 +152,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   const requiredQuorum = policy?.quorumMinimum ?? settings.quorumMinimum
 
   const voting = await withTransaction(async (tx) => {
+    await assertNoActiveLocalAuthority(tx, session.id)
     const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
     if (currentSession.official && body.mode === 'secreto') {
       throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado.')
@@ -146,6 +166,9 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       'Conclua ou cancele a votação pendente antes de criar outra.')
     const currentAgendaItem = agendaItem
       ? await tx.agendaItem.findUniqueOrThrow({ where: { id: agendaItem.id } }) : null
+    const blockQuestion = blockItems.length > 0
+      ? `Votação em bloco (${blockItems.length} itens): ${blockItems.map((b) => b.title.slice(0, 40)).join('; ')}`.slice(0, 500)
+      : ''
     const created = await tx.voting.create({
       data: {
         sessionId: session.id,
@@ -153,7 +176,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
         agendaBefore: currentAgendaItem ? JSON.stringify({ status: currentAgendaItem.status,
           resultSummary: currentAgendaItem.resultSummary }) : null,
         matterId: agendaItem?.matterId ?? null,
-        question: body.question ?? agendaItem!.title,
+        question: body.question ?? (agendaItem ? agendaItem.title : blockQuestion),
         mode: body.mode,
         status: 'ready',
         rule,
@@ -177,6 +200,11 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     if (agendaItem) {
       await tx.agendaItem.update({
         where: { id: agendaItem.id },
+        data: { status: 'em_votacao' },
+      })
+    } else if (blockItems.length > 0) {
+      await tx.agendaItem.updateMany({
+        where: { id: { in: blockItems.map((b) => b.id) }, sessionId: session.id },
         data: { status: 'em_votacao' },
       })
     }

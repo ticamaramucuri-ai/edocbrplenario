@@ -16,7 +16,7 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
   const session = await loadSession(actor, id)
   const now = new Date()
 
-  const [attendance, agendaCount, lease, designation, latestRevision] = await Promise.all([
+  const [attendance, agendaCount, lease, designation, latestRevision, reconciledCount, lastReconciled] = await Promise.all([
     currentAttendance(db, session.id, session.tenantId),
     db.agendaItem.count({ where: { sessionId: session.id } }),
     db.localSessionAuthorityLease.findUnique({
@@ -31,6 +31,14 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
       where: { tenantId: session.tenantId, sessionId: session.id },
       orderBy: { revision: 'desc' },
       select: { id: true, revision: true },
+    }),
+    db.auditEvent.count({
+      where: { tenantId: session.tenantId, aggregateId: session.id, action: 'authority.reconciled_event' },
+    }),
+    db.auditEvent.findFirst({
+      where: { tenantId: session.tenantId, aggregateId: session.id, action: 'authority.reconciled_event' },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
     }),
   ])
 
@@ -77,8 +85,13 @@ export const GET = apiHandler(async (req: NextRequest, ctx) => {
         deviceName: lease?.device.name ?? null,
         expiresAt: lease?.expiresAt.toISOString() ?? null,
       },
+      reconciliation: {
+        reconciledEventsCount: reconciledCount,
+        lastReconciledAt: lastReconciled?.createdAt.toISOString() ?? null,
+      },
       readyForWebOpen: session.agendaPublished && agendaCount > 0 && attendance.quorum.ok && !localAuthorityActive,
       blockers,
     },
   })
 })
+

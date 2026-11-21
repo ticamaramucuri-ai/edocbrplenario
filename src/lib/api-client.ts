@@ -284,6 +284,7 @@ export const api = {
     sessionId: string,
     data: {
       agendaItemId?: string
+      agendaItemIds?: string[]
       question?: string
       mode: VotingMode
       rule?: VotingRule
