@@ -74,6 +74,7 @@ export type ApiErrorCode =
   | 'LOCAL_TRANSFER_UNAVAILABLE'
   | 'LOCAL_TRANSFER_ACK_MISMATCH'
   | 'LOCAL_AUTHORITY_CONFLICT'
+  | 'LOCAL_AUTHORITY_ACTIVE'
   | 'LOCAL_AUTHORITY_PRECONDITION'
   | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR'
@@ -141,6 +142,7 @@ const TYPE_SLUG: Record<ApiErrorCode, string> = {
   LOCAL_TRANSFER_UNAVAILABLE: 'local-transfer-unavailable',
   LOCAL_TRANSFER_ACK_MISMATCH: 'local-transfer-ack-mismatch',
   LOCAL_AUTHORITY_CONFLICT: 'local-authority-conflict',
+  LOCAL_AUTHORITY_ACTIVE: 'local-authority-active',
   LOCAL_AUTHORITY_PRECONDITION: 'local-authority-precondition',
   DATABASE_UNAVAILABLE: 'database-unavailable',
   INTERNAL_ERROR: 'internal-error',

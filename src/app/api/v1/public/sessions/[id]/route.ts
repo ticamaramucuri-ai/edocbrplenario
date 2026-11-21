@@ -94,5 +94,56 @@ export const GET = apiHandler(async (req: NextRequest, ctx, _correlationId) => {
       .filter((v) => ['closed', 'annulled'].includes(v.status) && v.resultStatus !== null)
       .map((v) => toPublicVotingResult(v, partyById, v.impediments.length)),
     speeches: speeches.map(toPublicSpeech),
+    replayMarkers: (() => {
+      const originMs = (session.openedAt ?? session.scheduledAt).getTime()
+      const offset = (d: Date) => Math.max(0, Math.round((d.getTime() - originMs) / 1000))
+      const markers: Array<{
+        type: 'session_opened' | 'voting_opened' | 'voting_closed' | 'speech_started'
+        label: string
+        at: string
+        offsetSeconds: number
+        refId: string
+      }> = []
+      if (session.openedAt) {
+        markers.push({
+          type: 'session_opened',
+          label: 'Abertura da sessão',
+          at: session.openedAt.toISOString(),
+          offsetSeconds: 0,
+          refId: session.id,
+        })
+      }
+      for (const v of votings) {
+        if (v.openedAt) {
+          markers.push({
+            type: 'voting_opened',
+            label: `Votação aberta: ${v.question.slice(0, 80)}`,
+            at: v.openedAt.toISOString(),
+            offsetSeconds: offset(v.openedAt),
+            refId: v.id,
+          })
+        }
+        if (v.closedAt) {
+          markers.push({
+            type: 'voting_closed',
+            label: `Votação encerrada: ${v.question.slice(0, 80)}`,
+            at: v.closedAt.toISOString(),
+            offsetSeconds: offset(v.closedAt),
+            refId: v.id,
+          })
+        }
+      }
+      for (const s of speeches) {
+        const speaker = s.parliamentarian?.name ?? s.externalSpeaker ?? 'Orador'
+        markers.push({
+          type: 'speech_started',
+          label: `Pronunciamento: ${speaker}`,
+          at: s.createdAt.toISOString(),
+          offsetSeconds: offset(s.createdAt),
+          refId: s.id,
+        })
+      }
+      return markers.sort((a, b) => a.offsetSeconds - b.offsetSeconds)
+    })(),
   })
 })

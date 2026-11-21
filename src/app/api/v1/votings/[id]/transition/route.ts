@@ -16,6 +16,7 @@ import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { loadVoting } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { emitOutbox } from '@/lib/server/outbox'
 import { notify } from '@/lib/server/notify'
 import {
@@ -95,6 +96,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
   }
 
   const result = await withTransaction(async (tx) => {
+    await assertNoActiveLocalAuthority(tx, voting.sessionId)
     const current = await tx.voting.findUniqueOrThrow({ where: { id: voting.id } })
     if (session.official && current.mode === 'secreto' && ['open', 'resume', 'close'].includes(body.action)) {
       throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado até revisão independente do sigilo.')

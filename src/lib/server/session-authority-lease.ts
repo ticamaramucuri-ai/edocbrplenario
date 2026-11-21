@@ -19,6 +19,26 @@ const precondition = (detail: string) => new DomainError('LOCAL_AUTHORITY_PRECON
 const conflict = (detail: string) => new DomainError('LOCAL_AUTHORITY_CONFLICT', 409,
   'Autoridade local ocupada', detail)
 
+/** Bloqueia escritores web enquanto o servidor local detiver concessão vigente. */
+export async function assertNoActiveLocalAuthority(
+  client: Prisma.TransactionClient | typeof db,
+  sessionId: string,
+  now = new Date()
+): Promise<void> {
+  const lease = await client.localSessionAuthorityLease.findUnique({
+    where: { sessionId },
+    select: { expiresAt: true, epoch: true, deviceId: true },
+  })
+  if (lease && lease.expiresAt > now) {
+    throw new DomainError(
+      'LOCAL_AUTHORITY_ACTIVE',
+      409,
+      'Sessão sob autoridade local',
+      `Esta sessão está sendo conduzida pelo servidor local da Câmara (época ${lease.epoch}). Mutações concorrentes na nuvem estão bloqueadas até a devolução ou vencimento da concessão.`
+    )
+  }
+}
+
 export async function reserveSessionAuthorityLease(args: {
   tenantId: string; sessionId: string; deviceId: string; revisionId: string; manifestSha256: string
   keyId: string; privateKey: KeyObject; correlationId: string; now?: Date

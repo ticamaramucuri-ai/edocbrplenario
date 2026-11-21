@@ -12,6 +12,7 @@ import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { loadSession, loadParliamentarian } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { emitOutbox } from '@/lib/server/outbox'
 import { currentAttendance } from '@/lib/server/domain'
 import { SESSION_STATUS_LABEL, ATTENDANCE_STATUS_LABEL } from '@/lib/contracts'
@@ -68,6 +69,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
       }
     }
     const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    await assertNoActiveLocalAuthority(tx, session.id)
     const statusLabel = SESSION_STATUS_LABEL[currentSession.status as keyof typeof SESSION_STATUS_LABEL] ?? currentSession.status
     if (spec.liveOnly && !LIVE_STATUSES.includes(currentSession.status)) {
       throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Transição inválida',

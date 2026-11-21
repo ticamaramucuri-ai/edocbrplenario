@@ -13,6 +13,7 @@ import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { loadSpeech } from '@/lib/server/loaders'
 import { writeAudit } from '@/lib/server/audit'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { emitOutbox } from '@/lib/server/outbox'
 import { toSpeechView } from '@/lib/server/serializers'
 
@@ -55,6 +56,7 @@ export const POST = apiHandler(async (req: NextRequest, ctx, correlationId) => {
     new DomainError('SPEECH_INVALID_TRANSITION', 409, 'Transição inválida', detail)
 
   const result = await withTransaction(async (tx) => {
+    await assertNoActiveLocalAuthority(tx, speech.sessionId)
     const data: Record<string, unknown> = {}
     let summary = ''
 

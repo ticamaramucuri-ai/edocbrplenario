@@ -19,6 +19,7 @@ import { writeAudit } from './audit'
 import { emitOutbox } from './outbox'
 import { computeVotingResult, currentAttendance, tenantSettings } from './domain'
 import { computeReceipt, SECRET_VOTE_PLACEHOLDER } from './receipts'
+import { assertNoActiveLocalAuthority } from './session-authority-lease'
 import type { ResultCounts, VoteValue, VotingRule } from '@/lib/contracts'
 import { Prisma, type Parliamentarian, type Vote, type Voting } from '@prisma/client'
 
@@ -89,6 +90,7 @@ export async function castVote(args: CastVoteArgs): Promise<CastVoteResult> {
 
   return withTransaction(async (tx) => {
     const currentVoting = await tx.voting.findUniqueOrThrow({ where: { id: voting.id }, include: { session: true } })
+    await assertNoActiveLocalAuthority(tx, currentVoting.sessionId)
     if (currentVoting.session.official && currentVoting.mode === 'secreto') {
       throw new DomainError('VOTING_INVALID_TRANSITION', 409, 'Modalidade indisponível', 'Voto secreto oficial está desabilitado.')
     }

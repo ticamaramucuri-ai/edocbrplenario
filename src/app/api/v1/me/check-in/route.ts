@@ -15,6 +15,7 @@ import { resolveActor } from '@/lib/server/actor'
 import { requirePermission } from '@/lib/server/rbac'
 import { requireMeParliamentarian, targetSessionForTenant } from '@/lib/server/me'
 import { writeAudit } from '@/lib/server/audit'
+import { assertNoActiveLocalAuthority } from '@/lib/server/session-authority-lease'
 import { emitOutbox } from '@/lib/server/outbox'
 import { currentAttendance, tenantSettings } from '@/lib/server/domain'
 import { ATTENDANCE_STATUS_LABEL, SESSION_STATUS_LABEL } from '@/lib/contracts'
@@ -84,6 +85,7 @@ export const POST = apiHandler(async (req: NextRequest, _ctx, correlationId) => 
       }
     }
     const currentSession = await tx.session.findUniqueOrThrow({ where: { id: session.id } })
+    await assertNoActiveLocalAuthority(tx, session.id)
     if (!LIVE_STATUSES.includes(currentSession.status)) {
       throw new DomainError('SESSION_INVALID_TRANSITION', 409, 'Sessão indisponível', 'A sessão mudou de estado. Atualize antes de registrar presença.')
     }
