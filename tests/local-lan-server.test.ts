@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { initializeLocalDevice, enrollLocalDevice, trustLocalTransferKey, loadLocalDevice } from '../src/lib/local-device-keystore'
 import { startLocalLanServer } from '../src/lib/local-lan-server'
+import { startLocalSetupServer } from '../src/lib/local-desktop-setup'
 
 const createdDirs: string[] = []
 const serversToClose: Array<{ close(): void }> = []
@@ -262,5 +263,35 @@ describe('local-lan-server', () => {
     } finally {
       ws.close()
     }
+  })
+
+  it('starts setup wizard when vault is missing and initializes demo vault in 1 click', async () => {
+    const tempParent = await mkdtemp(join(tmpdir(), 'edoc-setup-'))
+    createdDirs.push(tempParent)
+    const root = join(tempParent, 'device')
+    const passphraseFile = join(tempParent, 'passphrase')
+
+    let configured = false
+    const setup = startLocalSetupServer({
+      root,
+      passphraseFile,
+      reason: 'Cofre local ainda não configurado.',
+      hostname: '127.0.0.1',
+      port: 0,
+      onConfigured: () => {
+        configured = true
+      },
+    })
+    serversToClose.push(setup)
+
+    const base = `http://127.0.0.1:${setup.port}`
+    const page = await fetch(`${base}/`)
+    expect(page.status).toBe(200)
+    expect(await page.text()).toContain('Criar Cofre de Teste Local (1 clique)')
+
+    const demoRes = await fetch(`${base}/api/setup/demo`, { method: 'POST' })
+    expect(demoRes.status).toBe(200)
+    await new Promise((r) => setTimeout(r, 100))
+    expect(configured).toBe(true)
   })
 })
